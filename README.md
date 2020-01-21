@@ -10,11 +10,11 @@ This repo is a self-contained version of the UniRep model (so far only the 1900 
 
 ## Usage
 
-To generate representations of same-length sequences, use `jax_unirep.featurize.get_reps`. It will return a tuple consisting of the following representations for each sequence:
+To generate representations of protein sequences, pass a list of same-length sequences as strings to `jax_unirep.featurize.get_reps`. It will return a tuple consisting of the following representations for each sequence:
 
-- h_final: Final hidden state of the mLSTM
-- c_final: Final cell state of the mLSTM
-- h_avg: Average hidden state of the mLSTM over the whole sequence.
+- `h_final`: Final hidden state of the mLSTM
+- `c_final`: Final cell state of the mLSTM
+- `h_avg`: Average hidden state of the mLSTM over the whole sequence.
 
 # License
 
