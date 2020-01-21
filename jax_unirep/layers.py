@@ -3,8 +3,8 @@ from functools import partial
 import jax.numpy as np
 from jax import lax, vmap
 
-from activations import sigmoid, tanh
-from utils import l2_normalize
+from .activations import sigmoid, tanh
+from .utils import l2_normalize
 
 
 def mlstm1900(params: dict, x: np.ndarray) -> np.ndarray:

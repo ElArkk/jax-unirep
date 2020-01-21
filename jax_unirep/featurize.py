@@ -2,8 +2,8 @@ from typing import List, Tuple
 
 import numpy as np
 
-from layers import mlstm1900
-from utils import get_embeddings, load_params_1900
+from .layers import mlstm1900
+from .utils import get_embeddings, load_params_1900
 
 
 def get_reps(seqs: List[str]) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:

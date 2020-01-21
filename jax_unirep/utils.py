@@ -4,7 +4,7 @@ from typing import List
 import numpy as np
 from pyprojroot import here
 
-from errors import SequenceLengthsError
+from .errors import SequenceLengthsError
 
 aa_to_int = {
     "M": 1,
