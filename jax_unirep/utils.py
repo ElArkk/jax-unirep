@@ -45,7 +45,7 @@ def aa_seq_to_int(s):
     # Make sure only valid aa's are passed
     if not set([aa for aa in s]).issubset(set(aa_to_int.keys())):
         raise ValueError(
-            f"Unsupported characters in sequences found:"
+            f"Unsupported character(s) in sequence found:"
             f" {set([aa for aa in s]).difference(set(aa_to_int.keys()))}"
         )
     return [24] + [aa_to_int[a] for a in s] + [25]
