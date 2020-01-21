@@ -1,5 +1,6 @@
 import jax.numpy as np
 
+
 def sigmoid(x, version="tanh"):
     if version not in ["tanh", "exp"]:
         raise ValueError("version must be one of ['tanh' or 'exp']")

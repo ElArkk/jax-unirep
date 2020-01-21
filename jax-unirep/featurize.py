@@ -1,6 +1,7 @@
+from typing import List, Tuple
+
 import numpy as np
 
-from typing import List, Tuple
 from layers import mlstm1900
 from utils import get_embeddings, load_params_1900
 
@@ -13,5 +14,3 @@ def get_reps(seqs: List[str]) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     h_avg = h.mean(axis=1)
 
     return h_final, c_final, h_avg
-
-
