@@ -1,0 +1,15 @@
+name: jax-unirep
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.7
+  - black=19.10b0
+  - conda=4.7.12
+  - hypothesis=5.2.0
+  - isort=4.3.21
+  - jax=0.1.57
+  - jaxlib=0.1.37
+  - numpy=1.17.5
+  - pyprojroot=0.2.0
+  - pytest=5.3.4
