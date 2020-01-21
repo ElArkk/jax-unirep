@@ -45,6 +45,10 @@ def aa_seq_to_int(s):
     return [24] + [aa_to_int[a] for a in s] + [25]
 
 
+def load_embedding_1900():
+    return np.load(here("./weights/1900_weights/embed_matrix:0.npy"))
+
+
 def get_embedding(sequence: str, embeddings: np.ndarray) -> np.ndarray:
     """Get embeddings for one sequence"""
     if len(sequence) < 1:
@@ -76,7 +80,7 @@ Sequence length: number of sequences information in the dictionary below.
 {seq_lengths}
 """
         raise SequenceLengthsError(error)
-    embeddings = np.load(here("./weights/1900_weights/embed_matrix:0.npy"))
+    embeddings = load_embedding_1900()
 
     seq_embeddings = [get_embedding(s, embeddings) for s in sequences]
     return np.stack(seq_embeddings, axis=0)
