@@ -2,7 +2,8 @@ from collections import Counter
 from typing import List
 
 import numpy as np
-from pyprojroot import here
+import pkg_resources
+from pathlib import Path
 
 from .errors import SequenceLengthsError
 
@@ -37,6 +38,8 @@ aa_to_int = {
     "stop": 25,
 }
 
+weights_1900_dir = Path(pkg_resources.resource_filename("jax_unirep", "weights/1900_weights"))
+
 
 def aa_seq_to_int(s):
     """
@@ -52,7 +55,7 @@ def aa_seq_to_int(s):
 
 
 def load_embedding_1900():
-    return np.load(here("./weights/1900_weights/embed_matrix:0.npy"))
+    return np.load(weights_1900_dir/ "embed_matrix:0.npy")
 
 
 def get_embedding(sequence: str, embeddings: np.ndarray) -> np.ndarray:
@@ -96,33 +99,33 @@ def load_params_1900() -> dict:
 
     params = dict()
     params["gh"] = np.load(
-        here("./weights/1900_weights/rnn_mlstm_mlstm_gh:0.npy")
+        weights_1900_dir/"rnn_mlstm_mlstm_gh:0.npy"
     )
     params["gmh"] = np.load(
-        here("./weights/1900_weights/rnn_mlstm_mlstm_gmh:0.npy")
+        weights_1900_dir/"rnn_mlstm_mlstm_gmh:0.npy"
     )
     params["gmx"] = np.load(
-        here("./weights/1900_weights/rnn_mlstm_mlstm_gmx:0.npy")
+        weights_1900_dir/"rnn_mlstm_mlstm_gmx:0.npy"
     )
     params["gx"] = np.load(
-        here("./weights/1900_weights/rnn_mlstm_mlstm_gx:0.npy")
+        weights_1900_dir/"rnn_mlstm_mlstm_gx:0.npy"
     )
 
     params["wh"] = np.load(
-        here("./weights/1900_weights/rnn_mlstm_mlstm_wh:0.npy")
+        weights_1900_dir/"rnn_mlstm_mlstm_wh:0.npy"
     )
     params["wmh"] = np.load(
-        here("./weights/1900_weights/rnn_mlstm_mlstm_wmh:0.npy")
+        weights_1900_dir/"rnn_mlstm_mlstm_wmh:0.npy"
     )
     params["wmx"] = np.load(
-        here("./weights/1900_weights/rnn_mlstm_mlstm_wmx:0.npy")
+        weights_1900_dir/"rnn_mlstm_mlstm_wmx:0.npy"
     )
     params["wx"] = np.load(
-        here("./weights/1900_weights/rnn_mlstm_mlstm_wx:0.npy")
+        weights_1900_dir/"rnn_mlstm_mlstm_wx:0.npy"
     )
 
     params["b"] = np.load(
-        here("./weights/1900_weights/rnn_mlstm_mlstm_b:0.npy")
+        weights_1900_dir/"rnn_mlstm_mlstm_b:0.npy"
     )
 
     return params
