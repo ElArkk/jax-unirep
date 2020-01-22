@@ -17,6 +17,12 @@ def get_reps(seqs: List[str]) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     Each element of the output tuple is a np.array
     of shape (n_sequences, 1900).
 
+    You should not use this function if you want to do further JAX-based computations
+    on the output vectors! In that case, the `DeviceArray` futures returned by `mlstm1900`
+    should be passed directly into the next step instead of converting them to np.arrays.
+    The conversion to np.arrays is done here to force python to wait with returning the values
+    until the computation is actually completed.
+
 
     :param seqs: A list of same length sequences as strings.
         If passing only a single sequence, it also needs to be passed inside a list.
@@ -30,4 +36,4 @@ def get_reps(seqs: List[str]) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     h_final, c_final, h = mlstm1900(params, embedded_seqs)
     h_avg = h.mean(axis=1)
 
-    return h_final, c_final, h_avg
+    return np.array(h_final), np.array(c_final), np.array(h_avg)

@@ -1,9 +1,10 @@
 from collections import Counter
 from typing import List
 
-import numpy as np
 import pkg_resources
 from pathlib import Path
+import jax.numpy as np
+import numpy as onp
 
 from .errors import SequenceLengthsError
 
@@ -46,16 +47,20 @@ def aa_seq_to_int(s):
     Return the int sequence as a list for a given string of amino acids
     """
     # Make sure only valid aa's are passed
-    if not set([aa for aa in s]).issubset(set(aa_to_int.keys())):
+    if not set(s).issubset(set(aa_to_int.keys())):
         raise ValueError(
             f"Unsupported character(s) in sequence found:"
-            f" {set([aa for aa in s]).difference(set(aa_to_int.keys()))}"
+            f" {set(s).difference(set(aa_to_int.keys()))}"
         )
     return [24] + [aa_to_int[a] for a in s] + [25]
 
 
 def load_embedding_1900():
+<<<<<<< HEAD
     return np.load(weights_1900_dir/ "embed_matrix:0.npy")
+=======
+    return onp.load(here("./weights/1900_weights/embed_matrix:0.npy"))
+>>>>>>> upstream/master
 
 
 def get_embedding(sequence: str, embeddings: np.ndarray) -> np.ndarray:
@@ -63,7 +68,7 @@ def get_embedding(sequence: str, embeddings: np.ndarray) -> np.ndarray:
     if len(sequence) < 1:
         raise SequenceLengthsError("Sequence must be at least of length one.")
     sequence = aa_seq_to_int(sequence)[:-1]
-    x = np.vstack([embeddings[i] for i in sequence])
+    x = onp.vstack([embeddings[i] for i in sequence])
     return x
 
 
@@ -92,12 +97,13 @@ Sequence length: number of sequences information in the dictionary below.
     embeddings = load_embedding_1900()
 
     seq_embeddings = [get_embedding(s, embeddings) for s in sequences]
-    return np.stack(seq_embeddings, axis=0)
+    return onp.stack(seq_embeddings, axis=0)
 
 
 def load_params_1900() -> dict:
 
     params = dict()
+<<<<<<< HEAD
     params["gh"] = np.load(
         weights_1900_dir/"rnn_mlstm_mlstm_gh:0.npy"
     )
@@ -126,6 +132,36 @@ def load_params_1900() -> dict:
 
     params["b"] = np.load(
         weights_1900_dir/"rnn_mlstm_mlstm_b:0.npy"
+=======
+    params["gh"] = onp.load(
+        here("./weights/1900_weights/rnn_mlstm_mlstm_gh:0.npy")
+    )
+    params["gmh"] = onp.load(
+        here("./weights/1900_weights/rnn_mlstm_mlstm_gmh:0.npy")
+    )
+    params["gmx"] = onp.load(
+        here("./weights/1900_weights/rnn_mlstm_mlstm_gmx:0.npy")
+    )
+    params["gx"] = onp.load(
+        here("./weights/1900_weights/rnn_mlstm_mlstm_gx:0.npy")
+    )
+
+    params["wh"] = onp.load(
+        here("./weights/1900_weights/rnn_mlstm_mlstm_wh:0.npy")
+    )
+    params["wmh"] = onp.load(
+        here("./weights/1900_weights/rnn_mlstm_mlstm_wmh:0.npy")
+    )
+    params["wmx"] = onp.load(
+        here("./weights/1900_weights/rnn_mlstm_mlstm_wmx:0.npy")
+    )
+    params["wx"] = onp.load(
+        here("./weights/1900_weights/rnn_mlstm_mlstm_wx:0.npy")
+    )
+
+    params["b"] = onp.load(
+        here("./weights/1900_weights/rnn_mlstm_mlstm_b:0.npy")
+>>>>>>> upstream/master
     )
 
     return params
