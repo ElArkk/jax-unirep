@@ -6,7 +6,9 @@ from .layers import mlstm1900
 from .utils import batch_sequences, get_embeddings, load_params_1900
 
 
-def get_reps(seqs: List[str]) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def get_reps_samelength(
+    seqs: List[str],
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     This function generates representations of protein sequences using the 
     1900 hidden-unit mLSTM model with pre-trained weights from the UniRep
@@ -39,26 +41,29 @@ def get_reps(seqs: List[str]) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     return np.array(h_final), np.array(c_final), np.array(h_avg)
 
 
-def get_reps_arbitrary(
+def get_reps_arbitrarylength(
     seqs: List[str],
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
 
     order = batch_sequences(seqs)
-
+    # TODO: Find a better way to do this, without code triplication
     hf_list, cf_list, ha_list = [], [], []
+    # Each list in `order` contains the indexes of all sequences of a
+    # given length from the original list of sequences.
     for idxs in order:
         subset = [seqs[i] for i in idxs]
-        # TODO: Find a better way to do this
+
         h_final, c_final, h_avg = get_reps(subset)
         hf_list.append(h_final)
         cf_list.append(c_final)
         ha_list.append(h_avg)
-    # TODO: Find a better way to do this
+
     h_final, c_final, h_avg = (
         np.zeros((len(seqs), 1900)),
         np.zeros((len(seqs), 1900)),
         np.zeros((len(seqs), 1900)),
     )
+    # Re-order generated reps to match sequence order in the original list.
     for i, subset in enumerate(order):
         for j, rep in enumerate(subset):
             h_final[rep] = hf_list[i][j]
@@ -66,3 +71,20 @@ def get_reps_arbitrary(
             h_avg[rep] = ha_list[i][j]
 
     return h_final, c_final, h_avg
+
+
+def get_reps(seqs: List[str]) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+
+    # Make sure list is not empty
+    if len(seqs) == 0:
+        raise SequenceLengthsError("Cannot pass in empty list of sequences.")
+
+    # Differentiate between two cases:
+    # 1. All sequences in the list have the same length
+    # 2. There are sequences of different lengths in the list
+    if len(set([len(s) for s in seqs])) == 1:
+        h_final, c_final, h_avg = get_reps_samelength(seqs)
+        return h_final, c_final, h_avg
+    else:
+        h_final, c_final, h_avg = get_reps_arbitrarylength(seqs)
+        return h_final, c_final, h_avg
