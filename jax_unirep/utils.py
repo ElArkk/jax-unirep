@@ -163,6 +163,10 @@ def batch_sequences(seqs: List[str]) -> List[List]:
         same-length sequences in the original list.
     """
 
+    # Make sure list is not empty
+    if len(seqs) == 0:
+        raise SequenceLengthsError("Cannot pass in empty list of sequences.")
+
     order = []
     for l in set([len(s) for s in seqs]):
         order.append([i for i, s in enumerate(seqs) if len(s) == l])
