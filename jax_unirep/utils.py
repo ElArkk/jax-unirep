@@ -147,3 +147,23 @@ def l2_normalize(arr, axis, epsilon=1e-12):
     square_sum = np.sum(sq_arr, axis=axis, keepdims=True)
     max_weights = np.maximum(square_sum, epsilon)
     return np.divide(arr, np.sqrt(max_weights))
+
+
+def batch_sequences(seqs: List[str]) -> List[List]:
+    """
+    Given a list of strings, returns a list of lists,
+    where each sub-list contains the positions of same-length sequences
+    in the original list.
+
+    Example:
+    ['MTN', 'MT', 'MDN', 'M'] -> [[3], [1], [0, 2]]
+
+    :param seqs: List of sequences as strings.
+    :returns: List of lists, where each sub-list contains the positions of 
+        same-length sequences in the original list.
+    """
+
+    order = []
+    for l in set([len(s) for s in seqs]):
+        order.append([i for i, s in enumerate(seqs) if len(s) == l])
+    return order
