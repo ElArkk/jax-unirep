@@ -3,7 +3,7 @@ from typing import List, Tuple
 import numpy as np
 
 from .layers import mlstm1900
-from .utils import get_embeddings, load_params_1900, batch_sequences
+from .utils import batch_sequences, get_embeddings, load_params_1900
 
 
 def get_reps(seqs: List[str]) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -39,7 +39,9 @@ def get_reps(seqs: List[str]) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     return np.array(h_final), np.array(c_final), np.array(h_avg)
 
 
-def get_reps_arbitrary(seqs: List[str]) ->Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def get_reps_arbitrary(
+    seqs: List[str],
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
 
     order = batch_sequences(seqs)
 
@@ -52,14 +54,15 @@ def get_reps_arbitrary(seqs: List[str]) ->Tuple[np.ndarray, np.ndarray, np.ndarr
         cf_list.append(c_final)
         ha_list.append(h_avg)
     # TODO: Find a better way to do this
-    h_final, c_final, h_avg = np.zeros((len(seqs), 1900)), np.zeros((len(seqs), 1900)), np.zeros((len(seqs), 1900))
+    h_final, c_final, h_avg = (
+        np.zeros((len(seqs), 1900)),
+        np.zeros((len(seqs), 1900)),
+        np.zeros((len(seqs), 1900)),
+    )
     for i, subset in enumerate(order):
         for j, rep in enumerate(subset):
             h_final[rep] = hf_list[i][j]
             c_final[rep] = cf_list[i][j]
             h_avg[rep] = ha_list[i][j]
-    
+
     return h_final, c_final, h_avg
-
-
-
