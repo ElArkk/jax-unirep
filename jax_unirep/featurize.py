@@ -31,16 +31,16 @@ def rep_same_lengths(
 def rep_arbitrary_lengths(
     seqs: List[str],
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-"""
-This function generates representations of protein sequences of arbitrary length,
-by batching together all sequences of the same length and passing them through
-the mLSTM. Original order of sequences is restored in the final output.
+    """
+    This function generates representations of protein sequences of arbitrary length,
+    by batching together all sequences of the same length and passing them through
+    the mLSTM. Original order of sequences is restored in the final output.
 
-:param seqs: A list of sequences as strings.
-    If passing only a single sequence, it also needs to be passed inside a list.
-:returns: A 3-tuple of `np.array`s containing the reps.
-    Each `np.array` has shape (n_sequences, 1900).
-"""
+    :param seqs: A list of sequences as strings.
+        If passing only a single sequence, it also needs to be passed inside a list.
+    :returns: A 3-tuple of `np.array`s containing the reps.
+        Each `np.array` has shape (n_sequences, 1900).
+    """
     order = batch_sequences(seqs)
     # TODO: Find a better way to do this, without code triplication
     hf_list, cf_list, ha_list = [], [], []
