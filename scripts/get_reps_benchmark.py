@@ -10,7 +10,7 @@ def generate_sequence(length):
 
 
 sequences = dict()
-for n in [10, 100, 1000, 10000, 100000]:   # number of sequences
+for n in [10, 100, 1000, 10000]:   # number of sequences
     sequences[n] = [generate_sequence(50) for i in range(n)]
 
 
@@ -22,7 +22,7 @@ for n, seqs in sequences.items():
     print(f"Processing {n} sequences...")
     start = time()
     _, _, out = get_reps(seqs)
-    reps[n] = out.block_until_ready()
+    reps[n] = out#.block_until_ready()
     timings[n] = time() - start
 
 from pprint import pprint
