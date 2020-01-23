@@ -1,12 +1,12 @@
 from jax_unirep.featurize import get_reps
 from jax_unirep.utils import aa_to_int
 from random import choice
+import numpy as np
 
+def generate_sequence(length: int):
+    alphabet = list(set(aa_to_int.keys()).difference(["start", "stop"]))
 
-def generate_sequence(length):
-    alphabet = set(aa_to_int.keys()).difference(["start", "stop"])
-
-    return "".join(choice(a) for a in alphabet)
+    return "".join(choice(alphabet) for i in range(length))
 
 
 sequences = dict()
@@ -22,7 +22,7 @@ for n, seqs in sequences.items():
     print(f"Processing {n} sequences...")
     start = time()
     _, _, out = get_reps(seqs)
-    reps[n] = out#.block_until_ready()
+    reps[n] = np.array(out)
     timings[n] = time() - start
 
 from pprint import pprint
