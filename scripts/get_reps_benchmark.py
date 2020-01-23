@@ -10,7 +10,7 @@ def generate_sequence(length: int):
 
 
 sequences = dict()
-for n in [10, 100, 1000, 10000]:   # number of sequences
+for n in [10, 50, 100, 500, 1000, 5000]:   # number of sequences
     sequences[n] = [generate_sequence(50) for i in range(n)]
 
 
