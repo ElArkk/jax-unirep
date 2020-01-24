@@ -1,7 +1,7 @@
 from functools import partial
 
 import jax.numpy as np
-from jax import lax, vmap
+from jax import lax, vmap, jit
 
 from .activations import sigmoid, tanh
 from .utils import l2_normalize
@@ -25,7 +25,7 @@ def mlstm1900(params: dict, x: np.ndarray) -> np.ndarray:
     def mlstm1900_vmappable(x):
         return mlstm1900_batch(params=params, batch=x)
 
-    h_final, c_final, outputs = vmap(mlstm1900_vmappable)(x)
+    h_final, c_final, outputs = jit(vmap(mlstm1900_vmappable))(x)
     return h_final, c_final, outputs
 
 
