@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 import numpy as np
 
@@ -69,7 +69,7 @@ def rep_arbitrary_lengths(
     return h_final, c_final, h_avg
 
 
-def get_reps(seqs: List[str]) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def get_reps(seqs: Union[str, List[str]]) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     This function generates representations of protein sequences using the 
     1900 hidden-unit mLSTM model with pre-trained weights from the UniRep
@@ -84,15 +84,17 @@ def get_reps(seqs: List[str]) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     You should not use this function if you want to do further JAX-based computations
     on the output vectors! In that case, the `DeviceArray` futures returned by `mlstm1900`
     should be passed directly into the next step instead of converting them to `np.array`s.
-    The conversion to `np.array`s is done here to force python to wait with returning the values
-    until the computation is actually completed.
+    The conversion to `np.array`s is done in the dispatched `rep_x_lengths` functions 
+    to force python to wait with returning the values until the computation is completed.
 
 
-    :param seqs: A list of sequences as strings.
-        If passing only a single sequence, it also needs to be passed inside a list.
+    :param seqs: A list of sequences as strings or a single string.
     :returns: A 3-tuple of `np.array`s containing the reps.
         Each `np.array` has shape (n_sequences, 1900).
     """
+    # If single string sequence is passed, package it into a list
+    if isinstance(seqs, str):
+        seqs = [seqs]
     # Make sure list is not empty
     if len(seqs) == 0:
         raise SequenceLengthsError("Cannot pass in empty list of sequences.")
