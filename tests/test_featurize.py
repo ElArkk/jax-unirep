@@ -10,6 +10,7 @@ from jax_unirep.featurize import rep_arbitrary_lengths, rep_same_lengths
     "seqs, expected",
     [
         ([], pytest.raises(SequenceLengthsError)),
+        (["MT", "M1"], pytest.raises(ValueError)),
         (["MT", "MTN", "MD"], pytest.raises(SequenceLengthsError)),
         (["MTN"], does_not_raise()),
         (["MD", "MT", "DF"], does_not_raise()),
@@ -30,6 +31,7 @@ def test_rep_same_lengths(seqs, expected):
     "seqs, expected",
     [
         ([], pytest.raises(SequenceLengthsError)),
+        (["MT", "MTD", "M1"], pytest.raises(ValueError)),
         (["MT", "MTN", "MD"], does_not_raise()),
         (["MTN"], does_not_raise()),
         (["MD", "MT", "DF"], does_not_raise()),
