@@ -11,6 +11,6 @@ setup(
         'jax',
         'jaxlib',
         'numpy',
-    ]
+    ],
     include_package_data=True,
 )
