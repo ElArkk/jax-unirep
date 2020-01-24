@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from jax_unirep.utils import l2_normalize
+from jax_unirep.utils import batch_sequences, l2_normalize
 
 
 def test_l2_normalize():
@@ -16,3 +16,16 @@ def test_l2_normalize():
     )
 
     assert np.allclose(l2_normalize(x, axis=0), expected)
+
+
+@pytest.mark.parametrize(
+    "seqs, expected",
+    [
+        (pytest.param([], [], marks=pytest.mark.xfail)),
+        (["MTN"], [[0]]),
+        (["MT", "MTN", "MD"], [[0, 2], [1]]),
+        (["MD", "T", "D"], [[1, 2], [0]]),
+    ],
+)
+def test_batch_sequences(seqs, expected):
+    assert batch_sequences(seqs) == expected
