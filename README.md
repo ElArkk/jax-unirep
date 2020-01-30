@@ -14,6 +14,19 @@ This repo is a self-contained version of the UniRep model
 (so far only the 1900 hidden-unit mLSTM),
 adapted and extended from fundl.
 
+## Installation
+
+Ensure that your compute environment allows you to run JAX code.
+(A modern Linux or macOS with a GLIBC>=2.23 is probably necessary.)
+
+For now, `jax-unirep` is available by pip installing from source.
+
+Installation from GitHub:
+
+```bash
+pip install git+https://github.com/ElArkk/jax-unirep.git
+```
+
 ## Usage
 
 To generate representations of protein sequences,
