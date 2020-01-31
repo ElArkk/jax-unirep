@@ -132,19 +132,26 @@ def load_params_1900(name: str = "UniRef50") -> dict:
     return params
 
 
+def load_embeddings(name: str="UniRef50"):
+    return np.load(weights_1900_dir / name / "embed_matrix:0.npy")
+
+
 def l2_normalize(arr, axis, epsilon=1e-12):
     """
     L2 normalize along a particular axis.
+    
     Doc taken from tf.nn.l2_normalize:
+    
     https://www.tensorflow.org/api_docs/python/tf/math/l2_normalize
-    output = x / (
-        sqrt(
-            max(
-                sum(x**2),
-                epsilon
+    
+        output = x / (
+            sqrt(
+                max(
+                    sum(x**2),
+                    epsilon
+                )
             )
         )
-    )
     """
     sq_arr = np.power(arr, 2)
     square_sum = np.sum(sq_arr, axis=axis, keepdims=True)
