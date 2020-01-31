@@ -3,11 +3,34 @@ from functools import partial
 import jax.numpy as np
 from jax import lax, vmap
 
-from .activations import sigmoid, tanh
+from .activations import sigmoid, tanh, identity,
 from .utils import l2_normalize
 
 
-def mlstm1900(params: dict, x: np.ndarray) -> np.ndarray:
+def dense(params: Dict[str, np.ndarray], x: np.ndarray, activation=identity):
+    """
+    "dense" layers are just affine shifts + activation functions.
+    Affine shifts are represented
+    by multiplication by weights and adding biases.
+    Assumes that params is a dictionary with 'w' and 'b' as keys.
+    Activation defaults to identity,
+    but any elementwise numpy function can be applied.
+    Shapes of inputs should be:
+    :param params: A dictionary of weights.
+        Should have "w" and "b" as keywords.
+        "w" should be of shape (input_dim, output_dim),
+        "b" should be of shape (output_dim,),
+    :param x: Input data, which should be of shape (:, input_dim).
+    :param activation: A callable
+        that applies an elementwise activation function on the output array.
+    """
+    a = activation(np.dot(x, params["w"]) + params["b"])
+    return a
+
+
+from typing import Dict, Tuple
+
+def mlstm1900(params: Dict[str, np.ndarray], x: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     mLSTM layer for UniRep, in which we pass in the entire dataset.
     :param params: A dictionary of parameters for the model.
@@ -15,6 +38,10 @@ def mlstm1900(params: dict, x: np.ndarray) -> np.ndarray:
         of what parameter names are expected
     :param x: Input tensor,
         which should be of shape (n_samples, n_windows, n_features).
+    :returns: Three tensors.
+        `h_final` is of shape (n_samples, n_features).
+        `c_final` is of shape (n_samples, n_features).
+        `outputs` is of shape (n_samples, n_windows, n_features).
     """
     # Wrap mlstm1900_batch to only take one argument,
     # so that we can vmap it properly.
@@ -29,7 +56,7 @@ def mlstm1900(params: dict, x: np.ndarray) -> np.ndarray:
     return h_final, c_final, outputs
 
 
-def mlstm1900_batch(params: dict, batch: np.ndarray) -> np.ndarray:
+def mlstm1900_batch(params: Dict[str, np.ndarray], batch: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     LSTM layer implemented according to UniRep,
     found here:
@@ -44,6 +71,7 @@ def mlstm1900_batch(params: dict, batch: np.ndarray) -> np.ndarray:
         mlstm1900 rnn cell.
     :param batch: One sequence batch, sliced by window size,
         into an array of shape (:, n_windows, n_features).
+    :returns:
     """
     h_t = np.zeros(params["wmh"].shape[0])
     c_t = np.zeros(params["wmh"].shape[0])
@@ -55,7 +83,11 @@ def mlstm1900_batch(params: dict, batch: np.ndarray) -> np.ndarray:
     return h_final, c_final, outputs
 
 
-def mlstm1900_step(params: dict, carry: tuple, x_t: np.ndarray):
+def mlstm1900_step(
+    params: Dict[str, np.ndarray], 
+    carry: Tuple[np.ndarray, np.ndarray], 
+    x_t: np.ndarray
+) -> Tuple[Tuple[np.ndarray, np.ndarray], np.ndarray]:
     """
     Implementation of mLSTMCell from UniRep paper, with weight normalization.
     Exact source code reference:
