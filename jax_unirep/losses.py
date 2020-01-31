@@ -12,14 +12,14 @@ def _cross_entropy_loss(y, y_hat):
     return np.mean(xent)
 
 
-def _neg_cross_entropy_loss(y, y_hat):
+def _neg_cross_entropy_loss(y, y_hat, tol = 1E-10):
     """
     Also corresponds to the log likelihood of the Bernoulli
     distribution.
     Intended to be used inside of another function that differentiates w.r.t.
     parameters.
     """
-    xent = -(y * np.log(y_hat) + (1 - y) * np.log(1 - y_hat))
+    xent = -(y * np.log(y_hat + tol) + (1 - y) * np.log((1 - y_hat) + tol))
     return np.mean(xent)
 
 
