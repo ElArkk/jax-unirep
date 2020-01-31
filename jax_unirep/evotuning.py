@@ -1,13 +1,14 @@
-from .utils import get_embeddings
-from .params import add_dense_params
-from .layers import mlstm1900, dense
-from .activations import softmax
-from .losses import neg_cross_entropy_loss
-
 from functools import partial
+from typing import Dict, List
+
 from jax import grad
 from jax.experimental.optimizers import adam
-from typing import List, Dict
+
+from .activations import softmax
+from .layers import dense, mlstm1900
+from .losses import neg_cross_entropy_loss
+from .params import add_dense_params
+from .utils import get_embeddings
 
 
 def evotune(

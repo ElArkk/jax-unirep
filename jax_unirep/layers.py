@@ -1,9 +1,10 @@
 from functools import partial
+from typing import Dict, Tuple
 
 import jax.numpy as np
 from jax import lax, vmap
 
-from .activations import sigmoid, tanh, identity,
+from .activations import identity, sigmoid, tanh
 from .utils import l2_normalize
 
 
@@ -28,9 +29,9 @@ def dense(params: Dict[str, np.ndarray], x: np.ndarray, activation=identity):
     return a
 
 
-from typing import Dict, Tuple
-
-def mlstm1900(params: Dict[str, np.ndarray], x: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def mlstm1900(
+    params: Dict[str, np.ndarray], x: np.ndarray
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     mLSTM layer for UniRep, in which we pass in the entire dataset.
     :param params: A dictionary of parameters for the model.
@@ -56,7 +57,9 @@ def mlstm1900(params: Dict[str, np.ndarray], x: np.ndarray) -> Tuple[np.ndarray,
     return h_final, c_final, outputs
 
 
-def mlstm1900_batch(params: Dict[str, np.ndarray], batch: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def mlstm1900_batch(
+    params: Dict[str, np.ndarray], batch: np.ndarray
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     LSTM layer implemented according to UniRep,
     found here:
@@ -84,9 +87,9 @@ def mlstm1900_batch(params: Dict[str, np.ndarray], batch: np.ndarray) -> Tuple[n
 
 
 def mlstm1900_step(
-    params: Dict[str, np.ndarray], 
-    carry: Tuple[np.ndarray, np.ndarray], 
-    x_t: np.ndarray
+    params: Dict[str, np.ndarray],
+    carry: Tuple[np.ndarray, np.ndarray],
+    x_t: np.ndarray,
 ) -> Tuple[Tuple[np.ndarray, np.ndarray], np.ndarray]:
     """
     Implementation of mLSTMCell from UniRep paper, with weight normalization.

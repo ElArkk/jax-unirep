@@ -1,5 +1,6 @@
 import jax.numpy as np
 
+
 def _cross_entropy_loss(y, y_hat):
     """
     Also corresponds to the log likelihood of the Bernoulli

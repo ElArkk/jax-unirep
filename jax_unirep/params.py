@@ -1,5 +1,5 @@
-from jax.random import PRNGKey, normal, split
 from jax.nn.initializers import glorot_normal
+from jax.random import PRNGKey, normal, split
 
 key = PRNGKey(42)
 
