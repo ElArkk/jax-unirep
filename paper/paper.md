@@ -5,7 +5,7 @@
 ## Abstract
 
 UniRep is a recurrent neural network model
-trained on 25 million protein sequences (%%factcheck),
+trained on 24 million protein sequences,
 and has shown utility in protein engineering.
 Its original implementation,
 however, has rough spots in its implementation,
@@ -22,8 +22,8 @@ and engineer it for robustness and ease of use.
 
 UniRep is a recurrent neural network,
 trained using self-supervision
-on 25 million protein sequences (%%factcheck)
-to predict the next amino acid in a sequence (%%reference).
+on 24 million protein sequences
+to predict the next amino acid in a sequence [@alley2019unified].
 Its most powerful model allows for embedding
 arbitrary length sequences in a 1900-long feature vector
 that can be used as the input to a "top model"
@@ -32,7 +32,7 @@ Vectors can be used for clustering
 or as inputs for the top model
 to predict properties of proteins.
 
-The original model was implemented in TensorFlow 1.13 (%%reference for TF),
+The original model was implemented in TensorFlow 1.13 [@abadi2016tensorflow],
 and its original API only allowed
 for one sequence to be transformed at once.
 Thus, while the model itself has great potential for great use,
@@ -51,12 +51,12 @@ In particular, our engineering goals were to provide:
 
 ### Choice of JAX
 
-JAX (%%reference) was our library choice to reimplement it in,
-because it provides automatic differentiation machinery (%%reference)
-on top of the highly idiomatic and widely-used NumPy API (%%reference).
+JAX was our library choice to reimplement it in,
+because it provides automatic differentiation machinery [@jax2018github]
+on top of the highly idiomatic and widely-used NumPy API [@oliphant2006guide].
 JAX uses a number of components shared with TensorFlow,
 in particular the use of the
-XLA (Accelerated Linear Algebra) library (%%reference)
+XLA (Accelerated Linear Algebra) library
 to provide automatic compilation from the NumPy API to GPU and TPU.
 
 Part of the exercise was also pedagogical:
@@ -174,7 +174,7 @@ As usual, tests are provided,
 bringing the same degree of confidence as we would expect
 from tested software.
 
-Evotuning is an important task when using UniRep (%%reference),
+Evotuning is an important task when using UniRep [@alley2019unified],
 and we provide a convenient API through the `evotune()` function.
 Here, we use of Optuna to automatically find the right hyperparameters
 for finetuning weights, using the protocol that the original authors describe.
@@ -250,7 +250,7 @@ To break free of framework lock-in,
 being able to translate between frameworks is highly valuable.
 Model reimplementation was highly beneficial for this.
 
-If "models are software 2.0" (%%reference),
+If "models are software 2.0" [@kaparthy2017software2],
 then data science teams might do well
 to treat model weights as software artefacts
 that are shipped to end-users,
