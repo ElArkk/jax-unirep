@@ -14,3 +14,9 @@ dependencies:
   - pyprojroot=0.2.0
   - pytest=5.3.4
   - pandoc=2.9.1.1
+  - pip
+  - pip:
+    - pandoc-fignos
+    - pandoc-eqnos
+    - pandoc-tablenos
+    - pandoc-secnos
