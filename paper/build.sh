@@ -7,6 +7,6 @@ pandoc paper.md -o index.html \
 	--bibliography references.bib \
 	-s
 
-# pandoc paper.md -o paper.pdf \
-# 	--filter pandoc-citeproc \
-# 	--bibliography references.bib \
+pandoc paper.md -o paper.pdf \
+	--filter pandoc-citeproc \
+	--bibliography references.bib \
