@@ -36,8 +36,10 @@ script:
 before_deploy:
   # Build paper
   - make paper
+  - mkdir -p docs/
+  - cp paper/* docs/*
   # Diagnostic commands
-  - ls paper/
+  - ls docs/
 
 # This is an example to deploy to a branch through Travis.
 deploy:
@@ -49,8 +51,8 @@ deploy:
   # We read the master branch
   # on:
   #   branch: master
-  # Take the paper/ directory
-  local_dir: paper
+  # Take the docs/ directory
+  local_dir: docs
   # Publish to the gh-pages branch
   target_branch: gh-pages
   verbose: true
