@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.com/ElArkk/jax-unirep.svg?branch=master)](https://travis-ci.com/ElArkk/jax-unirep)
+
 # jax-unirep
 
 Reimplementation of the UniRep protein featurization model in JAX.
