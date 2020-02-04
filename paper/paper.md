@@ -7,8 +7,7 @@
 UniRep is a recurrent neural network model
 trained on 24 million protein sequences,
 and has shown utility in protein engineering.
-Its original implementation,
-however, has rough spots in its implementation,
+The original model, however, has rough spots in its implementation,
 and a convenient API is not available for certain tasks.
 To rectify this, we reimplemented the model in JAX/NumPy,
 achieving X-fold speedups in forward pass performance,
@@ -28,14 +27,15 @@ Its most powerful model allows for embedding
 arbitrary length sequences in a 1900-long feature vector
 that can be used as the input to a "top model"
 for unsupervised clustering or supervised prediction of protein properties.
-Vectors can be used for clustering
+<!-- Vectors can be used for clustering
 or as inputs for the top model
-to predict properties of proteins.
+to predict properties of proteins. -->
 
 The original model was implemented in TensorFlow 1.13 [@abadi2016tensorflow],
 and its original API only allowed
 for one sequence to be transformed at once.
-Thus, while the model itself has great potential for great use,
+Thus, while the model itself holds great potential
+for the protein engineering field,
 the API prevents us from using it conveniently and productively.
 We thus sought to reimplement and package the model
 in a way that brings a robust yet easy-to-use experience
@@ -44,7 +44,7 @@ to protein modellers and engineers.
 In particular, our engineering goals were to provide:
 
 - A function that can process multiple sequences of arbitrary lengths,
-- Vectorized to make it fast.
+- Vectorizing the inputs to make it fast.
 - A single function call to "evotune" the global weights.
 
 ## Reimplementation Main Points
@@ -84,7 +84,7 @@ Firstly, we started from the RNN cell (`mlstm1900_step`),
 which sequentially walks down the protein sequence
 and generates the single step embedding.
 Secondly, we wrapped the RNN cell using `lax.scan`
-to scan it over a single sequence, generating `mlstm1900_batch`.
+to scan over a single sequence, generating `mlstm1900_batch`.
 Thirdly, we then used `jax.vmap`
 to vectorize the operation over multiple sequences,
 thus generating `mlstm1900`.
@@ -169,7 +169,7 @@ This also reduces cognitive load for end-users,
 some of whom might want to process only a single sequence,
 while others might be operating in batch mode.
 `get_reps()` also correctly handles sequences of multiple lengths,
-further reducing the cognitive load for end-users.
+further simplifying usage for end-users.
 As usual, tests are provided,
 bringing the same degree of confidence as we would expect
 from tested software.
@@ -198,10 +198,10 @@ A formal speed comparison using the same CPU is available below.
 <!-- %%figure -->
 ![](./figures/speed_comparison.png)
 
-We also needed to check that our reimplementation gave the correct reps.
+We also needed to check that our reimplementation correctly embeds sequences.
 To do so, we ran a dummy sequence
 through the original and through our reimplementation,
-and compared the computed reps.
+and compared the computed representations.
 Because it is 1900-long, a visual check for correctness
 is a trace of 1900-long embedding.
 
