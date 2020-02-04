@@ -36,6 +36,8 @@ script:
 before_deploy:
   # Build paper
   - make paper
+  # Diagnostic commands
+  - ls paper/
 
 # This is an example to deploy to a branch through Travis.
 deploy:
