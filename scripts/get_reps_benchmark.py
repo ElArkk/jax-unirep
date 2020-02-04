@@ -1,7 +1,12 @@
+from pprint import pprint
+from random import choice
+from time import time
+
+import numpy as np
+
 from jax_unirep.featurize import get_reps
 from jax_unirep.utils import aa_to_int
-from random import choice
-import numpy as np
+
 
 def generate_sequence(length: int):
     alphabet = list(set(aa_to_int.keys()).difference(["start", "stop"]))
@@ -10,11 +15,9 @@ def generate_sequence(length: int):
 
 
 sequences = dict()
-for n in [10, 100, 1000, 10000]:   # number of sequences
+for n in [10, 100, 1000, 10000]:  # number of sequences
     sequences[n] = [generate_sequence(50) for i in range(n)]
 
-
-from time import time
 
 timings = dict()
 reps = dict()
@@ -25,6 +28,5 @@ for n, seqs in sequences.items():
     reps[n] = np.array(out)
     timings[n] = time() - start
 
-from pprint import pprint
 
 pprint(timings)
