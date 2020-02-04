@@ -268,3 +268,5 @@ Going forth, we aim to work on implementing the 256- and 64-cell model.
 We thank the UniRep authors for open sourcing their model.
 It is our hope that our reimplementation helps with adoption of the model
 in a variety of settings, and increases its impact.
+
+## References
