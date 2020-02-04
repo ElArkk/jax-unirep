@@ -1,3 +1,6 @@
+.PHONY: format style test paper
+
+
 format:
 	@printf "Checking code style with black...\n"
 	isort -rc -y .
@@ -11,3 +14,6 @@ style:
 
 test:  # Test code using pytest.
 	pytest -v . --cov=./ 
+
+paper:
+	cd paper && bash build.sh
