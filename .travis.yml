@@ -28,13 +28,8 @@ script:
   - make test
   # Check formatting with black
   - make style
-  # Create the docs directory. This is where we will be publishing from
-  # (see the "deploy" section below).
-  # - mkdir -p docs
-  # All notebooks that need to be converted are inside nbconvert_config.py
-  # We have to call on --execute - without doing so, the execution config
-  # inside nbconvert_config.py won't run.
-  # - jupyter nbconvert --config nbconvert_config.py --execute
+  # Build paper
+  - make paper
 
 # This is an example to deploy to a branch through Travis.
 deploy:
