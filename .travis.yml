@@ -24,7 +24,7 @@ install:
   - conda env create -f environment.yml
   - source activate jax-unirep
   - python setup.py install
-
+v
   # Ensure that the kernel is installed into the compute environment.
   # - python -m ipykernel install --user --name jax-unirep
 
@@ -44,6 +44,7 @@ deploy:
   deploy_key: $GITHUB_TOKEN
   edge: true # opt in to dpl v2
   keep_history: false
+  cleanup: false
   # We read the master branch
   # on:
   #   branch: master
