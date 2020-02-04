@@ -1,11 +1,11 @@
 from contextlib import suppress as does_not_raise
 
-import pytest
 import numpy as np
+import pytest
 
+from jax_unirep import get_reps
 from jax_unirep.errors import SequenceLengthsError
 from jax_unirep.featurize import rep_arbitrary_lengths, rep_same_lengths
-from jax_unirep import get_reps
 
 
 @pytest.mark.parametrize(
@@ -51,10 +51,9 @@ def test_rep_arbitrary_lengths(seqs, expected):
 
 
 def test_get_reps():
-    a,b,c = get_reps(["ABC"])
-    d,e,f = get_reps("ABC")
+    a, b, c = get_reps(["ABC"])
+    d, e, f = get_reps("ABC")
 
     assert np.array_equal(a, d)
     assert np.array_equal(b, e)
     assert np.array_equal(c, f)
-    
