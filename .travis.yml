@@ -18,6 +18,7 @@ install:
   # Install Python and required packages.
   - conda env create -f environment.yml
   - source activate jax-unirep
+  - python setup.py install
 
   # Ensure that the kernel is installed into the compute environment.
   # - python -m ipykernel install --user --name jax-unirep
