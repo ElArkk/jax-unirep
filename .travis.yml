@@ -2,7 +2,7 @@ language: python
 
 before_install:
   - sudo apt-get update
-  - sudo apt-get install texlive-fonts-recommended texlive-latex-extra texlive-fonts-extra texlive-latex-recommended
+  - sudo apt-get install texlive-fonts-recommended texlive-latex-extra texlive-fonts-extra texlive-latex-recommended lmodern
 
 python:
   # We don't actually use the Travis Python, but this keeps it organized.
