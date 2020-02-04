@@ -69,7 +69,9 @@ def rep_arbitrary_lengths(
     return h_final, c_final, h_avg
 
 
-def get_reps(seqs: Union[str, List[str]]) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def get_reps(
+    seqs: Union[str, List[str]]
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     This function generates representations of protein sequences using the 
     1900 hidden-unit mLSTM model with pre-trained weights from the UniRep
