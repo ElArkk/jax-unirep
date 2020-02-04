@@ -37,7 +37,7 @@ before_deploy:
   # Build paper
   - make paper
   - mkdir -p docs/
-  - cp paper/* docs/*
+  - cp -r paper/* docs/.
   # Diagnostic commands
   - ls docs/
 
