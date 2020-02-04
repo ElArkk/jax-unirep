@@ -113,7 +113,7 @@ could actually be implemented in multiple ways.
 One example was the `sigmoid()` function.
 The TensorFlow implementation is:
 
-$$\frac{1}{1 + e^(-x)}$$
+$$\frac{1}{1 + e^{-x}}$$
 
 However, an alternative implementation includes:
 
