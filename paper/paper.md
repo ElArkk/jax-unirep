@@ -196,7 +196,16 @@ takes only 40 seconds on a single CPU core.
 A formal speed comparison using the same CPU is available below.
 
 <!-- %%figure -->
-![](./figures/speed_comparison.png)
+![
+    Figure 1: 
+    Speed comparison between the original implementation (UniRep)
+    and our re-implementation (Jax-UniRep). Both one and ten random sequences of length ten
+    were transformed by both implementations. 
+    Our re-implementation could make use of vectorization
+    in the multi-sequence case, 
+    whereas in the original implementation each sequence was transformed
+    sequentially.
+](./figures/speed_barplot.png)
 
 We also needed to check that our reimplementation correctly embeds sequences.
 To do so, we ran a dummy sequence
@@ -206,7 +215,15 @@ Because it is 1900-long, a visual check for correctness
 is a trace of 1900-long embedding.
 
 <!-- %%figure -->
-![](./figures/trace.png)
+![
+    Figure 2:
+    Comparison of the average hidden state between the implementations 
+    when transforming the same sequence. 
+    Because the two traces of the hidden state dimensions overlapped
+    almost perfectly, a small constant was added to the UniRep values,
+    such that both traces become visible. The inset shows
+    50 out of the total 1900 dimensions.
+](./figures/rep_trace.png)
 
 We also verified that the embeddings of our reimplementation
 were informative for top models,
