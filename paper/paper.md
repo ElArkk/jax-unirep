@@ -203,7 +203,7 @@ A formal speed comparison using the same CPU is available below.
     were transformed by both implementations. 
     Our re-implementation could make use of vectorization
     in the multi-sequence case, 
-    whereas in the original implementation each sequence was transformed
+    whereas in the original implementation the sequences were transformed
     one at a time.
 ](./figures/speed_barplot.png)
 
