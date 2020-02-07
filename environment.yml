@@ -17,6 +17,7 @@ dependencies:
   - pytest=5.3.4
   - pandoc=2.9.1.1
   - pytest-cov=2.8.1
+  - ipykernel=5.1.4
   - pip
   - pip:
     - pandoc-fignos
