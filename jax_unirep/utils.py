@@ -193,3 +193,48 @@ one_hots = {v: oh_arrs[v - 1] for k, v in aa_to_int.items()}
 oh_idx_to_aa = {v - 1: k for k, v in aa_to_int.items()}
 oh_idx_to_aa[22] = "[XZBJ]"
 
+
+def boolean_true_idxs(mask: np.ndarray, arr: np.ndarray) -> np.ndarray:
+    """
+    Return the index where the mask equals the array.
+
+    We expect the ``mask`` to be a 1D array,
+    while the ``arr`` to be a 2D array.
+
+    np.where returns a tuple,
+    and under the assumptions of this convenience function,
+    we only need the first element.
+    Hence, the magic number ``[0]`` in the return statement.
+
+    The intended use of this function is to mkae arr_to_letter
+    _really fast_.
+
+    :param mask: The 1-D array mask.
+    :param arr: The 2-D array on which to check mask equality.
+    :returns: A 1-D array of indices where the mask
+        equals the array.
+    """
+    return np.array(np.where(np.all(mask == arr, axis=-1)))[0]
+
+
+def arr_to_letter(arr) -> str:
+    """
+    Convert a 1D one-hot array into a letter.
+
+    This is intended to operate on a single array.
+    """
+    idx = int(boolean_true_idxs(mask=arr, arr=oh_arrs)[0])
+    letter = oh_idx_to_aa[idx]
+    return letter
+
+
+def letter_seq(arr: np.array) -> str:
+    """
+    Convert a 2D one-hot array into a string representation.
+
+    TODO: More docstrings needed.
+    """
+    sequence = ""
+    for letter in arr:
+        sequence += arr_to_letter(np.round(letter))
+    return sequence.strip("start").strip("stop")
