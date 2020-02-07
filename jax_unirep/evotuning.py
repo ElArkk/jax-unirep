@@ -21,7 +21,7 @@ def evotune(
     under the pretext learning task of predicting the next
     amino acid in the protein sequences, given the output of the mLSTM.
     The prediction itself is being done by a single, fully-connected
-    layer with 26 output nodes and using softmax activation 
+    layer with 26 output nodes and using softmax activation
     (Each node corresponding to one AA).
 
     :param params: Either pre-trained or random weights to initalize

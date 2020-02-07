@@ -1,0 +1,58 @@
+language: python
+
+before_install:
+  - sudo apt-get update
+  - sudo apt-get install texlive-fonts-recommended texlive-latex-extra texlive-fonts-extra texlive-latex-recommended lmodern
+
+python:
+  # We don't actually use the Travis Python, but this keeps it organized.
+  - "3.7"
+install:
+  # We do this conditionally because it saves us some downloading if the
+  # version is the same.
+  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - hash -r
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+
+  # Useful for debugging any issues with conda
+  - conda info -a
+
+  # Install Python and required packages.
+  - conda env create -f environment.yml
+  - source activate jax-unirep
+  - python setup.py install
+  # Ensure that the kernel is installed into the compute environment.
+  # - python -m ipykernel install --user --name jax-unirep
+
+script:
+  # Run tests
+  - make test
+  # Check formatting with black
+  - make style
+
+before_deploy:
+  # Build paper
+  - make paper
+  - mkdir -p docs/
+  - cp -r paper/* docs/.
+  # Diagnostic commands
+  - ls docs/
+
+# This is an example to deploy to a branch through Travis.
+deploy:
+  provider: pages:git
+  cleanup: false
+  deploy_key: $GITHUB_TOKEN
+  edge: true # opt in to dpl v2
+  keep_history: false
+  # We read the master branch
+  # on:
+  #   branch: master
+  # Take the docs/ directory
+  local_dir: docs
+  # Publish to the gh-pages branch
+  target_branch: gh-pages
+  verbose: true

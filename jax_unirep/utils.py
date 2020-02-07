@@ -57,8 +57,13 @@ def aa_seq_to_int(s):
     return [24] + [aa_to_int[a] for a in s] + [25]
 
 
+<<<<<<< HEAD
 def load_embedding_1900(name: str = "UniRef50"):
     return np.load(weights_1900_dir / name / "embed_matrix:0.npy")
+=======
+def load_embedding_1900():
+    return np.load(weights_1900_dir / "embed_matrix:0.npy")
+>>>>>>> master
 
 
 def get_embedding(sequence: str, embeddings: np.ndarray) -> np.ndarray:
@@ -101,6 +106,7 @@ Sequence length: number of sequences information in the dictionary below.
 def load_params_1900(name: str = "UniRef50") -> dict:
 
     params = dict()
+<<<<<<< HEAD
     params["gh"] = np.load(
         weights_1900_dir / name / "rnn_mlstm_mlstm_gh:0.npy"
     )
@@ -128,6 +134,19 @@ def load_params_1900(name: str = "UniRef50") -> dict:
     )
 
     params["b"] = np.load(weights_1900_dir / name / "rnn_mlstm_mlstm_b:0.npy")
+=======
+    params["gh"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_gh:0.npy")
+    params["gmh"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_gmh:0.npy")
+    params["gmx"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_gmx:0.npy")
+    params["gx"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_gx:0.npy")
+
+    params["wh"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_wh:0.npy")
+    params["wmh"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_wmh:0.npy")
+    params["wmx"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_wmx:0.npy")
+    params["wx"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_wx:0.npy")
+
+    params["b"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_b:0.npy")
+>>>>>>> master
 
     return params
 
