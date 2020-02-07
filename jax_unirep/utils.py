@@ -181,3 +181,15 @@ def batch_sequences(seqs: List[str]) -> List[List]:
     for l in set([len(s) for s in seqs]):
         order.append([i for i, s in enumerate(seqs) if len(s) == l])
     return order
+
+
+# This block of code generates one-hot-encoded arrays.
+oh_arrs = np.eye(max(aa_to_int.values()))
+
+# one_hots maps from aa_to_int integers to an array
+one_hots = {v: oh_arrs[v - 1] for k, v in aa_to_int.items()}
+
+# oh_idx_to_aa maps from oh_arrs index to aa_to_int letter.
+oh_idx_to_aa = {v - 1: k for k, v in aa_to_int.items()}
+oh_idx_to_aa[22] = "[XZBJ]"
+
