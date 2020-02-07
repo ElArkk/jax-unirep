@@ -1,14 +1,20 @@
 from functools import partial
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
-from jax import grad, numpy as np
+from jax import grad, numpy as np, jit
 from jax.experimental.optimizers import adam
 
 from .activations import softmax
 from .layers import dense, mlstm1900
 from .losses import neg_cross_entropy_loss
 from .params import add_dense_params
-from .utils import get_embeddings, batch_sequences
+from .utils import (
+    get_embeddings,
+    batch_sequences,
+    aa_seq_to_int,
+    load_embeddings,
+    one_hots,
+)
 
 
 # def evotune(
@@ -76,16 +82,16 @@ def evotuning_pairs(s: str) -> Tuple[np.ndarray, np.ndarray]:
     This is the first element in the returned tuple.
 
     Given the same 1D sequence,
-    the output is defined as a 2D array of shape (k-1, 28),
-    where 28 is the number of possible characters
-    present in the ``aa_to_int`` dictionary keys,
+    the output is defined as a 2D array of shape (k-1, 25),
+    where 25 is number of indices available to us
+    in ``aa_to_int``,
     and k-1 corresponds to the first a.a. to the nth a.a.
     This is the second element in the returned tuple.
 
     :param s: The protein sequence to featurize.
     :returns: Two 2D NumPy arrays,
         the first corresponding to the input to evotuning with shape (n_letters, 10),
-        and the second corresponding to the output amino acid to predict with shape (n_letters, 28).
+        and the second corresponding to the output amino acid to predict with shape (n_letters, 25).
     """
     seq_int = aa_seq_to_int(s[:-1])
     next_letters_int = aa_seq_to_int(s[1:])
@@ -108,7 +114,7 @@ def input_output_pairs(sequences: List[str]) -> Tuple[np.ndarray, np.ndarray]:
         the first corresponding to the input to evotuning
         with shape (n_sequences, n_letters, 10),
         and the second corresponding to the output amino acids to predict
-        with shape (n_sequences, n_letters, 28).
+        with shape (n_sequences, n_letters, 25).
         Both will have an additional "sample" dimension as the first dim.
     """
     seqlengths = set(map(len, sequences))
@@ -140,7 +146,7 @@ def predict(params, x) -> np.ndarray:
     :param x: Input tensor.
         Should be the result of calling ``input_output_pairs``,
         and be of shape (n_sequences, n_letters, 10).
-    :returns: Prediction tensor, of shape (n_sequences, n_letters, 28).
+    :returns: Prediction tensor, of shape (n_sequences, n_letters, 25).
     """
     # Defensive programming checks.
     if not len(x.shape) == 3:
@@ -190,9 +196,8 @@ def evotune_step(
 
     l = loss(params, x=x, y=y)
     if np.isnan(l):
-        break
-    if verbose:
-        print(f"Iteration: {i}, Loss: {l:.4f}")
+        raise Exception("NaN occurred in optimization.")
+    print(f"Iteration: {i}, Loss: {l:.4f}")
 
     g = dloss(params, x=x, y=y)
 
@@ -247,7 +252,7 @@ def evotune(params: Dict, sequences: List[str], n: int) -> Dict:
     loss_funcs = (loss, dloss)
 
     state = init(params)
-    for i in range(100):  # TODO: Magic number
+    for i in range(n):  # TODO: Magic number
         for x, y in zip(xs, ys):
             state = evotune_step(i, state, optimizer_funcs, loss_funcs, x, y)
 
