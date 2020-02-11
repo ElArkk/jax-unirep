@@ -70,8 +70,9 @@ we are thus not prohibited from fine-tuning UniRep weights
 through gradient descent.
 
 During the reimplementation,
-we also discovered that JAX provided convenient utilities (`jit` and `vmap`)
-to convert loops into vectorized operations on tensors.
+we also discovered that JAX provided convenient utilities
+(`lax.scan`, `vmap`, and `jit`)
+to convert loops into fast, vectorized operations on tensors.
 This had a pleasant effect of helping us write more performant code,
 while also forcing us to reason clearly about the semantic meaning
 of our tensor dimensions.
@@ -174,16 +175,6 @@ As usual, tests are provided,
 bringing the same degree of confidence as we would expect
 from tested software.
 
-Evotuning is an important task when using UniRep [@alley2019unified],
-and we provide a convenient API through the `evotune()` function.
-Here, we use of Optuna to automatically find the right hyperparameters
-for finetuning weights, using the protocol that the original authors describe.
-This enables end-users to "set and forget" the model fitting protocol
-instead of needing to babysit a deep learning optimization routine.
-Like `get_reps()`, `evotune()` and its associated utility functions
-have at least an example-based test, if not a property-based test
-associated with them.
-
 ## Reimplementation Performance
 
 Anecdotally, on our benchmarks using internal data,
@@ -262,6 +253,17 @@ that minimize cognitive load.
 
 As we have, at this point, only implemented the 1900-cell model.
 Going forth, we aim to work on implementing the 256- and 64-cell model.
+
+Evotuning is an important task when using UniRep [@alley2019unified],
+and we aim to provide a convenient API through the `evotune()` function.
+Here, we plan to use Optuna
+to automatically find the right hyperparameters for finetuning weights,
+using the protocol that the original authors describe.
+This would enable end-users to "set and forget" the model fitting protocol
+rather than needing to babysit a deep learning optimization routine.
+Like `get_reps()`, `evotune()` and its associated utility functions
+will have at least an example-based test,
+if not also a property-based test associated with them.
 
 ## Acknowledgments
 
