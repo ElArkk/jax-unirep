@@ -205,7 +205,7 @@ A formal speed comparison using the same CPU is available below.
     in the multi-sequence case, 
     whereas in the original implementation the sequences were transformed
     one at a time.
-](./figures/speed_barplot.png)
+](./figures/speed_barplot.png){width=80% .center}
 
 We also needed to check that our reimplementation correctly embeds sequences.
 To do so, we ran a dummy sequence
@@ -223,7 +223,7 @@ is a trace of 1900-long embedding.
     almost perfectly, a small constant was added to the UniRep values,
     such that both traces become visible. The inset shows
     50 out of the total 1900 dimensions.
-](./figures/rep_trace.png)
+](./figures/rep_trace.png){width=100% .center}
 
 We also verified that the embeddings of our reimplementation
 were informative for top models,
