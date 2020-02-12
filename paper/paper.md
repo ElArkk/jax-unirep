@@ -223,7 +223,7 @@ is a trace of 1900-long embedding.
     almost perfectly, a small constant was added to the UniRep values,
     such that both traces become visible. The inset shows
     50 out of the total 1900 dimensions.
-](./figures/rep_trace_lf.png#center){width=100%}
+](./figures/rep_trace_lf.png)
 
 We also verified that the embeddings of our reimplementation
 were informative for top models,
