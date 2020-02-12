@@ -43,6 +43,11 @@ img {
   text-align: center;
 }
 
+img[src*="#center"] {
+  display: block;
+  margin: auto;
+}
+
 table {
   width: 100%;
   margin: 1.667em 0 1em;
