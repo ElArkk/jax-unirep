@@ -238,8 +238,8 @@ debugging why the model would fail.
 Writing automated tests for the model functions,
 in basically the same way as we would test software,
 gave us the confidence that our code changes would not
-inadvertently break something.
-We also could more easily narrow down where failures were happening
+inadvertently break existing functionality that was also already tested.
+We also could then more easily narrow down where failures were happening
 when developing new code that interacted with the model
 (such as providing input tensors).
 
