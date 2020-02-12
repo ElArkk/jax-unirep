@@ -8,5 +8,6 @@ pandoc paper.md -o index.html \
 	-s
 
 pandoc paper.md -o paper.pdf \
+	--template=template.tex \
 	--filter pandoc-citeproc \
 	--bibliography references.bib \
