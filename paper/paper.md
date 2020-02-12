@@ -243,6 +243,12 @@ We also could then more easily narrow down where failures were happening
 when developing new code that interacted with the model
 (such as providing input tensors).
 
+Through reimplementation, we took the opportunity to document
+the semantic meaning of tensor axes and their order,
+thus enabling ourselves to better understand the model's semantic structure,
+while also enabling others to more easily participate
+in the model's improvement and development.
+
 Competing tensor libraries that do not interoperate seamlessly
 means data scientists are forced to learn one
 (and be mentally locked in).
