@@ -18,13 +18,13 @@ ol {
 }
 
 .affiliation {
-  line-height: 0.7;
-  font-size: 1rem;
+    line-height: 0.7;
+    font-size: 1rem;
 }
 
 .abstract {
-  font-size: 1.2rem;
-  line-height: 1.5;
+    font-size: 1.2rem;
+    line-height: 1.5;
 }
 
 p.caption {
