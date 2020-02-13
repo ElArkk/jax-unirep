@@ -1,0 +1,26 @@
+\title{$title$}
+\author{
+       $for(author)$
+       $author.name$ \\
+       \small{$author.department$}\\
+       \small{$author.institution$}\\
+       \and
+       $endfor$
+}
+\date{$date$}
+
+\documentclass[12pt]{article}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+$abstract$
+\end{abstract}
+
+$body$
+
+\bibliographystyle{abbrv}
+\bibliography{simple}
+
+\end{document}
