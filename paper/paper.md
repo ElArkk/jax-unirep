@@ -25,7 +25,6 @@ abstract:
 
 <!-- Things to check are prefixed with %% -->
 
-## Abstract
 
 ## Introduction
 
