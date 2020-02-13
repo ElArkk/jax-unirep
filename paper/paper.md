@@ -298,6 +298,10 @@ Like `get_reps()`, `evotune()` and its associated utility functions
 will have at least an example-based test,
 if not also a property-based test associated with them.
 
+## Software Repository
+
+`jax-unirep` is available on GitHub at https://github.com/ElArkk/jax-unirep.
+
 ## Acknowledgments
 
 We thank the UniRep authors for open sourcing their model.
