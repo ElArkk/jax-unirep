@@ -4,3 +4,4 @@
 *.fdb_latexmk
 *.fls
 *.synctex.gz
+!template.html
