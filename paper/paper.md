@@ -22,10 +22,6 @@ abstract:
     and engineer it for robustness and ease of use.
 ---
 
-
-<!-- Things to check are prefixed with %% -->
-
-
 ## Introduction
 
 UniRep is a recurrent neural network,
