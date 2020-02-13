@@ -1,5 +1,6 @@
 pandoc paper.md -o index.html \
 	--css style.css \
+    --template template.html \
 	--mathjax \
 	--filter pandoc-fignos \
 	--filter pandoc-tablenos \
