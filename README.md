@@ -74,6 +74,13 @@ h_avg, h_final, c_final= get_reps(sequences)
 # with the correct order of sequences preserved
 ```
 
+# More Details
+
+To read more about how we reimplemented the model in JAX, we wrote it up.
+Both the [HTML](https://elarkk.github.io/jax-unirep/)
+and [PDF](https://elarkk.github.io/jax-unirep/paper.pdf)
+are available.
+
 # License
 
 All the model weights are licensed under the terms of
