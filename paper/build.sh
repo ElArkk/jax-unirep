@@ -7,6 +7,11 @@ pandoc paper.md -o index.html \
 	--bibliography references.bib \
 	-s
 
-pandoc paper.md -o paper.pdf \
+pandoc paper.md -o paper.tex \
+	--template=template.tex \
 	--filter pandoc-citeproc \
 	--bibliography references.bib \
+
+pandoc paper.tex -o paper.pdf
+
+rm paper.tex
