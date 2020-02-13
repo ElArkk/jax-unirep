@@ -1,21 +1,31 @@
-# Reimplementing Unirep in JAX
+---
+title: Reimplementing Unirep in JAX
+author:
+- name: Eric J. Ma
+  department: Scientific Data Analysis, NIBR Informatics
+  institution: Novartis Institutes for Biomedical Research
+- name: Arkadij Kummer
+  department: Bioreactions Group, Global Discovery Chemistry
+  institution: Novartis Institutes for Biomedical Research
+abstract:
+    UniRep is a recurrent neural network model
+    trained on 24 million protein sequences,
+    and has shown utility in protein engineering.
+    The original model, however, has rough spots in its implementation,
+    and a convenient API is not available for certain tasks.
+    To rectify this, we reimplemented the model in JAX/NumPy,
+    achieving X-fold speedups in forward pass performance,
+    and implemented a convenient API for specialized tasks.
+    In this article, we wish to document our model reimplementation process
+    with the goal of educating others interested in learning
+    how to dissect a deep learning model,
+    and engineer it for robustness and ease of use.
+---
+
 
 <!-- Things to check are prefixed with %% -->
 
 ## Abstract
-
-UniRep is a recurrent neural network model
-trained on 24 million protein sequences,
-and has shown utility in protein engineering.
-The original model, however, has rough spots in its implementation,
-and a convenient API is not available for certain tasks.
-To rectify this, we reimplemented the model in JAX/NumPy,
-achieving X-fold speedups in forward pass performance,
-and implemented a convenient API for specialized tasks.
-In this article, we wish to document our model reimplementation process
-with the goal of educating others interested in learning
-how to dissect a deep learning model,
-and engineer it for robustness and ease of use.
 
 ## Introduction
 
@@ -187,7 +197,16 @@ takes only 40 seconds on a single CPU core.
 A formal speed comparison using the same CPU is available below.
 
 <!-- %%figure -->
-![](./figures/speed_comparison.png)
+![
+    Figure 1:
+    Speed comparison between the original implementation (UniRep)
+    and our re-implementation (Jax-UniRep). Both one and ten random sequences of length ten
+    were transformed by both implementations.
+    Our re-implementation could make use of vectorization
+    in the multi-sequence case,
+    whereas in the original implementation the sequences were transformed
+    one at a time.
+](./figures/speed_barplot.png)
 
 We also needed to check that our reimplementation correctly embeds sequences.
 To do so, we ran a dummy sequence
@@ -197,7 +216,15 @@ Because it is 1900-long, a visual check for correctness
 is a trace of 1900-long embedding.
 
 <!-- %%figure -->
-![](./figures/trace.png)
+![
+    Figure 2:
+    Comparison of the average hidden state between the implementations
+    when transforming the same sequence.
+    Because the two traces of the hidden state dimensions overlapped
+    almost perfectly, a small constant was added to the UniRep values,
+    such that both traces become visible. The inset shows
+    50 out of the total 1900 dimensions.
+](./figures/rep_trace.png)
 
 We also verified that the embeddings of our reimplementation
 were informative for top models,
@@ -229,10 +256,16 @@ debugging why the model would fail.
 Writing automated tests for the model functions,
 in basically the same way as we would test software,
 gave us the confidence that our code changes would not
-inadvertently break something.
-We also could more easily narrow down where failures were happening
+inadvertently break existing functionality that was also already tested.
+We also could then more easily narrow down where failures were happening
 when developing new code that interacted with the model
 (such as providing input tensors).
+
+Through reimplementation, we took the opportunity to document
+the semantic meaning of tensor axes and their order,
+thus enabling ourselves to better understand the model's semantic structure,
+while also enabling others to more easily participate
+in the model's improvement and development.
 
 Competing tensor libraries that do not interoperate seamlessly
 means data scientists are forced to learn one

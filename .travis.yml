@@ -24,7 +24,6 @@ install:
   - conda env create -f environment.yml
   - source activate jax-unirep
   - python setup.py install
-v
   # Ensure that the kernel is installed into the compute environment.
   # - python -m ipykernel install --user --name jax-unirep
 
@@ -37,19 +36,23 @@ script:
 before_deploy:
   # Build paper
   - make paper
+  - mkdir -p docs/
+  - cp -r paper/* docs/.
+  # Diagnostic commands
+  - ls docs/
 
 # This is an example to deploy to a branch through Travis.
 deploy:
   provider: pages:git
+  cleanup: false
   deploy_key: $GITHUB_TOKEN
   edge: true # opt in to dpl v2
   keep_history: false
-  cleanup: false
   # We read the master branch
   # on:
   #   branch: master
-  # Take the paper/ directory
-  local_dir: paper
+  # Take the docs/ directory
+  local_dir: docs
   # Publish to the gh-pages branch
   target_branch: gh-pages
   verbose: true
