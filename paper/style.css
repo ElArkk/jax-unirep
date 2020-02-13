@@ -14,14 +14,33 @@ p,
 li,
 ol {
   line-height: 1.5;
+  font-size: 1.5rem;
+}
+
+.affiliation {
+  line-height: 0.7;
+  font-size: 1rem;
+}
+
+.abstract {
+  font-size: 1.2rem;
+  line-height: 1.5;
 }
 
 p.caption {
   font-style: italic;
 }
 
-h1.title {
+h1 {
   font-size: 3rem;
+}
+
+h2 {
+  font-size: 2.5rem;
+}
+
+h3 {
+  font-size: 2rem;
 }
 
 pre code {
@@ -32,6 +51,11 @@ img {
   max-width: 100%;
   max-height: 600px;
   text-align: center;
+}
+
+img[src*="#center"] {
+  display: block;
+  margin: auto;
 }
 
 table {
