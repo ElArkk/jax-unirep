@@ -35,15 +35,19 @@ To generate representations of protein sequences,
 pass a list of sequences as strings or a single sequence to `jax_unirep.get_reps`.
 It will return a tuple consisting of the following representations for each sequence:
 
+- `h_avg`: Average hidden state of the mLSTM over the whole sequence.
 - `h_final`: Final hidden state of the mLSTM
 - `c_final`: Final cell state of the mLSTM
-- `h_avg`: Average hidden state of the mLSTM over the whole sequence.
+
+From the original paper, `h_avg` is considered the "representation" (or "rep") of the protein sequence.
 
 Only valid amino acid sequence letters belonging to the set:
 
     MRHKDESTNQCUGPAVIFYWLOXZBJ
 
-are allowed.
+are allowed as inputs to `get_reps`. 
+They may be passed in as a single string or an iterable of strings,
+and need _not_ necessarily be of the same length.
 
 In Python code, for a single sequence:
 
@@ -52,7 +56,8 @@ from jax_unirep import get_reps
 
 sequence = "ASDFGHJKL"
 
-h_final, c_final, h_avg = get_reps(sequence)
+# h_avg is the canonical "reps"
+h_avg, h_final, c_final = get_reps(sequence)
 ```
 
 And for multiple sequences:
@@ -62,7 +67,9 @@ from jax_unirep import get_reps
 
 sequences = ["ASDF", "YJKAL", "QQLAMEHALQP"]
 
-h_final, c_final, h_avg = get_reps(sequences)
+# h_avg is the canonical "reps"
+h_avg, h_final, c_final= get_reps(sequences)
+
 # each of the arrays will be of shape (len(sequences), 1900),
 # with the correct order of sequences preserved
 ```

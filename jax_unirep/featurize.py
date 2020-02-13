@@ -25,7 +25,7 @@ def rep_same_lengths(
     h_final, c_final, h = mlstm1900(params, embedded_seqs)
     h_avg = h.mean(axis=1)
 
-    return np.array(h_final), np.array(c_final), np.array(h_avg)
+    return np.array(h_avg), np.array(h_final), np.array(c_final)
 
 
 def rep_arbitrary_lengths(
@@ -43,18 +43,18 @@ def rep_arbitrary_lengths(
     """
     order = batch_sequences(seqs)
     # TODO: Find a better way to do this, without code triplication
-    hf_list, cf_list, ha_list = [], [], []
+    ha_list, hf_list, cf_list = [], [], []
     # Each list in `order` contains the indexes of all sequences of a
     # given length from the original list of sequences.
     for idxs in order:
         subset = [seqs[i] for i in idxs]
 
-        h_final, c_final, h_avg = rep_same_lengths(subset)
+        h_avg, h_final, c_final = rep_same_lengths(subset)
+        ha_list.append(h_avg)
         hf_list.append(h_final)
         cf_list.append(c_final)
-        ha_list.append(h_avg)
 
-    h_final, c_final, h_avg = (
+    h_avg, h_final, c_final = (
         np.zeros((len(seqs), 1900)),
         np.zeros((len(seqs), 1900)),
         np.zeros((len(seqs), 1900)),
@@ -62,11 +62,11 @@ def rep_arbitrary_lengths(
     # Re-order generated reps to match sequence order in the original list.
     for i, subset in enumerate(order):
         for j, rep in enumerate(subset):
+            h_avg[rep] = ha_list[i][j]
             h_final[rep] = hf_list[i][j]
             c_final[rep] = cf_list[i][j]
-            h_avg[rep] = ha_list[i][j]
 
-    return h_final, c_final, h_avg
+    return h_avg, h_final, c_final
 
 
 def get_reps(
@@ -105,8 +105,8 @@ def get_reps(
     # 1. All sequences in the list have the same length
     # 2. There are sequences of different lengths in the list
     if len(set([len(s) for s in seqs])) == 1:
-        h_final, c_final, h_avg = rep_same_lengths(seqs)
-        return h_final, c_final, h_avg
+        h_avg, h_final, c_final = rep_same_lengths(seqs)
+        return h_avg, h_final, c_final
     else:
-        h_final, c_final, h_avg = rep_arbitrary_lengths(seqs)
-        return h_final, c_final, h_avg
+        h_avg, h_final, c_final = rep_arbitrary_lengths(seqs)
+        return h_avg, h_final, c_final
