@@ -14,7 +14,7 @@ abstract:
     The original model, however, has rough spots in its implementation,
     and a convenient API is not available for certain tasks.
     To rectify this, we reimplemented the model in JAX/NumPy,
-    achieving X-fold speedups in forward pass performance,
+    achieving near-100X speedups in forward pass performance,
     and implemented a convenient API for specialized tasks.
     In this article, we wish to document our model reimplementation process
     with the goal of educating others interested in learning
