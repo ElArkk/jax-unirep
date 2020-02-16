@@ -1,21 +1,26 @@
-# Reimplementing Unirep in JAX
-
-<!-- Things to check are prefixed with %% -->
-
-## Abstract
-
-UniRep is a recurrent neural network model
-trained on 24 million protein sequences,
-and has shown utility in protein engineering.
-The original model, however, has rough spots in its implementation,
-and a convenient API is not available for certain tasks.
-To rectify this, we reimplemented the model in JAX/NumPy,
-achieving X-fold speedups in forward pass performance,
-and implemented a convenient API for specialized tasks.
-In this article, we wish to document our model reimplementation process
-with the goal of educating others interested in learning
-how to dissect a deep learning model,
-and engineer it for robustness and ease of use.
+---
+title: Reimplementing Unirep in JAX
+author:
+- name: Eric J. Ma
+  department: Scientific Data Analysis, NIBR Informatics
+  institution: Novartis Institutes for Biomedical Research
+- name: Arkadij Kummer
+  department: Bioreactions Group, Global Discovery Chemistry
+  institution: Novartis Institutes for Biomedical Research
+abstract:
+    UniRep is a recurrent neural network model
+    trained on 24 million protein sequences,
+    and has shown utility in protein engineering.
+    The original model, however, has rough spots in its implementation,
+    and a convenient API is not available for certain tasks.
+    To rectify this, we reimplemented the model in JAX/NumPy,
+    achieving near-100X speedups in forward pass performance,
+    and implemented a convenient API for specialized tasks.
+    In this article, we wish to document our model reimplementation process
+    with the goal of educating others interested in learning
+    how to dissect a deep learning model,
+    and engineer it for robustness and ease of use.
+---
 
 ## Introduction
 
@@ -70,8 +75,9 @@ we are thus not prohibited from fine-tuning UniRep weights
 through gradient descent.
 
 During the reimplementation,
-we also discovered that JAX provided convenient utilities (`jit` and `vmap`)
-to convert loops into vectorized operations on tensors.
+we also discovered that JAX provided convenient utilities
+(`lax.scan`, `vmap`, and `jit`)
+to convert loops into fast, vectorized operations on tensors.
 This had a pleasant effect of helping us write more performant code,
 while also forcing us to reason clearly about the semantic meaning
 of our tensor dimensions.
@@ -174,16 +180,6 @@ As usual, tests are provided,
 bringing the same degree of confidence as we would expect
 from tested software.
 
-Evotuning is an important task when using UniRep [@alley2019unified],
-and we provide a convenient API through the `evotune()` function.
-Here, we use of Optuna to automatically find the right hyperparameters
-for finetuning weights, using the protocol that the original authors describe.
-This enables end-users to "set and forget" the model fitting protocol
-instead of needing to babysit a deep learning optimization routine.
-Like `get_reps()`, `evotune()` and its associated utility functions
-have at least an example-based test, if not a property-based test
-associated with them.
-
 ## Reimplementation Performance
 
 Anecdotally, on our benchmarks using internal data,
@@ -197,15 +193,15 @@ A formal speed comparison using the same CPU is available below.
 
 <!-- %%figure -->
 ![
-    Figure 1: 
+    Figure 1:
     Speed comparison between the original implementation (UniRep)
     and our re-implementation (Jax-UniRep). Both one and ten random sequences of length ten
-    were transformed by both implementations. 
+    were transformed by both implementations.
     Our re-implementation could make use of vectorization
-    in the multi-sequence case, 
+    in the multi-sequence case,
     whereas in the original implementation the sequences were transformed
     one at a time.
-](./figures/speed_barplot.png)
+](./figures/speed_comparison.png#center){width=50%}
 
 We also needed to check that our reimplementation correctly embeds sequences.
 To do so, we ran a dummy sequence
@@ -217,13 +213,13 @@ is a trace of 1900-long embedding.
 <!-- %%figure -->
 ![
     Figure 2:
-    Comparison of the average hidden state between the implementations 
-    when transforming the same sequence. 
+    Comparison of the average hidden state between the implementations
+    when transforming the same sequence.
     Because the two traces of the hidden state dimensions overlapped
     almost perfectly, a small constant was added to the UniRep values,
     such that both traces become visible. The inset shows
     50 out of the total 1900 dimensions.
-](./figures/rep_trace.png)
+](./figures/rep_trace_lf.png)
 
 We also verified that the embeddings of our reimplementation
 were informative for top models,
@@ -255,10 +251,16 @@ debugging why the model would fail.
 Writing automated tests for the model functions,
 in basically the same way as we would test software,
 gave us the confidence that our code changes would not
-inadvertently break something.
-We also could more easily narrow down where failures were happening
+inadvertently break existing functionality that was also already tested.
+We also could then more easily narrow down where failures were happening
 when developing new code that interacted with the model
 (such as providing input tensors).
+
+Through reimplementation, we took the opportunity to document
+the semantic meaning of tensor axes and their order,
+thus enabling ourselves to better understand the model's semantic structure,
+while also enabling others to more easily participate
+in the model's improvement and development.
 
 Competing tensor libraries that do not interoperate seamlessly
 means data scientists are forced to learn one
@@ -279,6 +281,21 @@ that minimize cognitive load.
 
 As we have, at this point, only implemented the 1900-cell model.
 Going forth, we aim to work on implementing the 256- and 64-cell model.
+
+Evotuning is an important task when using UniRep [@alley2019unified],
+and we aim to provide a convenient API through the `evotune()` function.
+Here, we plan to use Optuna
+to automatically find the right hyperparameters for finetuning weights,
+using the protocol that the original authors describe.
+This would enable end-users to "set and forget" the model fitting protocol
+rather than needing to babysit a deep learning optimization routine.
+Like `get_reps()`, `evotune()` and its associated utility functions
+will have at least an example-based test,
+if not also a property-based test associated with them.
+
+## Software Repository
+
+`jax-unirep` is available on GitHub at https://github.com/ElArkk/jax-unirep.
 
 ## Acknowledgments
 

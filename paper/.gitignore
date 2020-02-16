@@ -1,2 +1,7 @@
 *.html
 *.pdf
+*.aux
+*.fdb_latexmk
+*.fls
+*.synctex.gz
+!template.html
