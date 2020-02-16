@@ -20,9 +20,11 @@ def _neg_cross_entropy_loss(y, y_hat, tol=1e-10):
     parameters.
     """
     xent = -(
-        y * np.log(np.maximum(tol, y_hat)) + (1 - y) * np.log(np.maximum(tol, 1 - y_hat))
+        y * np.log(np.maximum(tol, y_hat))
+        + (1 - y) * np.log(np.maximum(tol, 1 - y_hat))
     )
     return np.mean(xent)
+
 
 def _mse_loss(y, y_hat):
     """
