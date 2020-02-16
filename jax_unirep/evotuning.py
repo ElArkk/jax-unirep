@@ -1,6 +1,8 @@
-from typing import Dict, List, Tuple
+from typing import Callable, Dict, List, Tuple, Optional
 
-from jax import grad, numpy as np, jit
+import optuna
+from jax import grad, jit
+from jax import numpy as np
 from jax.experimental.optimizers import adam
 
 from .activations import softmax
@@ -8,15 +10,15 @@ from .layers import dense, mlstm1900
 from .losses import neg_cross_entropy_loss
 from .params import add_dense_params
 from .utils import (
-    get_embeddings,
-    batch_sequences,
     aa_seq_to_int,
+    batch_sequences,
+    get_embeddings,
     load_embeddings,
-    one_hots,
     load_params_1900,
+    one_hots,
 )
 from sklearn.model_selection import train_test_split
-import optuna
+from functools import partial
 
 
 def evotuning_pairs(s: str) -> Tuple[np.ndarray, np.ndarray]:
@@ -115,9 +117,6 @@ def predict(params, x) -> np.ndarray:
     return x
 
 
-from typing import Tuple, Callable
-
-
 def evotune_step(
     i: int,
     state,
@@ -159,7 +158,7 @@ evotune_loss_funcs = (evotune_loss, devotune_loss)
 
 
 def length_batch_input_outputs(
-    sequences: List[str]
+    sequences: List[str],
 ) -> Tuple[List[np.ndarray], List[np.ndarray]]:
     """
     Return lists of x and y tensors for evotuning, batched by their length.
@@ -221,7 +220,7 @@ def fit(params: Dict, sequences: List[str], n: int) -> Dict:
     return get_params(state)
 
 
-def objective(trial, params: Optional[Dict] = None, sequences: List[str]):
+def objective(trial, sequences: List[str], params: Optional[Dict] = None):
     """
     Objective function for an Optuna trial.
 
@@ -230,12 +229,12 @@ def objective(trial, params: Optional[Dict] = None, sequences: List[str]):
     that minimizes test loss.
     Doing so allows us to avoid babysitting the model.
     """
-    n_steps = trial.suggest_discrete_uniform(1, 1000, 1)
-
+    n_epochs = trial.suggest_discrete_uniform(name="n_epochs", low=1, high=len(sequences) * 3, q=1)
+    print(f"Trying out {n_epochs} epochs.")
     train_sequences, test_sequences = train_test_split(
         sequences, test_size=0.3
     )
-    evotuned_params = fit(params, train_sequences, n=n_steps)
+    evotuned_params = fit(params, train_sequences, n=int(n_epochs))
 
     xs, ys = length_batch_input_outputs(test_sequences)
 
@@ -246,7 +245,7 @@ def objective(trial, params: Optional[Dict] = None, sequences: List[str]):
     return sum_loss / len(test_sequences)
 
 
-def evotune(params: Dict, sequences: List[str], n_trials: int) -> Dict:
+def evotune(params: Optional[Dict], sequences: List[str], n_trials: int) -> Dict:
     """
     Evolutionarily tune the model to a set of sequences.
 
@@ -264,13 +263,15 @@ def evotune(params: Dict, sequences: List[str], n_trials: int) -> Dict:
     defaults to 20, but can be configured.
     """
     if params is None:
-        params = load_params_1900()
+        params = dict()
+        params = add_dense_params(params, "dense", 1900, 25)
+        params["mlstm1900"] = load_params_1900()
 
     study = optuna.create_study()
 
     objective_func = lambda x: objective(x, params=params, sequences=sequences)
     study.optimize(objective_func, n_trials=n_trials)
-    num_epochs = study.best_params["n"]
+    num_epochs = int(study.best_params["n_epochs"])
 
-    evotuned_params = fit(params, sequences=sequences, n=n)
+    evotuned_params = fit(params, sequences=sequences, n=num_epochs)
     return evotuned_params
