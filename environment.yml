@@ -19,6 +19,7 @@ dependencies:
   - pytest-cov=2.8.1
   - ipykernel=5.1.4
   - optuna=1.1.0
+  - scikit-learn=0.22.1
   - pip
   - pip:
     - pandoc-fignos
