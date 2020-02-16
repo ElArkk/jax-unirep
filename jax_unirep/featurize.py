@@ -1,4 +1,4 @@
-from typing import List, Tuple, Union
+from typing import Dict, List, Tuple, Union
 
 import numpy as np
 
@@ -73,7 +73,7 @@ def get_reps(
     seqs: Union[str, List[str]]
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
-    This function generates representations of protein sequences using the 
+    This function generates representations of protein sequences using the
     1900 hidden-unit mLSTM model with pre-trained weights from the UniRep
     paper (https://github.com/churchlab/UniRep).
 
@@ -83,11 +83,16 @@ def get_reps(
     - `c_final`: Final cell state of the mLSTM
     - `h_avg`: Average hidden state of the mLSTM over the whole sequence.
 
-    You should not use this function if you want to do further JAX-based computations
-    on the output vectors! In that case, the `DeviceArray` futures returned by `mlstm1900`
-    should be passed directly into the next step instead of converting them to `np.array`s.
-    The conversion to `np.array`s is done in the dispatched `rep_x_lengths` functions 
-    to force python to wait with returning the values until the computation is completed.
+    You should not use this function
+    if you want to do further JAX-based computations
+    on the output vectors!
+    In that case, the `DeviceArray` futures returned by `mlstm1900`
+    should be passed directly into the next step
+    instead of converting them to `np.array`s.
+    The conversion to `np.array`s is done
+    in the dispatched `rep_x_lengths` functions
+    to force python to wait with returning the values
+    until the computation is completed.
 
 
     :param seqs: A list of sequences as strings or a single string.
