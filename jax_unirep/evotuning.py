@@ -1,4 +1,3 @@
-from functools import partial
 from typing import Dict, List, Tuple
 
 from jax import grad, numpy as np, jit
@@ -14,56 +13,10 @@ from .utils import (
     aa_seq_to_int,
     load_embeddings,
     one_hots,
+    load_params_1900,
 )
-
-
-# def evotune(
-#     mlstm1900_params: Dict[str, np.array], seqs: List[str]
-# ) -> Dict[str, np.array]:
-#     """
-#     Given a set of weights for the `mlstm1900` UniRep model,
-#     as well as protein sequences of arbitrary length,
-#     this function will perform weight updates on the mLSTM,
-#     under the pretext learning task of predicting the next
-#     amino acid in the protein sequences, given the output of the mLSTM.
-#     The prediction itself is being done by a single, fully-connected
-#     layer with 26 output nodes and using softmax activation
-#     (Each node corresponding to one AA).
-
-#     :param params: Either pre-trained or random weights to initalize
-#         the mLSTM with, as `np.arrays`.
-#     :param seqs: A list of protein sequences as strings
-#     """
-
-#     params = dict()
-#     params["mlstm1900"] = mlstm1900_params
-#     params["dense"] = add_dense_params()
-
-#     def predict(params, batch):
-#         batch = mlstm1900(params["mlstm1900"], batch)
-#         batch = dense(params["dense"], batch, activation=softmax)
-#         return batch
-
-#     loss = partial(neg_cross_entropy_loss, model=predict)
-#     dloss = grad(loss)
-
-#     init, update, get_params = adam(step_size=0.005)
-
-#     state = init(params)
-
-#     for i in range(epochs):
-#         g = dloss(params, x=x, y=y)
-
-#         state = update(i, g, state)
-#         params = get_params(state)
-
-#         if i % 10 == 0:
-#             l = loss(params, x=x, y=y)
-#             print(f"iteration: {i}, loss: {l}")
-#     # def update(params, x, y):
-
-#     # prepare the sequences
-#     # batch sequences according to length
+from sklearn.model_selection import train_test_split
+import optuna
 
 
 def evotuning_pairs(s: str) -> Tuple[np.ndarray, np.ndarray]:
@@ -172,11 +125,6 @@ def evotune_step(
     loss_funcs: Tuple[Callable, Callable],
     x: np.ndarray,
     y: np.ndarray,
-    # params: Dict[str, Dict[str, np.ndarray]],
-    # x: np.ndarray,
-    # y: np.ndarray,
-    # n: int,
-    # verbose=False,
 ):
     """
     ;param i: The current iteration of the training loop.
@@ -205,13 +153,38 @@ def evotune_step(
     return state
 
 
-def evotune(params: Dict, sequences: List[str], n: int) -> Dict:
-    """
-    Return evolutionarily-tuned weights.
+evotune_loss = partial(neg_cross_entropy_loss, model=predict)
+devotune_loss = jit(grad(evotune_loss))
+evotune_loss_funcs = (evotune_loss, devotune_loss)
 
-    Evotuning is described in the original UniRep and eUniRep papers.
-    This reimplementation of evotune provides a nicer API
-    that automatically handles multiple sequences of variable lengths.
+
+def length_batch_input_outputs(
+    sequences: List[str]
+) -> Tuple[List[np.ndarray], List[np.ndarray]]:
+    """
+    Return lists of x and y tensors for evotuning, batched by their length.
+
+    This function exists because we need a way of
+    batching sequences by size conveniently.
+
+    :param sequences: A list of sequences to evotune on.
+    :returns: Two lists of NumPy arrays, one for xs and the other for ys.
+    """
+    idxs_batched = batch_sequences(sequences)
+
+    xs = []
+    ys = []
+    for idxs in idxs_batched:
+        seqs = [sequences[i] for i in idxs]
+        x, y = input_output_pairs(seqs)
+        xs.append(x)
+        ys.append(y)
+    return xs, ys
+
+
+def fit(params: Dict, sequences: List[str], n: int) -> Dict:
+    """
+    Return weights fitted to predict the next letter in each sequence.
 
     The training loop is as follows.
     Per step in the training loop,
@@ -233,55 +206,71 @@ def evotune(params: Dict, sequences: List[str], n: int) -> Dict:
     :param sequences: List of sequences to evotune on.
     :param n: The number of iterations to evotune on.
     """
-    idxs_batched = batch_sequences(sequences)
-
-    # Obtain x,y pairs
-    xs = []
-    ys = []
-    for idxs in idxs_batched:
-        seqs = [sequences[i] for i in idxs]
-        x, y = input_output_pairs(seqs)
-        xs.append(x)
-        ys.append(y)
+    xs, ys = length_batch_input_outputs(sequences)
 
     init, update, get_params = adam(step_size=0.005)
     optimizer_funcs = update, get_params
 
-    loss = partial(neg_cross_entropy_loss, model=predict)
-    dloss = jit(grad(loss))
-    loss_funcs = (loss, dloss)
-
     state = init(params)
-    for i in range(n):  # TODO: Magic number
+    for i in range(n):
         for x, y in zip(xs, ys):
-            state = evotune_step(i, state, optimizer_funcs, loss_funcs, x, y)
+            state = evotune_step(
+                i, state, optimizer_funcs, evotune_loss_funcs, x, y
+            )
 
     return get_params(state)
-    # """
-    # Master function for tuning.
 
-    # :param x: Input tensor.
-    # :param y: Output tensor to train against.
-    # :param n: Number of epochs (iterations) to train model for.
-    # """
-    # # `predict` must be defined in the same source file as this function.
-    # loss = partial(neg_cross_entropy_loss, model=predict)
-    # dloss = jit(grad(loss))
 
-    # init, update, get_params = adam(step_size=0.005)
+def objective(trial, params: Optional[Dict] = None, sequences: List[str]):
+    """
+    Objective function for an Optuna trial.
 
-    # state = init(params)
+    The goal with the objective function is
+    to automatically find the number of epochs to train
+    that minimizes test loss.
+    Doing so allows us to avoid babysitting the model.
+    """
+    n_steps = trial.suggest_discrete_uniform(1, 1000, 1)
 
-    # for i in range(20):
+    train_sequences, test_sequences = train_test_split(
+        sequences, test_size=0.3
+    )
+    evotuned_params = fit(params, train_sequences, n=n_steps)
 
-    #     l = loss(params, x=x, y=y)
-    #     if np.isnan(l):
-    #         break
-    #     if verbose:
-    #         print(f"Iteration: {i}, Loss: {l:.4f}")
+    xs, ys = length_batch_input_outputs(test_sequences)
 
-    #     g = dloss(params, x=x, y=y)
+    sum_loss = 0
+    for x, y in zip(xs, ys):
+        sum_loss += evotune_loss(evotuned_params, x=x, y=y)
 
-    #     state = update(i, g, state)
-    #     params = get_params(state)
-    # return params
+    return sum_loss / len(test_sequences)
+
+
+def evotune(params: Dict, sequences: List[str], n_trials: int) -> Dict:
+    """
+    Evolutionarily tune the model to a set of sequences.
+
+    Evotuning is described in the original UniRep and eUniRep papers.
+    This reimplementation of evotune provides a nicer API
+    that automatically handles multiple sequences of variable lengths.
+
+    Evotuning always needs a starter set of weights.
+    By default, the pre-trained weights from the Nature Methods paper are used.
+    However, other pre-trained weights are legitimate.
+
+    We first use optuna to figure out how many epochs to fit
+    before overfitting happens.
+    To save on computation time, the number of trials run
+    defaults to 20, but can be configured.
+    """
+    if params is None:
+        params = load_params_1900()
+
+    study = optuna.create_study()
+
+    objective_func = lambda x: objective(x, params=params, sequences=sequences)
+    study.optimize(objective_func, n_trials=n_trials)
+    num_epochs = study.best_params["n"]
+
+    evotuned_params = fit(params, sequences=sequences, n=n)
+    return evotuned_params
