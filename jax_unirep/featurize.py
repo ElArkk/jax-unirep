@@ -4,6 +4,7 @@ import numpy as np
 
 from .layers import mlstm1900
 from .utils import batch_sequences, get_embeddings, load_params_1900
+from .errors import SequenceLengthsError
 
 
 def rep_same_lengths(

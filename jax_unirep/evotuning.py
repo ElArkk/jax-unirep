@@ -1,3 +1,4 @@
+"""API for evolutionary tuning."""
 from typing import Callable, Dict, List, Tuple, Optional
 
 import optuna
@@ -229,7 +230,9 @@ def objective(trial, sequences: List[str], params: Optional[Dict] = None):
     that minimizes test loss.
     Doing so allows us to avoid babysitting the model.
     """
-    n_epochs = trial.suggest_discrete_uniform(name="n_epochs", low=1, high=len(sequences) * 3, q=1)
+    n_epochs = trial.suggest_discrete_uniform(
+        name="n_epochs", low=1, high=len(sequences) * 3, q=1
+    )
     print(f"Trying out {n_epochs} epochs.")
     train_sequences, test_sequences = train_test_split(
         sequences, test_size=0.3
@@ -245,7 +248,9 @@ def objective(trial, sequences: List[str], params: Optional[Dict] = None):
     return sum_loss / len(test_sequences)
 
 
-def evotune(params: Optional[Dict], sequences: List[str], n_trials: int) -> Dict:
+def evotune(
+    params: Optional[Dict], sequences: List[str], n_trials: int
+) -> Dict:
     """
     Evolutionarily tune the model to a set of sequences.
 
