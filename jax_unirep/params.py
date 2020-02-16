@@ -1,3 +1,5 @@
+from typing import Dict
+
 from jax.nn.initializers import glorot_normal
 from jax.random import PRNGKey, normal, split
 
