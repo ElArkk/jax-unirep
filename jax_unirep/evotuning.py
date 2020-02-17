@@ -245,7 +245,7 @@ def objective(trial, sequences: List[str], params: Optional[Dict] = None):
 
     sum_loss = 0
     for x, y in zip(xs, ys):
-        sum_loss += evotune_loss(evotuned_params, x=x, y=y)
+        sum_loss += evotune_loss(evotuned_params, x=x, y=y) * len(x)
 
     return sum_loss / len(test_sequences)
 
