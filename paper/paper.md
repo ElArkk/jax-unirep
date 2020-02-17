@@ -14,7 +14,7 @@ abstract:
     The original model, however, has rough spots in its implementation,
     and a convenient API is not available for certain tasks.
     To rectify this, we reimplemented the model in JAX/NumPy,
-    achieving X-fold speedups in forward pass performance,
+    achieving near-100X speedups in forward pass performance,
     and implemented a convenient API for specialized tasks.
     In this article, we wish to document our model reimplementation process
     with the goal of educating others interested in learning
@@ -193,7 +193,6 @@ A formal speed comparison using the same CPU is available below.
 
 <!-- %%figure -->
 ![
-    Figure 1:
     Speed comparison between the original implementation (UniRep)
     and our re-implementation (Jax-UniRep). Both one and ten random sequences of length ten
     were transformed by both implementations.
@@ -212,7 +211,6 @@ is a trace of 1900-long embedding.
 
 <!-- %%figure -->
 ![
-    Figure 2:
     Comparison of the average hidden state between the implementations
     when transforming the same sequence.
     Because the two traces of the hidden state dimensions overlapped
