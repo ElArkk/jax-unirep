@@ -1,5 +1,6 @@
-from jax_unirep.evotuning import length_batch_input_outputs, evotuning_pairs
 import numpy as np
+
+from jax_unirep.evotuning import evotuning_pairs, length_batch_input_outputs
 
 
 def test_length_batch_input_outputs():

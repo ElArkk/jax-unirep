@@ -1,10 +1,12 @@
 """API for evolutionary tuning."""
-from typing import Callable, Dict, List, Tuple, Optional
+from functools import partial
+from typing import Callable, Dict, List, Optional, Tuple
 
 import optuna
 from jax import grad, jit
 from jax import numpy as np
 from jax.experimental.optimizers import adam
+from sklearn.model_selection import train_test_split
 
 from .activations import softmax
 from .layers import dense, mlstm1900
@@ -13,14 +15,12 @@ from .params import add_dense_params
 from .utils import (
     aa_seq_to_int,
     batch_sequences,
-    load_dense_1900,
     get_embeddings,
+    load_dense_1900,
     load_embeddings,
     load_params_1900,
     one_hots,
 )
-from sklearn.model_selection import train_test_split
-from functools import partial
 
 
 def evotuning_pairs(s: str) -> Tuple[np.ndarray, np.ndarray]:

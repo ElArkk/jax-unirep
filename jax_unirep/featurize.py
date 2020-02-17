@@ -1,10 +1,10 @@
-from typing import Dict, List, Tuple, Union, Optional
+from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
+from .errors import SequenceLengthsError
 from .layers import mlstm1900
 from .utils import batch_sequences, get_embeddings, load_params_1900
-from .errors import SequenceLengthsError
 
 
 def rep_same_lengths(
