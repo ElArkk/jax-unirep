@@ -193,7 +193,6 @@ A formal speed comparison using the same CPU is available below.
 
 <!-- %%figure -->
 ![
-    Figure 1:
     Speed comparison between the original implementation (UniRep)
     and our re-implementation (Jax-UniRep). Both one and ten random sequences of length ten
     were transformed by both implementations.
@@ -212,7 +211,6 @@ is a trace of 1900-long embedding.
 
 <!-- %%figure -->
 ![
-    Figure 2:
     Comparison of the average hidden state between the implementations
     when transforming the same sequence.
     Because the two traces of the hidden state dimensions overlapped
