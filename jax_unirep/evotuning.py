@@ -127,6 +127,8 @@ def evotune_step(
     y: np.ndarray,
 ):
     """
+    Perform one step of evolutionary updating.
+
     ;param i: The current iteration of the training loop.
     :param state: Current state of parameters from jax.
     :param optimizer_funcs: The (update, get_params) functions
