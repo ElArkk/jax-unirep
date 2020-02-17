@@ -13,6 +13,7 @@ from .params import add_dense_params
 from .utils import (
     aa_seq_to_int,
     batch_sequences,
+    load_dense_1900,
     get_embeddings,
     load_embeddings,
     load_params_1900,
@@ -251,7 +252,7 @@ def objective(trial, sequences: List[str], params: Optional[Dict] = None):
 
 
 def evotune(
-    params: Optional[Dict], sequences: List[str], n_trials: int
+    sequences: List[str], n_trials: int, params: Optional[Dict] = None
 ) -> Dict:
     """
     Evolutionarily tune the model to a set of sequences.
@@ -271,8 +272,11 @@ def evotune(
     """
     if params is None:
         params = dict()
-        params = add_dense_params(params, "dense", 1900, 25)
+        params["dense"] = load_dense_1900()
         params["mlstm1900"] = load_params_1900()
+
+    # Check that params have correct keys and shapes
+    validate_mlstm1900_params(params["mlstm1900"])
 
     study = optuna.create_study()
 

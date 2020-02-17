@@ -98,7 +98,19 @@ Sequence length: number of sequences information in the dictionary below.
     return onp.stack(seq_embeddings, axis=0)
 
 
-def load_params_1900(name: str = "UniRef50") -> dict:
+def load_dense_1900(name: str = "UniRef50") -> Dict:
+
+    params = dict()
+    params["w"] = np.load(
+        weights_1900_dir / name / "fully_connected_weights:0.npy"
+    )
+    params["b"] = np.load(
+        weights_1900_dir / name / "fully_connected_biases:0.npy"
+    )
+    return params
+
+
+def load_params_1900(name: str = "UniRef50") -> Dict:
 
     params = dict()
     params["gh"] = np.load(
@@ -130,6 +142,32 @@ def load_params_1900(name: str = "UniRef50") -> dict:
     params["b"] = np.load(weights_1900_dir / name / "rnn_mlstm_mlstm_b:0.npy")
 
     return params
+
+
+def validate_mlstm1900_params(params: Dict):
+    """
+    Check that mlstm1900 params dictionary contains the correct set of keys
+    and that the shapes of the params are correct.
+
+    :param params: A dictionary of mlstm1900 weights.
+    """
+    expected = {
+        "gh": (7600,),
+        "gmh": (1900,),
+        "gmx": (1900,),
+        "gx": (7600,),
+        "wh": (1900, 7600),
+        "wmh": (1900, 1900),
+        "wmx": (10, 1900),
+        "wx": (10, 7600),
+        "b": (7600,),
+    }
+
+    for key, value in params.items():
+        if value.shape != expected[key]:
+            raise ValueError(
+                f"Param {key} does not have the right shape. Expected: {expected[key]}, got: {value.shape} instead."
+            )
 
 
 def load_embeddings(name: str = "UniRef50"):
