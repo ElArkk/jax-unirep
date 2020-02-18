@@ -217,10 +217,11 @@ is a trace of 1900-long embedding.
     50 out of the total 1900 dimensions.
 ](./figures/rep_trace_lf.png)
 
-We also verified that the embeddings of our reimplementation
+We also verified that the embeddings calculated using the pre-trained weights
 were informative for top models,
 and trained a model to predict avGFP brightness (as the authors did).
-Average performance across 5-fold cross-validation is shown below.
+Average performance across 5-fold cross-validation
+is shown in Figure 3.
 avGFP data came from [@sarkisyan2016local].
 
 ![
