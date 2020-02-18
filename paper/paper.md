@@ -225,7 +225,19 @@ and trained a model to predict avGFP brightness (as the authors did).
 5-fold cross-validated performance is shown below.
 
 <!-- %%figure -->
-![](./figures/top_model.png)
+![
+    GFP brightness classification using 
+    a logistic regression top model taking in the
+    1900-long average hidden state representations
+    of the GFP protein sequences. 
+    Left: Distribution of GFP brightness values in the dataset.
+    Red dotted line indicates classification breakpoint.
+    Points to the left get labeled as "Dark",
+    while points to the right get labeled "Bright".
+    Right: Confusion matrix showing the
+    classification accuracy of the model.
+](./figures/top_model.png)
+
 
 <!--
 Process of reimplementing the model parts in JAX (RNN cell, weight normalization).
