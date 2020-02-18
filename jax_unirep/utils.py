@@ -40,7 +40,7 @@ aa_to_int = {
 }
 
 weights_1900_dir = Path(
-    pkg_resources.resource_filename("jax_unirep", "weights/1900_weights")
+    pkg_resources.resource_filename("jax_unirep", "weights/uniref50/1900_weights")
 )
 
 
@@ -57,7 +57,7 @@ def aa_seq_to_int(s):
     return [24] + [aa_to_int[a] for a in s] + [25]
 
 
-def load_embedding_1900(name: str = "UniRef50"):
+def load_embedding_1900(name: str = "uniref50"):
     return np.load(weights_1900_dir / name / "embed_matrix:0.npy")
 
 
@@ -98,7 +98,7 @@ Sequence length: number of sequences information in the dictionary below.
     return onp.stack(seq_embeddings, axis=0)
 
 
-def load_dense_1900(name: str = "UniRef50") -> Dict:
+def load_dense_1900(name: str = "uniref50") -> Dict:
 
     params = dict()
     params["w"] = np.load(
@@ -110,7 +110,7 @@ def load_dense_1900(name: str = "UniRef50") -> Dict:
     return params
 
 
-def load_params_1900(name: str = "UniRef50") -> Dict:
+def load_params_1900(name: str = "uniref50") -> Dict:
 
     params = dict()
     params["gh"] = np.load(
@@ -170,7 +170,7 @@ def validate_mlstm1900_params(params: Dict):
             )
 
 
-def load_embeddings(name: str = "UniRef50"):
+def load_embeddings(name: str = "uniref50"):
     return np.load(weights_1900_dir / name / "embed_matrix:0.npy")
 
 
