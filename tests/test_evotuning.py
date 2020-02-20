@@ -65,11 +65,6 @@ def test_fit():
     fitted_params = fit(params, sequences, n=1)
 
     assert_param_shapes_equal(params, fitted_params)
-    # assert len(state) == len(final_state)
-
-    # for state_el, final_state_el in zip(state[0], final_state[0]):
-    #     for s, fs in zip(state_el, final_state_el):
-    #         assert s.shape == fs.shape
 
 
 def assert_param_shapes_equal(params1: Dict, params2: Dict):
