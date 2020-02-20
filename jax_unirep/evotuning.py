@@ -238,7 +238,7 @@ def objective(
     The goal with the objective function is
     to automatically find the number of epochs to train
     that minimizes the average of 5-fold test loss.
-    Doing so allows us to avoid babysitting the model.
+    Doing so allows us to avoid babysitting the model manually.
 
     :param trial: An Optuna trial object.
     :param sequences: A list of strings corresponding to the sequences
@@ -248,22 +248,30 @@ def objective(
         which correspond to the mLSTM weights and dense layer weights
         (output dimensions = 25)
         to predict the next character in the sequence.
+    :param n_epochs_config: A dictionary of kwargs
+        to ``trial.suggest_discrete_uniform``,
+        which are: ``name``, ``low``, ``high``, ``q``.
+        This controls how many epochs to have Optuna test.
+        See source code for default configuration,
+        at the definition of ``n_epochs_kwargs``.
     :returns: Average of 5-fold test loss.
     """
-    n_epochs = trial.suggest_discrete_uniform(
-        name="n_epochs",
-        low=1,
-        # high=len(sequences) * 3,
-        high=2,
-        q=1,
-    )
+    n_epochs_kwargs = {
+        "name": "n_epochs",
+        "low": 1,
+        "high": len(sequences) * 3,
+        "q": 1,
+    }
+    n_epochs_kwargs.update(n_epochs_config)
+    n_epochs = trial.suggest_discrete_uniform(**n_epochs_config)
     print(f"Trying out {n_epochs} epochs.")
 
     kf = KFold(shuffle=True)
     sequences = onp.array(sequences)
 
     avg_test_losses = []
-    for train_index, test_index in kf.split(sequences):
+    for i, (train_index, test_index) in enumerate(kf.split(sequences)):
+        print(f"Split #{i}")
         train_sequences, test_sequences = (
             sequences[train_index],
             sequences[test_index],
@@ -282,7 +290,7 @@ def objective(
 
 
 def evotune(
-    sequences: List[str], n_trials: int, params: Optional[Dict] = None
+    sequences: List[str], n_trials: int = 20, params: Optional[Dict] = None
 ) -> Dict:
     """
     Evolutionarily tune the model to a set of sequences.
@@ -299,6 +307,12 @@ def evotune(
     before overfitting happens.
     To save on computation time, the number of trials run
     defaults to 20, but can be configured.
+
+    :param sequences: Sequences to evotune against.
+    :param n_trials: The number of trials Optuna should attempt.
+    :param params: Starting dictionary of weights.
+        Optional; if None, will default to mLSTM1900 from paper.
+    :returns: A dictionary of optimized weights.
     """
     if params is None:
         params = dict()
