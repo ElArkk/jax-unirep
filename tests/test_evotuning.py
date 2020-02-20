@@ -1,5 +1,4 @@
 """Evolutionary tuning function tests."""
-import numpy as np
 from contextlib import suppress as does_not_raise
 from typing import Dict
 
@@ -8,6 +7,7 @@ import pytest
 from jax.experimental.optimizers import adam
 
 from jax_unirep.evotuning import (
+    evotune,
     evotune_loss_funcs,
     evotune_step,
     evotuning_pairs,
@@ -15,7 +15,6 @@ from jax_unirep.evotuning import (
     input_output_pairs,
     length_batch_input_outputs,
     predict,
-    evotune,
 )
 from jax_unirep.utils import load_dense_1900, load_params_1900
 
