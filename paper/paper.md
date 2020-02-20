@@ -191,9 +191,7 @@ takes only 40 seconds on a single CPU core.
 
 A formal speed comparison using the same CPU is available below.
 
-<!-- %%figure -->
 ![
-    Figure 1:
     Speed comparison between the original implementation (UniRep)
     and our re-implementation (Jax-UniRep). Both one and ten random sequences of length ten
     were transformed by both implementations.
@@ -210,9 +208,7 @@ and compared the computed representations.
 Because it is 1900-long, a visual check for correctness
 is a trace of 1900-long embedding.
 
-<!-- %%figure -->
 ![
-    Figure 2:
     Comparison of the average hidden state between the implementations
     when transforming the same sequence.
     Because the two traces of the hidden state dimensions overlapped
@@ -221,22 +217,25 @@ is a trace of 1900-long embedding.
     50 out of the total 1900 dimensions.
 ](./figures/rep_trace_lf.png)
 
-We also verified that the embeddings of our reimplementation
+We also verified that the embeddings calculated using the pre-trained weights
 were informative for top models,
 and trained a model to predict avGFP brightness (as the authors did).
-5-fold cross-validated performance is shown below.
+Average performance across 5-fold cross-validation
+is shown in Figure 3.
+avGFP data came from [@sarkisyan2016local].
 
-<!-- %%figure -->
-![](./figures/top_model.png)
-
-<!--
-Process of reimplementing the model parts in JAX (RNN cell, weight normalization).
-Speed comparison (maybe on CPU and GPU), on one sequence and eg 10 sequences.
--> Figure of speed comparison (bar or scatter plot)
-Rep comparison between TF and JAX implementation
--> Figure, x-axis Unirep positions (1-1900), y-axis embedding vals of TF and JAX on same sequence
-    Do this for all three reps.
--->
+![
+    GFP brightness classification using
+    a logistic regression top model taking in the
+    1900-long average hidden state representations
+    of the GFP protein sequences.
+    Left: Distribution of GFP brightness values in the dataset.
+    Red dotted line indicates classification breakpoint.
+    Points to the left get labeled as "Dark",
+    while points to the right get labeled "Bright".
+    Right: Confusion matrix showing the
+    classification accuracy of the model.
+](./figures/top_model.png)
 
 ## Lessons Learned
 
