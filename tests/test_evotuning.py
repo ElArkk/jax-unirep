@@ -5,11 +5,13 @@ from jax_unirep.evotuning import (
     length_batch_input_outputs,
     input_output_pairs,
     predict,
+    fit,
 )
 from jax_unirep.utils import (
     load_params_1900,
     load_dense_1900,
 )
+from jax.experimental.optimizers import adam
 
 
 def test_length_batch_input_outputs():
@@ -28,7 +30,12 @@ def test_evotuning_pairs():
 
 
 def test_predict():
-    """Unit test for ``predict``."""
+    """
+    Unit test for ``jax_unirep.evotuning.predict``.
+
+    We test that the shape of the output of ``predict``
+    is identical to the shape of the ys to predict.
+    """
     params = dict()
     params["mlstm1900"] = load_params_1900()
     params["dense"] = load_dense_1900()
@@ -38,3 +45,31 @@ def test_predict():
     res = predict(params, xs)
 
     assert res.shape == ys.shape
+
+
+def test_fit():
+    """
+    Execution test for ``jax_unirep.evotuning.fit``.
+
+    Basically ensuring that the output arrays have the same shape,
+    and that there are no errors executing the function
+    on a gold-standard test.
+    """
+    params = dict()
+    params["mlstm1900"] = load_params_1900()
+    params["dense"] = load_dense_1900()
+
+    sequences = ["ASDFGHJKL", "ASDYGHTKW"]
+
+    fitted_params = fit(params, sequences, n=1)
+
+    init, _, _ = adam(step_size=0.005)
+
+    state = init(params)
+    final_state = init(fitted_params)
+
+    assert len(state) == len(final_state)
+
+    for state_el, final_state_el in zip(state[0], final_state[0]):
+        for s, fs in zip(state_el, final_state_el):
+            assert s.shape == fs.shape
