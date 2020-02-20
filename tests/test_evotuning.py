@@ -129,3 +129,17 @@ def assert_param_shapes_equal(params1: Dict, params2: Dict):
     for k, v in params1.items():
         for k2, v2 in v.items():
             assert v2.shape == params2[k][k2].shape
+
+
+@pytest.mark.skip(reason="Execution test already done in ``test_evotune``.")
+def test_objective():
+    """
+    Placeholder test for the future.
+
+    ``objective()`` gets called as part of ``test_evotune``,
+    and the original idea here was to design an execution-based test
+    for the ``objective()`` function call.
+    Since it's already executed as part of ``test_evotune``,
+    we are skipping this test until we have time to implement it.
+    """
+    assert False
