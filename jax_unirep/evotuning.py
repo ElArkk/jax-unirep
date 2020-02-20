@@ -270,7 +270,7 @@ def objective(trial, sequences: List[str], params: Optional[Dict] = None):
             sum_loss += evotune_loss(evotuned_params, x=x, y=y) * len(x)
         avg_test_losses.append(sum_loss / len(test_sequences))
 
-    return np.mean(avg_test_losses)
+    return sum(avg_test_losses)/len(avg_test_losses)
 
 
 def evotune(
