@@ -12,7 +12,12 @@ sequences = ["HASTA", "VISTA", "ALAVA", "LIMED", "HAST"] * 3
 # params["mlstm1900"] = load_params_1900()
 # params = fit(params=params, sequences=sequences, n=10)
 
-
-evotuned_params = evotune(params=None, sequences=sequences, n_trials=1)
+n_epochs_config = {"high": 1}
+evotuned_params = evotune(
+    params=None,
+    sequences=sequences,
+    n_trials=1,
+    n_epochs_config=n_epochs_config,
+)
 
 print(evotuned_params)

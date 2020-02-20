@@ -262,8 +262,9 @@ def objective(
         "high": len(sequences) * 3,
         "q": 1,
     }
-    n_epochs_kwargs.update(n_epochs_config)
-    n_epochs = trial.suggest_discrete_uniform(**n_epochs_config)
+    if n_epochs_config is not None:
+        n_epochs_kwargs.update(n_epochs_config)
+    n_epochs = trial.suggest_discrete_uniform(**n_epochs_kwargs)
     print(f"Trying out {n_epochs} epochs.")
 
     kf = KFold(shuffle=True)
@@ -290,7 +291,10 @@ def objective(
 
 
 def evotune(
-    sequences: List[str], n_trials: int = 20, params: Optional[Dict] = None
+    sequences: List[str],
+    n_trials: int = 20,
+    params: Optional[Dict] = None,
+    n_epochs_config=None,
 ) -> Dict:
     """
     Evolutionarily tune the model to a set of sequences.
@@ -312,6 +316,12 @@ def evotune(
     :param n_trials: The number of trials Optuna should attempt.
     :param params: Starting dictionary of weights.
         Optional; if None, will default to mLSTM1900 from paper.
+    :param n_epochs_config: A dictionary of kwargs
+        to ``trial.suggest_discrete_uniform``,
+        which are: ``name``, ``low``, ``high``, ``q``.
+        This controls how many epochs to have Optuna test.
+        See source code for default configuration,
+        at the definition of ``n_epochs_kwargs``.
     :returns: A dictionary of optimized weights.
     """
     if params is None:
@@ -324,7 +334,9 @@ def evotune(
 
     study = optuna.create_study()
 
-    objective_func = lambda x: objective(x, params=params, sequences=sequences)
+    objective_func = lambda x: objective(
+        x, params=params, sequences=sequences, n_epochs_config=n_epochs_config
+    )
     study.optimize(objective_func, n_trials=n_trials)
     num_epochs = int(study.best_params["n_epochs"])
 
