@@ -1,4 +1,5 @@
 import numpy as np
+from typing import Dict
 
 from jax_unirep.evotuning import (
     evotuning_pairs,
@@ -63,13 +64,16 @@ def test_fit():
 
     fitted_params = fit(params, sequences, n=1)
 
-    init, _, _ = adam(step_size=0.005)
+    assert_param_shapes_equal(params, fitted_params)
+    # assert len(state) == len(final_state)
 
-    state = init(params)
-    final_state = init(fitted_params)
+    # for state_el, final_state_el in zip(state[0], final_state[0]):
+    #     for s, fs in zip(state_el, final_state_el):
+    #         assert s.shape == fs.shape
 
-    assert len(state) == len(final_state)
 
-    for state_el, final_state_el in zip(state[0], final_state[0]):
-        for s, fs in zip(state_el, final_state_el):
-            assert s.shape == fs.shape
+def assert_param_shapes_equal(params1: Dict, params2: Dict):
+    """Assert that two parameter dictionaries are equal."""
+    for k, v in params1.items():
+        for k2, v2 in v.items():
+            assert v2.shape == params2[k][k2].shape
