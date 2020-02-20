@@ -15,8 +15,13 @@ from jax_unirep.evotuning import (
     input_output_pairs,
     length_batch_input_outputs,
     predict,
+    evotune,
 )
 from jax_unirep.utils import load_dense_1900, load_params_1900
+
+params = dict()
+params["dense"] = load_dense_1900()
+params["mlstm1900"] = load_params_1900()
 
 
 @pytest.mark.parametrize(
@@ -39,10 +44,6 @@ def test_input_output_pairs(seqs, expected):
 
 
 def test_evotune_step():
-    params = dict()
-    params["dense"] = load_dense_1900()
-    params["mlstm1900"] = load_params_1900()
-
     seqs = ["MTB", "MBD", "MDT"]
     xs, ys = length_batch_input_outputs(seqs)
 
@@ -56,6 +57,18 @@ def test_evotune_step():
         )
     params_new = get_params(state)
 
+    assert_param_shapes_equal(params, params_new)
+
+
+def test_evotune():
+    seqs = ["MTN", "BDD"] * 5
+    n_epochs_config = {"high": 1}
+    params_new = evotune(
+        sequences=seqs,
+        n_trials=1,
+        params=None,
+        n_epochs_config=n_epochs_config,
+    )
     assert_param_shapes_equal(params, params_new)
 
 
