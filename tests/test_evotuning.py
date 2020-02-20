@@ -1,18 +1,60 @@
-import numpy as np
+from contextlib import suppress as does_not_raise
 from typing import Dict
 
-from jax_unirep.evotuning import (
-    evotuning_pairs,
-    length_batch_input_outputs,
-    input_output_pairs,
-    predict,
-    fit,
-)
-from jax_unirep.utils import (
-    load_params_1900,
-    load_dense_1900,
-)
+import numpy as np
+import pytest
 from jax.experimental.optimizers import adam
+
+from jax_unirep.evotuning import (
+    evotune_loss_funcs,
+    evotune_step,
+    evotuning_pairs,
+    fit,
+    input_output_pairs,
+    length_batch_input_outputs,
+    predict,
+)
+from jax_unirep.utils import load_dense_1900, load_params_1900
+
+
+@pytest.mark.parametrize(
+    "seqs, expected",
+    [
+        ([], pytest.raises(ValueError)),
+        (["MT", "MTN"], pytest.raises(ValueError)),
+        (["MT", "MB", "MD"], does_not_raise()),
+    ],
+)
+def test_input_output_pairs(seqs, expected):
+
+    with expected:
+        assert input_output_pairs(seqs) is not None
+
+    if expected == does_not_raise():
+        xs, ys = input_output_pairs(seqs)
+        assert xs.shape == (len(seqs), len(seqs[0]) + 1, 10)
+        assert ys.shape == (len(seqs), len(seqs[0]) + 1, 25)
+
+
+def test_evotune_step():
+    params = dict()
+    params["dense"] = load_dense_1900()
+    params["mlstm1900"] = load_params_1900()
+
+    seqs = ["MTB", "MBD", "MDT"]
+    xs, ys = length_batch_input_outputs(seqs)
+
+    init, update, get_params = adam(step_size=0.005)
+    optimizer_funcs = update, get_params
+
+    state = init(params)
+    for x, y in zip(xs, ys):
+        state = evotune_step(
+            0, state, optimizer_funcs, evotune_loss_funcs, x, y
+        )
+    params_new = get_params(state)
+
+    assert_param_shapes_equal(params, params_new)
 
 
 def test_length_batch_input_outputs():
