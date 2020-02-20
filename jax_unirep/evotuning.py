@@ -229,14 +229,29 @@ def fit(params: Dict, sequences: List[str], n: int) -> Dict:
 from sklearn.model_selection import KFold
 
 
-def objective(trial, sequences: List[str], params: Optional[Dict] = None):
+def objective(
+    trial,
+    sequences: List[str],
+    params: Optional[Dict] = None,
+    n_epochs_config: Dict = None,
+) -> float:
     """
     Objective function for an Optuna trial.
 
     The goal with the objective function is
     to automatically find the number of epochs to train
-    that minimizes test loss.
+    that minimizes the average of 5-fold test loss.
     Doing so allows us to avoid babysitting the model.
+
+    :param trial: An Optuna trial object.
+    :param sequences: A list of strings corresponding to the sequences
+        that we want to evotune against.
+    :param params: A dictionary of parameters.
+        Should have the keys ``mlstm1900`` and ``dense``,
+        which correspond to the mLSTM weights and dense layer weights
+        (output dimensions = 25)
+        to predict the next character in the sequence.
+    :returns: Average of 5-fold test loss.
     """
     n_epochs = trial.suggest_discrete_uniform(
         name="n_epochs",
@@ -246,9 +261,6 @@ def objective(trial, sequences: List[str], params: Optional[Dict] = None):
         q=1,
     )
     print(f"Trying out {n_epochs} epochs.")
-    # train_sequences, test_sequences = train_test_split(
-    #     sequences, test_size=0.3
-    # )
 
     kf = KFold(shuffle=True)
     sequences = onp.array(sequences)
