@@ -1,3 +1,4 @@
+"""Evolutionary tuning function tests."""
 import numpy as np
 from typing import Dict
 
@@ -24,6 +25,7 @@ def test_length_batch_input_outputs():
 
 
 def test_evotuning_pairs():
+    """Unit test for evotuning_pairs function."""
     sequence = "ACGHJKL"
     x, y = evotuning_pairs(sequence)
     assert x.shape == (len(sequence) + 1, 10)  # embeddings ("x") are width 10

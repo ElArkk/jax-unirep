@@ -1,3 +1,4 @@
+"""jax-unirep utils."""
 from collections import Counter
 from pathlib import Path
 from typing import Dict, List, Tuple
@@ -45,9 +46,7 @@ weights_1900_dir = Path(
 
 
 def aa_seq_to_int(s):
-    """
-    Return the int sequence as a list for a given string of amino acids
-    """
+    """Return the int sequence as a list for a given string of amino acids."""
     # Make sure only valid aa's are passed
     if not set(s).issubset(set(aa_to_int.keys())):
         raise ValueError(
@@ -58,11 +57,12 @@ def aa_seq_to_int(s):
 
 
 def load_embedding_1900(name: str = "uniref50"):
+    """Load pre-trained weights for uniref50 model."""
     return np.load(weights_1900_dir / name / "embed_matrix:0.npy")
 
 
 def get_embedding(sequence: str, embeddings: np.ndarray) -> np.ndarray:
-    """Get embeddings for one sequence"""
+    """Get embeddings for one sequence."""
     if len(sequence) < 1:
         raise SequenceLengthsError("Sequence must be at least of length one.")
     sequence = aa_seq_to_int(sequence)[:-1]
@@ -72,13 +72,16 @@ def get_embedding(sequence: str, embeddings: np.ndarray) -> np.ndarray:
 
 def get_embeddings(sequences: List[str]) -> np.ndarray:
     """
+    Return embedding of a list of sequences.
+
     This function takes a list of protein sequences as strings,
     all sequences being of the same length,
     and returns the 10-dimensional embedding of those sequences.
     Input shapes should be (n_sequences, sequence_length),
     output shape is (n_sequences, sequence_length, 10).
-    """
 
+    :param sequences: A list of sequences to obtain embeddings for.
+    """
     # Defensive programming checks.
     # 1. Make sure list is not empty
     if len(sequences) == 0:
@@ -151,6 +154,8 @@ def load_params_1900(name: str = "uniref50") -> Dict:
 
 def validate_mlstm1900_params(params: Dict):
     """
+    Validate shapes of mLSTM1900 parameter dictionary.
+
     Check that mlstm1900 params dictionary contains the correct set of keys
     and that the shapes of the params are correct.
 
@@ -176,6 +181,7 @@ def validate_mlstm1900_params(params: Dict):
 
 
 def load_embeddings(name: str = "uniref50"):
+    """Load embeddings of amino acids for the uniref50 model."""
     return np.load(weights_1900_dir / name / "embed_matrix:0.npy")
 
 
@@ -204,6 +210,8 @@ def l2_normalize(arr, axis, epsilon=1e-12):
 
 def batch_sequences(seqs: List[str]) -> List[List]:
     """
+    Batch up sequences according to size.
+
     Given a list of strings, returns a list of lists,
     where each sub-list contains the positions of same-length sequences
     in the original list.
@@ -215,7 +223,6 @@ def batch_sequences(seqs: List[str]) -> List[List]:
     :returns: List of lists, where each sub-list contains the positions of
         same-length sequences in the original list.
     """
-
     # Make sure list is not empty
     if len(seqs) == 0:
         raise SequenceLengthsError("Cannot pass in empty list of sequences.")
