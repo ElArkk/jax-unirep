@@ -25,4 +25,6 @@ def identity(x):
 
 
 def softmax(x, axis: int = -1):
-    return np.exp(x) / np.sum(np.exp(x), axis=axis).reshape(-1, 1)
+    e = np.exp(x)
+    sumexp = np.sum(e, axis=axis)
+    return np.divide(e, np.expand_dims(sumexp, axis))
