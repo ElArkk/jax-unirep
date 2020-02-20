@@ -7,7 +7,7 @@ import optuna
 from jax import grad, jit
 from jax import numpy as np
 from jax.experimental.optimizers import adam
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import KFold, train_test_split
 
 from .activations import softmax
 from .layers import dense, mlstm1900
@@ -71,9 +71,9 @@ def input_output_pairs(sequences: List[str]) -> Tuple[np.ndarray, np.ndarray]:
         to generate input-output tensor pairs.
     :returns: Two NumPy arrays,
         the first corresponding to the input to evotuning
-        with shape (n_sequences, n_letters, 10),
+        with shape (n_sequences, n_letters+1, 10),
         and the second corresponding to the output amino acids to predict
-        with shape (n_sequences, n_letters, 25).
+        with shape (n_sequences, n_letters+1, 25).
         Both will have an additional "sample" dimension as the first dim.
     """
     seqlengths = set(map(len, sequences))
@@ -224,9 +224,6 @@ def fit(params: Dict, sequences: List[str], n: int) -> Dict:
             )
 
     return get_params(state)
-
-
-from sklearn.model_selection import KFold
 
 
 def objective(
