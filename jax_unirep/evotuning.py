@@ -293,7 +293,7 @@ def objective(
 
 
 def evotune(
-    sequences: List[str], n_trials: int, params: Optional[Dict] = None
+    sequences: List[str], n_trials: int = 20, params: Optional[Dict] = None
 ) -> Dict:
     """
     Evolutionarily tune the model to a set of sequences.
