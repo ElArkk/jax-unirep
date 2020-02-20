@@ -2,6 +2,7 @@
 from functools import partial
 from typing import Callable, Dict, List, Optional, Tuple
 
+import numpy as onp
 import optuna
 from jax import grad, jit
 from jax import numpy as np
@@ -20,6 +21,7 @@ from .utils import (
     load_embeddings,
     load_params_1900,
     one_hots,
+    validate_mlstm1900_params,
 )
 
 
@@ -224,6 +226,9 @@ def fit(params: Dict, sequences: List[str], n: int) -> Dict:
     return get_params(state)
 
 
+from sklearn.model_selection import KFold
+
+
 def objective(trial, sequences: List[str], params: Optional[Dict] = None):
     """
     Objective function for an Optuna trial.
@@ -234,21 +239,38 @@ def objective(trial, sequences: List[str], params: Optional[Dict] = None):
     Doing so allows us to avoid babysitting the model.
     """
     n_epochs = trial.suggest_discrete_uniform(
-        name="n_epochs", low=1, high=len(sequences) * 3, q=1
+        name="n_epochs",
+        low=1,
+        # high=len(sequences) * 3,
+        high=2,
+        q=1,
     )
     print(f"Trying out {n_epochs} epochs.")
-    train_sequences, test_sequences = train_test_split(
-        sequences, test_size=0.3
-    )
-    evotuned_params = fit(params, train_sequences, n=int(n_epochs))
+    # train_sequences, test_sequences = train_test_split(
+    #     sequences, test_size=0.3
+    # )
 
-    xs, ys = length_batch_input_outputs(test_sequences)
+    kf = KFold(shuffle=True)
+    sequences = onp.array(sequences)
 
-    sum_loss = 0
-    for x, y in zip(xs, ys):
-        sum_loss += evotune_loss(evotuned_params, x=x, y=y) * len(x)
+    avg_test_losses = []
+    for train_index, test_index in kf.split(sequences):
+        
+        train_sequences, test_sequences = (
+            sequences[train_index],
+            sequences[test_index],
+        )
 
-    return sum_loss / len(test_sequences)
+        evotuned_params = fit(params, train_sequences, n=int(n_epochs))
+
+        xs, ys = length_batch_input_outputs(test_sequences)
+
+        sum_loss = 0
+        for x, y in zip(xs, ys):
+            sum_loss += evotune_loss(evotuned_params, x=x, y=y) * len(x)
+        avg_test_losses.append(sum_loss / len(test_sequences))
+
+    return np.mean(avg_test_losses)
 
 
 def evotune(

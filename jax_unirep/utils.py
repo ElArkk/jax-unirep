@@ -40,7 +40,7 @@ aa_to_int = {
 }
 
 weights_1900_dir = Path(
-    pkg_resources.resource_filename("jax_unirep", "weights/uniref50/1900_weights")
+    pkg_resources.resource_filename("jax_unirep", "weights/1900_weights")
 )
 
 

@@ -5,7 +5,7 @@ from jax_unirep.evotuning import fit
 from jax_unirep.params import add_dense_params
 from jax_unirep.utils import load_params_1900
 
-sequences = ["HASTA", "VISTA", "ALAVA", "LIMED", "HAST"]
+sequences = ["HASTA", "VISTA", "ALAVA", "LIMED", "HAST"] * 3
 
 # params = dict()
 # params = add_dense_params(params, "dense", 1900, 25)
@@ -13,6 +13,6 @@ sequences = ["HASTA", "VISTA", "ALAVA", "LIMED", "HAST"]
 # params = fit(params=params, sequences=sequences, n=10)
 
 
-evotuned_params = evotune(params=None, sequences=sequences, n_trials=5)
+evotuned_params = evotune(params=None, sequences=sequences, n_trials=1)
 
 print(evotuned_params)
