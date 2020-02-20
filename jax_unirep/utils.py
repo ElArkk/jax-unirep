@@ -99,7 +99,12 @@ Sequence length: number of sequences information in the dictionary below.
 
 
 def load_dense_1900(name: str = "uniref50") -> Dict:
+    """
+    Load pre-trained dense layer weights from the UniRep paper.
 
+    The dense layer weights are used to predict next character
+    from the output of the mLSTM1900.
+    """
     params = dict()
     params["w"] = np.load(
         weights_1900_dir / name / "fully_connected_weights:0.npy"
@@ -111,7 +116,7 @@ def load_dense_1900(name: str = "uniref50") -> Dict:
 
 
 def load_params_1900(name: str = "uniref50") -> Dict:
-
+    """Load pre-trained mLSTM1900 weights from the UniRep paper."""
     params = dict()
     params["gh"] = np.load(
         weights_1900_dir / name / "rnn_mlstm_mlstm_gh:0.npy"
