@@ -1,6 +1,7 @@
+"""jax-unirep utils."""
 from collections import Counter
 from pathlib import Path
-from typing import List
+from typing import Dict, List, Tuple
 
 import jax.numpy as np
 import numpy as onp
@@ -45,9 +46,7 @@ weights_1900_dir = Path(
 
 
 def aa_seq_to_int(s):
-    """
-    Return the int sequence as a list for a given string of amino acids
-    """
+    """Return the int sequence as a list for a given string of amino acids."""
     # Make sure only valid aa's are passed
     if not set(s).issubset(set(aa_to_int.keys())):
         raise ValueError(
@@ -57,12 +56,13 @@ def aa_seq_to_int(s):
     return [24] + [aa_to_int[a] for a in s] + [25]
 
 
-def load_embedding_1900():
-    return np.load(weights_1900_dir / "embed_matrix:0.npy")
+def load_embedding_1900(name: str = "uniref50"):
+    """Load pre-trained weights for uniref50 model."""
+    return np.load(weights_1900_dir / name / "embed_matrix:0.npy")
 
 
 def get_embedding(sequence: str, embeddings: np.ndarray) -> np.ndarray:
-    """Get embeddings for one sequence"""
+    """Get embeddings for one sequence."""
     if len(sequence) < 1:
         raise SequenceLengthsError("Sequence must be at least of length one.")
     sequence = aa_seq_to_int(sequence)[:-1]
@@ -72,13 +72,16 @@ def get_embedding(sequence: str, embeddings: np.ndarray) -> np.ndarray:
 
 def get_embeddings(sequences: List[str]) -> np.ndarray:
     """
+    Return embedding of a list of sequences.
+
     This function takes a list of protein sequences as strings,
     all sequences being of the same length,
     and returns the 10-dimensional embedding of those sequences.
     Input shapes should be (n_sequences, sequence_length),
     output shape is (n_sequences, sequence_length, 10).
-    """
 
+    :param sequences: A list of sequences to obtain embeddings for.
+    """
     # Defensive programming checks.
     # 1. Make sure list is not empty
     if len(sequences) == 0:
@@ -98,37 +101,106 @@ Sequence length: number of sequences information in the dictionary below.
     return onp.stack(seq_embeddings, axis=0)
 
 
-def load_params_1900() -> dict:
+def load_dense_1900(name: str = "uniref50") -> Dict:
+    """
+    Load pre-trained dense layer weights from the UniRep paper.
 
+    The dense layer weights are used to predict next character
+    from the output of the mLSTM1900.
+    """
     params = dict()
-    params["gh"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_gh:0.npy")
-    params["gmh"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_gmh:0.npy")
-    params["gmx"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_gmx:0.npy")
-    params["gx"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_gx:0.npy")
+    params["w"] = np.load(
+        weights_1900_dir / name / "fully_connected_weights:0.npy"
+    )
+    params["b"] = np.load(
+        weights_1900_dir / name / "fully_connected_biases:0.npy"
+    )
+    return params
 
-    params["wh"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_wh:0.npy")
-    params["wmh"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_wmh:0.npy")
-    params["wmx"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_wmx:0.npy")
-    params["wx"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_wx:0.npy")
 
-    params["b"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_b:0.npy")
+def load_params_1900(name: str = "uniref50") -> Dict:
+    """Load pre-trained mLSTM1900 weights from the UniRep paper."""
+    params = dict()
+    params["gh"] = np.load(
+        weights_1900_dir / name / "rnn_mlstm_mlstm_gh:0.npy"
+    )
+    params["gmh"] = np.load(
+        weights_1900_dir / name / "rnn_mlstm_mlstm_gmh:0.npy"
+    )
+    params["gmx"] = np.load(
+        weights_1900_dir / name / "rnn_mlstm_mlstm_gmx:0.npy"
+    )
+    params["gx"] = np.load(
+        weights_1900_dir / name / "rnn_mlstm_mlstm_gx:0.npy"
+    )
+
+    params["wh"] = np.load(
+        weights_1900_dir / name / "rnn_mlstm_mlstm_wh:0.npy"
+    )
+    params["wmh"] = np.load(
+        weights_1900_dir / name / "rnn_mlstm_mlstm_wmh:0.npy"
+    )
+    params["wmx"] = np.load(
+        weights_1900_dir / name / "rnn_mlstm_mlstm_wmx:0.npy"
+    )
+    params["wx"] = np.load(
+        weights_1900_dir / name / "rnn_mlstm_mlstm_wx:0.npy"
+    )
+
+    params["b"] = np.load(weights_1900_dir / name / "rnn_mlstm_mlstm_b:0.npy")
 
     return params
+
+
+def validate_mlstm1900_params(params: Dict):
+    """
+    Validate shapes of mLSTM1900 parameter dictionary.
+
+    Check that mlstm1900 params dictionary contains the correct set of keys
+    and that the shapes of the params are correct.
+
+    :param params: A dictionary of mlstm1900 weights.
+    """
+    expected = {
+        "gh": (7600,),
+        "gmh": (1900,),
+        "gmx": (1900,),
+        "gx": (7600,),
+        "wh": (1900, 7600),
+        "wmh": (1900, 1900),
+        "wmx": (10, 1900),
+        "wx": (10, 7600),
+        "b": (7600,),
+    }
+
+    for key, value in params.items():
+        if value.shape != expected[key]:
+            raise ValueError(
+                f"Param {key} does not have the right shape. Expected: {expected[key]}, got: {value.shape} instead."
+            )
+
+
+def load_embeddings(name: str = "uniref50"):
+    """Load embeddings of amino acids for the uniref50 model."""
+    return np.load(weights_1900_dir / name / "embed_matrix:0.npy")
 
 
 def l2_normalize(arr, axis, epsilon=1e-12):
     """
     L2 normalize along a particular axis.
+
     Doc taken from tf.nn.l2_normalize:
+
     https://www.tensorflow.org/api_docs/python/tf/math/l2_normalize
-    output = x / (
-        sqrt(
-            max(
-                sum(x**2),
-                epsilon
+
+        output = x / (
+            sqrt(
+                max(
+                    sum(x**2),
+                    epsilon
+                )
             )
         )
-    )
     """
     sq_arr = np.power(arr, 2)
     square_sum = np.sum(sq_arr, axis=axis, keepdims=True)
@@ -138,6 +210,8 @@ def l2_normalize(arr, axis, epsilon=1e-12):
 
 def batch_sequences(seqs: List[str]) -> List[List]:
     """
+    Batch up sequences according to size.
+
     Given a list of strings, returns a list of lists,
     where each sub-list contains the positions of same-length sequences
     in the original list.
@@ -146,10 +220,9 @@ def batch_sequences(seqs: List[str]) -> List[List]:
     ['MTN', 'MT', 'MDN', 'M'] -> [[3], [1], [0, 2]]
 
     :param seqs: List of sequences as strings.
-    :returns: List of lists, where each sub-list contains the positions of 
+    :returns: List of lists, where each sub-list contains the positions of
         same-length sequences in the original list.
     """
-
     # Make sure list is not empty
     if len(seqs) == 0:
         raise SequenceLengthsError("Cannot pass in empty list of sequences.")
@@ -158,3 +231,60 @@ def batch_sequences(seqs: List[str]) -> List[List]:
     for l in set([len(s) for s in seqs]):
         order.append([i for i, s in enumerate(seqs) if len(s) == l])
     return order
+
+
+# This block of code generates one-hot-encoded arrays.
+oh_arrs = np.eye(max(aa_to_int.values()))
+
+# one_hots maps from aa_to_int integers to an array
+one_hots = {v: oh_arrs[v - 1] for k, v in aa_to_int.items()}
+
+# oh_idx_to_aa maps from oh_arrs index to aa_to_int letter.
+oh_idx_to_aa = {v - 1: k for k, v in aa_to_int.items()}
+oh_idx_to_aa[22] = "[XZBJ]"
+
+
+def boolean_true_idxs(mask: np.ndarray, arr: np.ndarray) -> np.ndarray:
+    """
+    Return the index where the mask equals the array.
+
+    We expect the ``mask`` to be a 1D array,
+    while the ``arr`` to be a 2D array.
+
+    np.where returns a tuple,
+    and under the assumptions of this convenience function,
+    we only need the first element.
+    Hence, the magic number ``[0]`` in the return statement.
+
+    The intended use of this function is to mkae arr_to_letter
+    _really fast_.
+
+    :param mask: The 1-D array mask.
+    :param arr: The 2-D array on which to check mask equality.
+    :returns: A 1-D array of indices where the mask
+        equals the array.
+    """
+    return np.array(np.where(np.all(mask == arr, axis=-1)))[0]
+
+
+def arr_to_letter(arr) -> str:
+    """
+    Convert a 1D one-hot array into a letter.
+
+    This is intended to operate on a single array.
+    """
+    idx = int(boolean_true_idxs(mask=arr, arr=oh_arrs)[0])
+    letter = oh_idx_to_aa[idx]
+    return letter
+
+
+def letter_seq(arr: np.array) -> str:
+    """
+    Convert a 2D one-hot array into a string representation.
+
+    TODO: More docstrings needed.
+    """
+    sequence = ""
+    for letter in arr:
+        sequence += arr_to_letter(np.round(letter))
+    return sequence.strip("start").strip("stop")
