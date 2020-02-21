@@ -12,6 +12,7 @@ dependencies:
   - isort=4.3.21
   - jax=0.1.57
   - jaxlib=0.1.37
+  - multipledispatch=0.6.0
   - numpy=1.17.5
   - pyprojroot=0.2.0
   - pytest=5.3.4
