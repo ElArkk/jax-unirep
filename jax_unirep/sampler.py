@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def check_acceptance(best: float, candidate: float) -> bool:
+def is_accepted(best: float, candidate: float) -> bool:
     """
     Return boolean decision on whether the candidate mutant is accepted or not.
 
