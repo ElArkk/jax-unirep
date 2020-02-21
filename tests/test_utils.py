@@ -43,6 +43,7 @@ def test_batch_sequences(seqs, expected):
 def test_propose_string(seq):
     new_seq = propose(seq)
     assert new_seq != seq
+    assert len(new_seq) == len(seq)
 
     # Check that only one position is different
     different_positions = []
