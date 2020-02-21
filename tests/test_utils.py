@@ -1,7 +1,15 @@
 import numpy as np
 import pytest
+from hypothesis import given
+from hypothesis import strategies as st
 
-from jax_unirep.utils import batch_sequences, l2_normalize
+### TO REFACTOR INTO test_sampler.py ###
+from jax_unirep.utils import (
+    batch_sequences,
+    l2_normalize,
+    proposal_valid_letters,
+    propose,
+)
 
 
 def test_l2_normalize():
@@ -29,3 +37,16 @@ def test_l2_normalize():
 )
 def test_batch_sequences(seqs, expected):
     assert batch_sequences(seqs) == expected
+
+
+@given(seq=st.text(alphabet=proposal_valid_letters, min_size=1))
+def test_propose_string(seq):
+    new_seq = propose(seq)
+    assert new_seq != seq
+
+    # Check that only one position is different
+    different_positions = []
+    for i, (l1, l2) in enumerate(zip(seq, new_seq)):
+        if l1 != l2:
+            different_positions.append(i)
+    assert len(different_positions) == 1

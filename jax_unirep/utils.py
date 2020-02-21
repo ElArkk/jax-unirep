@@ -1,11 +1,13 @@
 """jax-unirep utils."""
 from collections import Counter
 from pathlib import Path
+from random import choice
 from typing import Dict, List, Tuple
 
 import jax.numpy as np
 import numpy as onp
 import pkg_resources
+from multipledispatch import dispatch
 
 from .errors import SequenceLengthsError
 
@@ -39,6 +41,9 @@ aa_to_int = {
     "start": 24,
     "stop": 25,
 }
+
+proposal_valid_letters = "ACDEFGHIKLMNPQRSTVWY"
+
 
 weights_1900_dir = Path(
     pkg_resources.resource_filename("jax_unirep", "weights/1900_weights")
@@ -288,3 +293,85 @@ def letter_seq(arr: np.array) -> str:
     for letter in arr:
         sequence += arr_to_letter(np.round(letter))
     return sequence.strip("start").strip("stop")
+
+
+### TO BE REFACTORED INTO sampler.py ###
+
+
+@dispatch(str)
+def propose(sequence: str) -> str:
+    """
+    Given a string, return a proposed mutated string.
+
+    The proposed mutant is generated as follows:
+
+    - Uniformly pick a position
+    - Given that position,
+    uniformly pick a letter that is not the existing letter.
+
+    :param sequence: The sequence to propose a new mutation on.
+    :returns: A string.
+    """
+    if len(sequence) == 0:
+        raise ValueError(
+            "sequence passed into `propose` must be at least length 1."
+        )
+    position = choice(list(range(len(sequence))))
+    new_sequence = ""
+    for i, letter in enumerate(sequence):
+        if position != i:
+            new_sequence += letter
+        else:
+            new_letter = choice(
+                list(set(proposal_valid_letters).difference(letter))
+            )
+            new_sequence += new_letter
+    return new_sequence
+
+
+@dispatch(np.ndarray)
+def propose(sequence: np.ndarray) -> np.ndarray:
+    """
+    Given a bit-matrix, return a mutated bit-matrix.
+
+    This function proposes a new protein sequence.
+    The protein sequence in this particular case
+    is represented as a bit matrix.
+
+    The input bit-matrix should be of shape (N, 25),
+    where N = number of positions, and 25 is the number of possible letters
+    that UniRep's embedder hand handle.
+
+    TODO when we have some bandwidth.
+    """
+    pass
+    # pos = choice(list(range(len(sequence))))
+    # existing_vector = sequence[pos, :]
+
+    # indexing_vectors = np.eye(26)
+    # valid_indices = [
+    #     1,
+    #     2,
+    #     3,
+    #     4,
+    #     5,
+    #     6,
+    #     7,
+    #     8,
+    #     9,
+    #     10,
+    #     11,
+    #     13,
+    #     14,
+    #     15,
+    #     16,
+    #     17,
+    #     18,
+    #     19,
+    #     20,
+    #     21,
+    # ]
+    # index = choice(valid_indices)
+    # # Get the index of the existing_vector so that we can choose another index
+    # # to sample out.
+    # np.where(np.equal(indexing_vectors, existing_vector).all(axis=1))
