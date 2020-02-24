@@ -1,6 +1,7 @@
 """jax-unirep utils."""
 from collections import Counter
 from pathlib import Path
+from random import choice
 from typing import Dict, List, Tuple
 
 import jax.numpy as np
@@ -39,6 +40,9 @@ aa_to_int = {
     "start": 24,
     "stop": 25,
 }
+
+proposal_valid_letters = "ACDEFGHIKLMNPQRSTVWY"
+
 
 weights_1900_dir = Path(
     pkg_resources.resource_filename("jax_unirep", "weights/1900_weights")
