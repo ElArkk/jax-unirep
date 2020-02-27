@@ -72,7 +72,7 @@ def propose(
         )
 
     if pos_prob is None:
-        pos_prob = np.array([1 / len(sequence)] * len(sequence))
+        pos_prob = np.array([1.0 / len(sequence)] * len(sequence))
     if pwm is None:
         pwm = np.tile(np.array([[0.05] * 20]), (len(sequence), 1))
 
@@ -88,11 +88,13 @@ def propose(
         raise ValueError(
             f"PWM needs to be of shape (len(sequence), 20). Got shape {pwm.shape} instead."
         )
-    # TODO: make this work
-    # if not np.any(np.equal(np.sum(pwm, axis=1), 1.0)):
-    #     raise ValueError(
-    #         f"PWM probabilities for each position need to sum to 1."
-    #     )
+
+    if not np.all(np.equal(np.round(np.sum(pwm, axis=1), 3), 1.0)):
+        raise ValueError(
+            f"PWM probabilities for each position need to sum to 1. "
+            f"The following positions did not sum to 1: "
+            f"{np.where(np.equal(np.round(np.sum(pwm, axis=1), 3), 1.0)==0)[0]}"
+        )
 
     # position = choice(list(range(len(sequence))))
     position = np.argmax(npr.multinomial(1, pos_prob))
