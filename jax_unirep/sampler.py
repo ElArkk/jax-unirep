@@ -63,7 +63,8 @@ def propose(
         and probabilities need to sum to 1.
     :param pwm: Pick probability for each AA at each position.
         Needs to be of shape (len(sequence), 20),
-        and probabilities need to sum to 1.
+        and probabilities at each position need to sum to 1.
+        AA's need to be sorted alphabetically.
     :returns: A string.
     """
     if len(sequence) == 0:
