@@ -234,8 +234,8 @@ def objective(
     trial,
     sequences: List[str],
     params: Optional[Dict] = None,
-    n_epochs_config: Dict = None,
-    learning_rate_config: Dict = None,
+    n_epochs_config: Dict = {},
+    learning_rate_config: Dict = {},
 ) -> float:
     """
     Objective function for an Optuna trial.
@@ -274,10 +274,10 @@ def objective(
         "low": 0.00001,
         "high": 0.01,
     }
-    if n_epochs_config is not None:
-        n_epochs_kwargs.update(n_epochs_config)
-    if learning_rate_config is not None:
-        learning_rate_kwargs.update(learning_rate_config)
+
+    n_epochs_kwargs.update(n_epochs_config)
+    learning_rate_kwargs.update(learning_rate_config)
+
     n_epochs = trial.suggest_discrete_uniform(**n_epochs_kwargs)
     learning_rate = trial.suggest_loguniform(**learning_rate_kwargs)
     print(f"Trying out {n_epochs} epochs with learning rate {learning_rate}.")
