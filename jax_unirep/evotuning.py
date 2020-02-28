@@ -268,6 +268,7 @@ def objective(
         "q": 1,
     }
 
+    # Default settings for learning_rate_kwargs
     learning_rate_kwargs = {
         "name": "learning_rate",
         "low": 0.00001,
