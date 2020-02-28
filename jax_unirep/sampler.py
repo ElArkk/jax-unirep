@@ -6,25 +6,25 @@ from multipledispatch import dispatch
 from jax_unirep.utils import proposal_valid_letters
 
 
-def is_accepted(best: float, candidate: float) -> bool:
+def is_accepted(best: float, candidate: float, temperature: float) -> bool:
     """
     Return boolean decision on whether the candidate mutant is accepted or not.
 
-    This function checks whether we want to 
+    This function checks whether we want to
     accept a new mutant proposed by our MMC sampler,
-    by comparing its predicted activity 
+    by comparing its predicted activity
     to the current best mutants activity.
 
     :param best: Predicted activity of current best mutant
     :param candidate: Predicted activity of new candidate mutant
+    :param temperature: Boltzmann distribution temperature.
+        Controls acceptance probability.
+        Low T decreases acceptance probability.
+        High T increases acceptance probability.
     :returns bool: Whether or not candidate mutant was accepted
     """
-    if candidate < 1e-5:
-        return False
-    if candidate > 1e2:
-        return True
 
-    c = np.exp(candidate) / np.exp(best)
+    c = np.exp((candidate - best) / temperature)
 
     if c >= 1:
         return True
