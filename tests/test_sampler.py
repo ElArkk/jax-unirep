@@ -16,7 +16,7 @@ def test_is_accepted(data):
         )
     )
     candidate = data.draw(st.floats(allow_nan=False, allow_infinity=False))
-    accept = is_accepted(best=best, candidate=candidate)
+    accept = is_accepted(best=best, candidate=candidate, temperature=1)
     assert isinstance(accept, bool)
 
 
