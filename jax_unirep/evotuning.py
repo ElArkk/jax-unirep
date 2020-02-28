@@ -340,9 +340,9 @@ def evotune(
     :param learning_rate_config: A dictionary of kwargs
         to ``trial.suggest_loguniform``,
         which are: ``name``, ``low``, ``high``.
-        This controls how many epochs to have Optuna test.
+        This controls the learning rate of the model.
         See source code for default configuration,
-        at the definition of ``n_epochs_kwargs``.
+        at the definition of ``learning_rate_kwargs``.
     :returns: A dictionary of optimized weights.
     """
     if params is None:
