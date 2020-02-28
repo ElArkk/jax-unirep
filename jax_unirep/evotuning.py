@@ -150,6 +150,8 @@ def evotune_step(
     l = loss(params, x=x, y=y)
     if np.isnan(l):
         l = np.inf
+        print("NaN occured in optimization. Skipping trial.")
+        raise optuna.exceptions.TrialPruned()
     print(f"Iteration: {i}, Loss: {l:.4f}")
 
     g = dloss(params, x=x, y=y)
