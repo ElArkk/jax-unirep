@@ -81,7 +81,7 @@ def propose(
         raise ValueError(
             f"Position probability array needs to be of shape (len(sequence), ). Got shape {pos_prob.shape} instead."
         )
-    if np.sum(pos_prob) != 1.0:
+    if np.round(np.sum(pos_prob), 3) != 1.0:
         raise ValueError(
             f"Position probabilities need to sum to 1. Sum is {np.sum(pos_prob)} instead."
         )
