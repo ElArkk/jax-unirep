@@ -221,7 +221,8 @@ def batch_sequences(seqs: List[str]) -> List[List]:
     in the original list.
 
     Example:
-    ['MTN', 'MT', 'MDN', 'M'] -> [[3], [1], [0, 2]]
+
+        ['MTN', 'MT', 'MDN', 'M'] -> [[3], [1], [0, 2]]
 
     :param seqs: List of sequences as strings.
     :returns: List of lists, where each sub-list contains the positions of
