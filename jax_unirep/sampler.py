@@ -1,9 +1,36 @@
 from random import choice
+from typing import Dict
 
 import numpy as np
+import numpy.random as npr
 from multipledispatch import dispatch
 
 from jax_unirep.utils import proposal_valid_letters
+
+letters_sorted = sorted(proposal_valid_letters)
+
+aa_dict = {
+    "A": 1,
+    "C": 2,
+    "D": 3,
+    "E": 4,
+    "F": 5,
+    "G": 6,
+    "H": 7,
+    "I": 8,
+    "K": 9,
+    "L": 10,
+    "M": 11,
+    "N": 12,
+    "P": 13,
+    "Q": 14,
+    "R": 15,
+    "S": 16,
+    "T": 17,
+    "V": 18,
+    "W": 19,
+    "Y": 20,
+}
 
 
 def is_accepted(best: float, candidate: float, temperature: float) -> bool:
@@ -37,32 +64,76 @@ def is_accepted(best: float, candidate: float, temperature: float) -> bool:
 
 
 @dispatch(str)
-def propose(sequence: str) -> str:
+def propose(
+    sequence: str, pos_prob: np.ndarray = None, pwm: np.ndarray = None
+) -> str:
     """
     Given a string, return a proposed mutated string.
 
     The proposed mutant is generated as follows:
 
-    - Uniformly pick a position
+    - Pick a position given the pick probabilities for each position
     - Given that position,
-    uniformly pick a letter that is not the existing letter.
+    pick a letter given the pick probabilities for each letter at that position
+    that is not the existing letter.
+
+    If no probabilites are specified for the positions or the pwm (position weight matrix),
+    the sampler defaults to picking from an uniform distribution in both cases.
 
     :param sequence: The sequence to propose a new mutation on.
+    :param pos_prob: Pick probability for each position in the sequence.
+        Needs to be of shape (len(sequence), ),
+        and probabilities need to sum to 1.
+    :param pwm: Pick probability for each AA at each position.
+        Needs to be of shape (len(sequence), 20),
+        and probabilities at each position need to sum to 1.
+        AA's need to be sorted alphabetically.
     :returns: A string.
     """
     if len(sequence) == 0:
         raise ValueError(
             "sequence passed into `propose` must be at least length 1."
         )
-    position = choice(list(range(len(sequence))))
+
+    if pos_prob is None:
+        pos_prob = np.array([1.0 / len(sequence)] * len(sequence))
+    if pwm is None:
+        pwm = np.tile(np.array([[0.05] * 20]), (len(sequence), 1))
+
+    if pos_prob.shape != (len(sequence),):
+        raise ValueError(
+            f"Position probability array needs to be of shape (len(sequence), ). Got shape {pos_prob.shape} instead."
+        )
+    if np.round(np.sum(pos_prob), 3) != 1.0:
+        raise ValueError(
+            f"Position probabilities need to sum to 1. Sum is {np.sum(pos_prob)} instead."
+        )
+    if pwm.shape != (len(sequence), 20):
+        raise ValueError(
+            f"PWM needs to be of shape (len(sequence), 20). Got shape {pwm.shape} instead."
+        )
+
+    if not np.all(np.equal(np.round(np.sum(pwm, axis=1), 3), 1.0)):
+        raise ValueError(
+            f"PWM probabilities for each position need to sum to 1. "
+            f"The following positions did not sum to 1: "
+            f"{np.where(np.equal(np.round(np.sum(pwm, axis=1), 3), 1.0)==0)[0]}"
+        )
+
+    # position = choice(list(range(len(sequence))))
+    position = np.argmax(npr.multinomial(1, pos_prob))
     new_sequence = ""
     for i, letter in enumerate(sequence):
         if position != i:
             new_sequence += letter
         else:
-            new_letter = choice(
-                list(set(proposal_valid_letters).difference(letter))
-            )
+            # new_letter = choice(
+            #     list(set(proposal_valid_letters).difference(letter))
+            # )
+            letter_idx = aa_dict[letter] - 1
+            pwm[i, letter_idx] = 0
+            new_letter_idx = np.argmax(npr.multinomial(1, pwm[i, :]))
+            new_letter = letters_sorted[new_letter_idx]
             new_sequence += new_letter
     return new_sequence
 

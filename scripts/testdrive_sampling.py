@@ -25,7 +25,7 @@ for i in range(100):
     new_sequence = propose(current_sequence)
     new_score = get_reps(new_sequence)[0].sum()
 
-    if is_accepted(best=current_score, candidate=new_score):
+    if is_accepted(best=current_score, candidate=new_score, temperature=1):
         current_sequence = new_sequence
 
     sequences.append(current_sequence)
