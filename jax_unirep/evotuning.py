@@ -149,7 +149,9 @@ def evotune_step(
 
     l = loss(params, x=x, y=y)
     if np.isnan(l):
-        raise Exception("NaN occurred in optimization.")
+        l = np.inf
+        print("NaN occured in optimization. Skipping trial.")
+        raise optuna.exceptions.TrialPruned()
     print(f"Iteration: {i}, Loss: {l:.4f}")
 
     g = dloss(params, x=x, y=y)
@@ -188,7 +190,7 @@ def length_batch_input_outputs(
 
 
 def fit(
-    params: Dict, sequences: List[str], n: int, step_size: float = 0.005
+    params: Dict, sequences: List[str], n: int, step_size: float = 0.001
 ) -> Dict:
     """
     Return weights fitted to predict the next letter in each sequence.
@@ -233,7 +235,7 @@ def objective(
     sequences: List[str],
     params: Optional[Dict] = None,
     n_epochs_config: Dict = None,
-    step_size: float = 0.005,
+    learning_rate_config: Dict = None,
 ) -> float:
     """
     Objective function for an Optuna trial.
@@ -259,16 +261,29 @@ def objective(
         at the definition of ``n_epochs_kwargs``.
     :returns: Average of 5-fold test loss.
     """
+    # Default settings for n_epochs_kwargs
     n_epochs_kwargs = {
         "name": "n_epochs",
         "low": 1,
         "high": len(sequences) * 3,
         "q": 1,
     }
+
+    # Default settings for learning_rate_kwargs
+    learning_rate_kwargs = {
+        "name": "learning_rate",
+        "low": 0.00001,
+        "high": 0.01,
+    }
+
     if n_epochs_config is not None:
         n_epochs_kwargs.update(n_epochs_config)
+    if learning_rate_config is not None:
+        learning_rate_kwargs.update(learning_rate_config)
+
     n_epochs = trial.suggest_discrete_uniform(**n_epochs_kwargs)
-    print(f"Trying out {n_epochs} epochs.")
+    learning_rate = trial.suggest_loguniform(**learning_rate_kwargs)
+    print(f"Trying out {n_epochs} epochs with learning rate {learning_rate}.")
 
     kf = KFold(shuffle=True)
     sequences = onp.array(sequences)
@@ -282,7 +297,7 @@ def objective(
         )
 
         evotuned_params = fit(
-            params, train_sequences, n=int(n_epochs), step_size=step_size
+            params, train_sequences, n=int(n_epochs), step_size=learning_rate
         )
 
         xs, ys = length_batch_input_outputs(test_sequences)
@@ -299,8 +314,8 @@ def evotune(
     sequences: List[str],
     n_trials: int = 20,
     params: Optional[Dict] = None,
-    n_epochs_config=None,
-    step_size: float = 0.005,
+    n_epochs_config: Dict = None,
+    learning_rate_config: Dict = None,
 ) -> Dict:
     """
     Evolutionarily tune the model to a set of sequences.
@@ -328,6 +343,12 @@ def evotune(
         This controls how many epochs to have Optuna test.
         See source code for default configuration,
         at the definition of ``n_epochs_kwargs``.
+    :param learning_rate_config: A dictionary of kwargs
+        to ``trial.suggest_loguniform``,
+        which are: ``name``, ``low``, ``high``.
+        This controls the learning rate of the model.
+        See source code for default configuration,
+        at the definition of ``learning_rate_kwargs``.
     :returns: A dictionary of optimized weights.
     """
     if params is None:
@@ -345,10 +366,13 @@ def evotune(
         params=params,
         sequences=sequences,
         n_epochs_config=n_epochs_config,
-        step_size=step_size,
+        learning_rate_config=learning_rate_config,
     )
     study.optimize(objective_func, n_trials=n_trials)
     num_epochs = int(study.best_params["n_epochs"])
+    learning_rate = float(study.best_params["learning_rate"])
 
-    evotuned_params = fit(params, sequences=sequences, n=num_epochs)
+    evotuned_params = fit(
+        params, sequences=sequences, n=num_epochs, step_size=learning_rate
+    )
     return evotuned_params
