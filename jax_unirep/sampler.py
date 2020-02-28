@@ -104,21 +104,25 @@ def propose(
         raise ValueError(
             f"Position probability array needs to be of shape (len(sequence), ). Got shape {pos_prob.shape} instead."
         )
-    if np.round(np.sum(pos_prob), 3) != 1.0:
-        raise ValueError(
-            f"Position probabilities need to sum to 1. Sum is {np.sum(pos_prob)} instead."
-        )
+    # 28 February 2020: Temporarily delegating probability vector checks
+    # to NumPy's random multinomial instead.
+    # if np.round(np.sum(pos_prob), 3) != 1.0:
+    #     raise ValueError(
+    #         f"Position probabilities need to sum to 1. Sum is {np.sum(pos_prob)} instead."
+    #     )
     if pwm.shape != (len(sequence), 20):
         raise ValueError(
             f"PWM needs to be of shape (len(sequence), 20). Got shape {pwm.shape} instead."
         )
 
-    if not np.all(np.equal(np.round(np.sum(pwm, axis=1), 3), 1.0)):
-        raise ValueError(
-            f"PWM probabilities for each position need to sum to 1. "
-            f"The following positions did not sum to 1: "
-            f"{np.where(np.equal(np.round(np.sum(pwm, axis=1), 3), 1.0)==0)[0]}"
-        )
+    # 28 February 2020: Temporarily delegating probability vector checks
+    # to NumPy's random multinomial instead.
+    # if not np.all(np.equal(np.round(np.sum(pwm, axis=1), 3), 1.0)):
+    #     raise ValueError(
+    #         f"PWM probabilities for each position need to sum to 1. "
+    #        f"The following positions did not sum to 1: "
+    #          f"{np.where(np.equal(np.round(np.sum(pwm, axis=1), 3), 1.0)==0)[0]}"
+    #     )
 
     # position = choice(list(range(len(sequence))))
     position = np.argmax(npr.multinomial(1, pos_prob))
