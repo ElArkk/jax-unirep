@@ -9,6 +9,29 @@ from jax_unirep.utils import proposal_valid_letters
 
 letters_sorted = sorted(proposal_valid_letters)
 
+aa_dict = {
+    "A": 1,
+    "C": 2,
+    "D": 3,
+    "E": 4,
+    "F": 5,
+    "G": 6,
+    "H": 7,
+    "I": 8,
+    "K": 9,
+    "L": 10,
+    "M": 11,
+    "N": 12,
+    "P": 13,
+    "Q": 14,
+    "R": 15,
+    "S": 16,
+    "T": 17,
+    "V": 18,
+    "W": 19,
+    "Y": 20,
+}
+
 
 def is_accepted(best: float, candidate: float, temperature: float) -> bool:
     """
@@ -107,6 +130,8 @@ def propose(
             # new_letter = choice(
             #     list(set(proposal_valid_letters).difference(letter))
             # )
+            letter_idx = aa_dict[letter] - 1
+            pwm[i, letter_idx] = 0
             new_letter_idx = np.argmax(npr.multinomial(1, pwm[i, :]))
             new_letter = letters_sorted[new_letter_idx]
             new_sequence += new_letter
