@@ -234,8 +234,8 @@ def objective(
     trial,
     sequences: List[str],
     params: Optional[Dict] = None,
-    n_epochs_config: Dict = {},
-    learning_rate_config: Dict = {},
+    n_epochs_config: Dict = None,
+    learning_rate_config: Dict = None,
 ) -> float:
     """
     Objective function for an Optuna trial.
@@ -261,6 +261,7 @@ def objective(
         at the definition of ``n_epochs_kwargs``.
     :returns: Average of 5-fold test loss.
     """
+    # Default settings for n_epochs_kwargs
     n_epochs_kwargs = {
         "name": "n_epochs",
         "low": 1,
@@ -275,8 +276,10 @@ def objective(
         "high": 0.01,
     }
 
-    n_epochs_kwargs.update(n_epochs_config)
-    learning_rate_kwargs.update(learning_rate_config)
+    if n_epochs_config is not None:
+        n_epochs_kwargs.update(n_epochs_config)
+    if learning_rate_config is not None:
+        learning_rate_kwargs.update(learning_rate_config)
 
     n_epochs = trial.suggest_discrete_uniform(**n_epochs_kwargs)
     learning_rate = trial.suggest_loguniform(**learning_rate_kwargs)
