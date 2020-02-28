@@ -187,7 +187,9 @@ def length_batch_input_outputs(
     return xs, ys
 
 
-def fit(params: Dict, sequences: List[str], n: int) -> Dict:
+def fit(
+    params: Dict, sequences: List[str], n: int, step_size: float = 0.005
+) -> Dict:
     """
     Return weights fitted to predict the next letter in each sequence.
 
@@ -213,7 +215,7 @@ def fit(params: Dict, sequences: List[str], n: int) -> Dict:
     """
     xs, ys = length_batch_input_outputs(sequences)
 
-    init, update, get_params = adam(step_size=0.005)
+    init, update, get_params = adam(step_size=step_size)
     optimizer_funcs = update, get_params
 
     state = init(params)
@@ -231,6 +233,7 @@ def objective(
     sequences: List[str],
     params: Optional[Dict] = None,
     n_epochs_config: Dict = None,
+    step_size: float = 0.005,
 ) -> float:
     """
     Objective function for an Optuna trial.
@@ -278,7 +281,9 @@ def objective(
             sequences[test_index],
         )
 
-        evotuned_params = fit(params, train_sequences, n=int(n_epochs))
+        evotuned_params = fit(
+            params, train_sequences, n=int(n_epochs), step_size=step_size
+        )
 
         xs, ys = length_batch_input_outputs(test_sequences)
 
@@ -295,6 +300,7 @@ def evotune(
     n_trials: int = 20,
     params: Optional[Dict] = None,
     n_epochs_config=None,
+    step_size: float = 0.005,
 ) -> Dict:
     """
     Evolutionarily tune the model to a set of sequences.
@@ -335,7 +341,11 @@ def evotune(
     study = optuna.create_study()
 
     objective_func = lambda x: objective(
-        x, params=params, sequences=sequences, n_epochs_config=n_epochs_config
+        x,
+        params=params,
+        sequences=sequences,
+        n_epochs_config=n_epochs_config,
+        step_size=step_size,
     )
     study.optimize(objective_func, n_trials=n_trials)
     num_epochs = int(study.best_params["n_epochs"])
