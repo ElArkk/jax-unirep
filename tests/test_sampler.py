@@ -3,7 +3,13 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from jax_unirep.sampler import is_accepted, propose
+from jax_unirep import get_reps
+from jax_unirep.sampler import (
+    hamming_distance,
+    is_accepted,
+    propose,
+    sample_one_chain,
+)
 from jax_unirep.utils import proposal_valid_letters
 
 
@@ -32,3 +38,23 @@ def test_propose_string(seq):
         if l1 != l2:
             different_positions.append(i)
     assert len(different_positions) == 1
+
+
+@pytest.mark.parametrize(
+    "seq1,seq2,expected",
+    [("AAA", "AAC", 1), ("AAE", "AAC", 1), ("ABC", "DEF", 3)],
+)
+def test_hamming_distance(seq1, seq2, expected):
+    assert hamming_distance(seq1, seq2) == expected
+
+
+def test_sample_one_chain():
+    starter_sequence = "AAC"
+    n_steps = 10
+    scoring_func = lambda sequence: get_reps(sequence)[0].sum()
+
+    chain_data = sample_one_chain(starter_sequence, n_steps, scoring_func)
+    assert set(chain_data.keys()) == set(["sequences", "scores", "accept"])
+    for k, v in chain_data.items():
+        # +1 because the first step is included too.
+        assert len(v) == n_steps + 1

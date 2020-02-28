@@ -1,5 +1,6 @@
+from collections import defaultdict
 from random import choice
-from typing import Dict
+from typing import Callable, Dict
 
 import numpy as np
 import numpy.random as npr
@@ -188,3 +189,103 @@ def propose(sequence: np.ndarray) -> np.ndarray:
     # # Get the index of the existing_vector so that we can choose another index
     # # to sample out.
     # np.where(np.equal(indexing_vectors, existing_vector).all(axis=1))
+
+
+def hamming_distance(s1: str, s2: str):
+    """Return hamming distance between two strings of the same length."""
+    return sum(c1 != c2 for c1, c2 in zip(s1, s2))
+
+
+def sample_one_chain(
+    starter_sequence,
+    n_steps,
+    scoring_func: Callable,
+    is_accepted_kwargs: Dict = {},
+    trust_radius: int = 7,
+    propose_kwargs: Dict = {},
+) -> Dict:
+    """
+    Return one chain of MCMC samples of new sequences.
+
+    Given a ``starter_sequence``,
+    this function will sample one chain of protein sequences,
+    scored using a user-provided ``scoring_func``.
+
+    Design choices made here include the following.
+
+    Firstly, we record all sequences that were sampled,
+    and not just the accepted ones.
+    This behaviour differs from other MCMC samplers
+    that record only the accepted values.
+    We do this just in case sequences that are still "good"
+    (but not better than current) are rejected.
+    The effect here is that we get a cluster of sequences
+    that are one-apart from newly accepted sequences.
+
+    Secondly, we check the Hamming distance
+    between the newly proposed sequences and the original.
+    This corresponds to the "trust radius"
+    specified in the jax-unirep paper:
+    https://doi.org/10.1101/2020.01.23.917682.
+    If the hamming distance > trust radius,
+    we reject the sequence outright.
+
+    A dictionary containing the following key-value pairs are returned:
+
+    - "sequences": All proposed sequences.
+    - "scores": All scores from the scoring function.
+    - "accept": Whether the sequence was accepted as the new 'current sequence'
+        on which new sequences are proposed.
+
+    This can be turned into a pandas DataFrame.
+
+    :param starter_sequence: The starting sequence.
+    :param n_steps: Number of steps for the MC chain to walk.
+    :param scoring_func: Scoring function for a new sequence.
+        It should only accept a string sequence.
+    :param is_accepted_kwargs: Dictionary of kwargs to pass into
+        ``is_accepted`` function.
+        See ``is_accepted`` docstring for more details.
+    :param trust_radius: Maximum allowed number of mutations away from
+        starter sequence.
+    :param propose_kwargs: Dictionary of kwargs to pass into
+        ``propose`` function.
+        See ``propose`` docstring for more details.
+    :param verbose: Whether or not to print iteration number
+        and associated sequence + score. Defaults to False
+    """
+    current_sequence = starter_sequence
+    current_score = scoring_func(sequence=starter_sequence)
+
+    chain_data = defaultdict(list)
+    chain_data["sequences"].append(current_sequence)
+    chain_data["scores"].append(current_score)
+    chain_data["accept"].append(True)
+
+    for i in range(n_steps):
+        new_sequence = propose(current_sequence, **propose_kwargs)
+        new_score = scoring_func(sequence=new_sequence)
+
+        default_is_accepted_kwargs = {"temperature": 0.1}
+        default_is_accepted_kwargs.update(is_accepted_kwargs)
+        accept = is_accepted(
+            best=current_score,
+            candidate=new_score,
+            **default_is_accepted_kwargs,
+        )
+
+        # Check hamming distance
+        if hamming_distance(starter_sequence, new_sequence) > trust_radius:
+            accept = False
+
+        # Determine acceptance
+        if accept:
+            current_sequence = new_sequence
+            current_score = new_score
+
+        # Record data.
+        chain_data["sequences"].append(new_sequence)
+        chain_data["scores"].append(new_score)
+        chain_data["accept"].append(accept)
+    chain_data["scores"] = np.hstack(chain_data["scores"])
+    return chain_data
