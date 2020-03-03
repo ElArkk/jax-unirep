@@ -245,7 +245,7 @@ and trained a model to predict avGFP brightness (as the authors did). avGFP is a
 green-fluorescent protein that has been extensively studied in the literature.
 Many studies generated mutants of this protein, measuring the changes in brightness
 for each mutant, to try to understand how protein sequence links to function or simply
-to increase brightness.
+to try to increase brightness.
 
 Average performance across 5-fold cross-validation
 is shown in Figure 3.
