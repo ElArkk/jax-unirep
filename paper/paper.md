@@ -32,13 +32,11 @@ Its most powerful model allows for embedding
 arbitrary length sequences in a 1900-long feature vector
 that can be used as the input to a "top model"
 for unsupervised clustering or supervised prediction of protein properties.
-<!-- Vectors can be used for clustering
-or as inputs for the top model
-to predict properties of proteins. -->
 
 The original model was implemented in TensorFlow 1.13 [@abadi2016tensorflow],
 and its original API only allowed
 for one sequence to be transformed at once.
+
 Thus, while the model itself holds great potential
 for the protein engineering field,
 the API prevents us from using it conveniently and productively.
@@ -78,11 +76,24 @@ During the reimplementation,
 we also discovered that JAX provided convenient utilities
 (`lax.scan`, `vmap`, and `jit`)
 to convert loops into fast, vectorized operations on tensors.
-This had a pleasant effect of helping us write more performant code,
-while also forcing us to reason clearly about the semantic meaning
-of our tensor dimensions.
+This had a pleasant effect of helping us write more performant code.
+We were also forced to reason clearly about the semantic meaning
+of our tensor dimensions, to make sure that vecotrization happened
+over the correct axes. We commented at every tensor operation step
+how the shapes of our input(s) and output(s) should look like, e.g.:
 
-### Tensor Ops Reimplementation
+```python
+# layers.py
+
+# Shape annotation
+# (:, 10) @ (10, 1900) * (:, 1900) @ (1900, 1900) => (:, 1900)
+m = np.matmul(x_t, params["wmx"]) * np.matmul(h_t, params["wmh"])
+
+# (:, 10) @ (10, 7600) * (:, 1900) @ (1900, 7600) + (7600, ) => (:, 7600)
+z = np.matmul(x_t, params["wx"]) + np.matmul(m, params["wh"]) + params["b"]
+
+# ...
+```
 
 The process of tensor ops reimplementation were as follows.
 
@@ -112,6 +123,10 @@ which checked that tensor dimensions were correct
 given different numbers of samples.
 These are available in the source `tests/` directory.
 
+Our tests allowed us to build up the full model step by step,
+while always making sure that each new addition did not break
+the existing model.
+
 During the reimplementation,
 we found that certain operations that we took for granted
 to be implemented one way
@@ -121,18 +136,23 @@ The TensorFlow implementation is:
 
 $$\frac{1}{1 + e^{-x}}$$
 
-However, an alternative implementation includes:
+Which is equivalent to:
+
+$$\frac{1}{2} \text{tanh}(\frac{x}{2}) + \frac{1}{2}$$
+
+However, an alternative implementation often used in deep-learning
+omits the constant as it does not influence the performance:
 
 $$\frac{1}{2} \text{tanh}(x) + \frac{1}{2}$$
 
 Yet both are called "sigmoid" functions.
 Because their slopes differ,
 their outputs also differ drastically.
-We originally used the $\text{tanh}$ version,
+We originally used the version with ommited constant,
 but found a large discrepancy between the reimplemented model's output
 and the original's output.
 It took digging deep through the TensorFlow source code
-to realize that the exponentiated sigmoid was the one being used.
+to realize that the sigmoid was used which does not omit the constant.
 
 A similar lesson was learned while reimplementing the L2 norm of our weights.
 
@@ -219,7 +239,12 @@ is a trace of 1900-long embedding.
 
 We also verified that the embeddings calculated using the pre-trained weights
 were informative for top models,
-and trained a model to predict avGFP brightness (as the authors did).
+and trained a model to predict avGFP brightness (as the authors did). avGFP is a
+green-fluorescent protein that has been extensively studied in the literature.
+Many studies generated mutants of this protein, measuring the changes in brightness
+for each mutant, to try to understand how protein sequence links to function or simply
+to increase brightness.
+
 Average performance across 5-fold cross-validation
 is shown in Figure 3.
 avGFP data came from [@sarkisyan2016local].
@@ -267,6 +292,16 @@ means data scientists are forced to learn one
 To break free of framework lock-in,
 being able to translate between frameworks is highly valuable.
 Model reimplementation was highly beneficial for this.
+
+Tensorflow's syntax is not at all beginner-friendly,
+and so finding the spots in a TF model where one could speed
+up things (such as parallelize them) is hard. Also because the
+session and graph states of the model always need to be
+kept in mind.
+Stripping a TF model of it's syntactic overhead by re-implementing 
+it in a (almost) purely numpy-based framework makes it easier
+to see the spots where a model is parallelizable and can be
+sped up in other ways.
 
 If "models are software 2.0" [@kaparthy2017software2],
 then data science teams might do well
