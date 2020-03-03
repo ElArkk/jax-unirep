@@ -95,6 +95,8 @@ z = np.matmul(x_t, params["wx"]) + np.matmul(m, params["wh"]) + params["b"]
 # ...
 ```
 
+### Tensor Ops Reimplementation
+
 The process of tensor ops reimplementation were as follows.
 
 Firstly, we started from the RNN cell (`mlstm1900_step`),
