@@ -77,10 +77,12 @@ we also discovered that JAX provided convenient utilities
 (`lax.scan`, `vmap`, and `jit`)
 to convert loops into fast, vectorized operations on tensors.
 This had a pleasant effect of helping us write more performant code.
-We were also forced to reason clearly about the semantic meaning
-of our tensor dimensions, to make sure that vecotrization happened
-over the correct axes. We commented at every tensor operation step
-how the shapes of our input(s) and output(s) should look like, e.g.:
+We were also forced to reason clearly
+about the semantic meaning of our tensor dimensions,
+to make sure that vecotrization happened over the correct axes.
+We commented at every tensor operation step
+how the shapes of our input(s) and output(s) should look like.
+One example from our source:
 
 ```python
 # layers.py
@@ -124,10 +126,10 @@ However, for the full forward model, we provided a property-based test,
 which checked that tensor dimensions were correct
 given different numbers of samples.
 These are available in the source `tests/` directory.
-
-Our tests allowed us to build up the full model step by step,
-while always making sure that each new addition did not break
-the existing model.
+As a known benefit with software testing,
+our tests allowed us to rebuild the full model piece by piece,
+while always making sure that each new piece did not break
+the existing pieces.
 
 During the reimplementation,
 we found that certain operations that we took for granted
@@ -154,7 +156,7 @@ We originally used the version with ommited constant,
 but found a large discrepancy between the reimplemented model's output
 and the original's output.
 It took digging deep through the TensorFlow source code
-to realize that the sigmoid was used which does not omit the constant.
+to realize that the sigmoid being used does not omit the constant.
 
 A similar lesson was learned while reimplementing the L2 norm of our weights.
 
@@ -241,10 +243,12 @@ is a trace of 1900-long embedding.
 
 We also verified that the embeddings calculated using the pre-trained weights
 were informative for top models,
-and trained a model to predict avGFP brightness (as the authors did). avGFP is a
-green-fluorescent protein that has been extensively studied in the literature.
-Many studies generated mutants of this protein, measuring the changes in brightness
-for each mutant, to try to understand how protein sequence links to function or simply
+and trained a model to predict avGFP brightness (as the authors did).
+avGFP is a green-fluorescent protein
+that has been extensively studied in the literature.
+Many studies generated mutants of this protein,
+measuring the changes in brightness for each mutant,
+to try to understand how protein sequence links to function or simply
 to try to increase brightness.
 
 Average performance across 5-fold cross-validation
@@ -295,17 +299,39 @@ To break free of framework lock-in,
 being able to translate between frameworks is highly valuable.
 Model reimplementation was highly beneficial for this.
 
-Tensorflow's syntax is not at all beginner-friendly,
-and so finding the spots in a TF model where one could speed
-up things (such as parallelize them) is hard. Also because the
-session and graph states of the model always need to be
-kept in mind.
-Stripping a TF model of it's syntactic overhead by re-implementing 
-it in a (almost) purely numpy-based framework makes it easier
-to see the spots where a model is parallelizable and can be
-sped up in other ways.
+UniRep was implemented in Tensorflow 1.13.
+TF1's computation graph-oriented API
+does not promote debugging ease.
+Hence, it may sometimes be difficult to find spots in a TF model
+where one could speed up computations.
+By instead treating neural network layers as functions
+that are eagerly evaluated,
+we could more easily debug model problems,
+particularly the pernicious tensor shape issues.
 
-If "models are software 2.0" [@kaparthy2017software2],
+We believe that the speedup that we observed by reimplementing in JAX
+came primarily from eliminating graph compilation overhead
+and an enhanced version of the original API design.
+In anecdotal tests, graph compilation would take on the order of dozens of seconds
+before any computation occurred.
+Because the original implementation's `get_reps` function
+did not accept multiple sequences,
+one had to use a for-loop to pass sequence strings through the model.
+If a user were not careful,
+in a worst-case scenario,
+they would end up paying the compilation penalty
+on every loop iteration.
+By preprocessing strings in batches of the same size,
+and by keeping track of the original ordering,
+then we could (1) avoid compilation penalty,
+and (2) vectorize much of the tensor operations over the sample axis,
+before returning the representation vectors in the original order of the sequences.
+In ensuring that the enhanced `get_reps` API accepted multiple sequences,
+we also reduced cognitive load for a Python-speaking protein data scientist
+who might be seeking to use the model,
+as the function safely handles a single string and an iterable of strings.
+
+Hence, if "models are software 2.0" [@kaparthy2017software2],
 then data science teams might do well
 to treat model weights as software artefacts
 that are shipped to end-users,
@@ -328,6 +354,8 @@ rather than needing to babysit a deep learning optimization routine.
 Like `get_reps()`, `evotune()` and its associated utility functions
 will have at least an example-based test,
 if not also a property-based test associated with them.
+
+Community contributions and enhancements are welcome as well.
 
 ## Software Repository
 
