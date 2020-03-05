@@ -243,14 +243,18 @@ is a trace of 1900-long embedding.
 
 We also verified that the embeddings calculated using the pre-trained weights
 were informative for top models,
-and trained a model to predict avGFP brightness (as the authors did).
+and trained a model to predict the brightness
+of around 50'000 avGFP variants (as the authors did).
 avGFP is a green-fluorescent protein
 that has been extensively studied in the literature.
 Many studies generated mutants of this protein,
 measuring the changes in brightness for each mutant,
 to try to understand how protein sequence links to function or simply
-to try to increase brightness.
+to increase brightness.
 
+We binarized brightness values into a "dark" and a "bright"
+class, and used sklearn's implementation of logistic regression 
+for classification.
 Average performance across 5-fold cross-validation
 is shown in Figure 3.
 avGFP data came from [@sarkisyan2016local].
