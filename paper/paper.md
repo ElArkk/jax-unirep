@@ -252,12 +252,10 @@ measuring the changes in brightness for each mutant,
 to try to understand how protein sequence links to function or simply
 to increase brightness.
 
-We binarized brightness values into a "dark" and a "bright"
-class, and used sklearn's implementation of logistic regression 
-for classification.
-Average performance across 5-fold cross-validation
-is shown in Figure 3.
-avGFP data came from [@sarkisyan2016local].
+We binarized brightness values into a "dark" and a "bright" class,
+and used scikit-learn's implementation of logistic regression for classification.
+Average performance across 5-fold cross-validation is shown in Figure 3.
+(avGFP data came from [@sarkisyan2016local].)
 
 ![
     GFP brightness classification using
@@ -304,14 +302,14 @@ being able to translate between frameworks is highly valuable.
 Model reimplementation was highly beneficial for this.
 
 UniRep was implemented in Tensorflow 1.13.
-TF1's computation graph-oriented API
-does not promote debugging ease.
+It is well-known that TF1's computation graph-oriented API
+does not promote ease of debugging in native Python.
 Hence, it may sometimes be difficult to find spots in a TF model
 where one could speed up computations.
 By instead treating neural network layers as functions
 that are eagerly evaluated,
 we could more easily debug model problems,
-particularly the pernicious tensor shape issues.
+in particular, the pernicious tensor shape issues.
 
 We believe that the speedup that we observed by reimplementing in JAX
 came primarily from eliminating graph compilation overhead
@@ -325,6 +323,7 @@ If a user were not careful,
 in a worst-case scenario,
 they would end up paying the compilation penalty
 on every loop iteration.
+
 By preprocessing strings in batches of the same size,
 and by keeping track of the original ordering,
 then we could (1) avoid compilation penalty,
@@ -335,9 +334,10 @@ we also reduced cognitive load for a Python-speaking protein data scientist
 who might be seeking to use the model,
 as the function safely handles a single string and an iterable of strings.
 
-Hence, if "models are software 2.0" [@kaparthy2017software2],
+An overarching lesson we derive from this experience is  as follows.
+If "models are software 2.0" [@kaparthy2017software2],
 then data science teams might do well
-to treat model weights as software artefacts
+to treat fitted model weights as software artefacts
 that are shipped to end-users,
 and take care to design sane APIs
 that enable other developers to use it in ways
