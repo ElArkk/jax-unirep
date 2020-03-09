@@ -24,7 +24,12 @@ def identity(x):
     return x
 
 
-def softmax(x, axis: int = -1):
-    e = np.exp(x)
-    sumexp = np.sum(e, axis=axis)
-    return np.divide(e, np.expand_dims(sumexp, axis))
+# def softmax(x, axis: int = -1):
+#     # Weirdly this (wrong) implementation led to very nice loss decrease:
+#     # e = np.exp(-x)
+#     # sumexp = np.sum(e, axis=axis)
+#     # return 1 - np.divide(e, np.expand_dims(sumexp, axis))
+#     x = np.clip(x, -1e2, 1e2)
+#     e = np.exp(x - np.max(x))
+#     sumexp = np.sum(e, axis=axis)
+#     return np.divide(e, np.expand_dims(sumexp, axis))

@@ -7,9 +7,9 @@ import optuna
 from jax import grad, jit
 from jax import numpy as np
 from jax.experimental.optimizers import adam
+from jax.nn import softmax
 from sklearn.model_selection import KFold, train_test_split
 
-from .activations import softmax
 from .layers import dense, mlstm1900
 from .losses import neg_cross_entropy_loss
 from .params import add_dense_params
