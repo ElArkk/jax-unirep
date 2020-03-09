@@ -32,13 +32,11 @@ Its most powerful model allows for embedding
 arbitrary length sequences in a 1900-long feature vector
 that can be used as the input to a "top model"
 for unsupervised clustering or supervised prediction of protein properties.
-<!-- Vectors can be used for clustering
-or as inputs for the top model
-to predict properties of proteins. -->
 
 The original model was implemented in TensorFlow 1.13 [@abadi2016tensorflow],
 and its original API only allowed
 for one sequence to be transformed at once.
+
 Thus, while the model itself holds great potential
 for the protein engineering field,
 the API prevents us from using it conveniently and productively.
@@ -78,9 +76,26 @@ During the reimplementation,
 we also discovered that JAX provided convenient utilities
 (`lax.scan`, `vmap`, and `jit`)
 to convert loops into fast, vectorized operations on tensors.
-This had a pleasant effect of helping us write more performant code,
-while also forcing us to reason clearly about the semantic meaning
-of our tensor dimensions.
+This had a pleasant effect of helping us write more performant code.
+We were also forced to reason clearly
+about the semantic meaning of our tensor dimensions,
+to make sure that vecotrization happened over the correct axes.
+We commented at every tensor operation step
+how the shapes of our input(s) and output(s) should look like.
+One example from our source:
+
+```python
+# layers.py
+
+# Shape annotation
+# (:, 10) @ (10, 1900) * (:, 1900) @ (1900, 1900) => (:, 1900)
+m = np.matmul(x_t, params["wmx"]) * np.matmul(h_t, params["wmh"])
+
+# (:, 10) @ (10, 7600) * (:, 1900) @ (1900, 7600) + (7600, ) => (:, 7600)
+z = np.matmul(x_t, params["wx"]) + np.matmul(m, params["wh"]) + params["b"]
+
+# ...
+```
 
 ### Tensor Ops Reimplementation
 
@@ -111,6 +126,10 @@ However, for the full forward model, we provided a property-based test,
 which checked that tensor dimensions were correct
 given different numbers of samples.
 These are available in the source `tests/` directory.
+As a known benefit with software testing,
+our tests allowed us to rebuild the full model piece by piece,
+while always making sure that each new piece did not break
+the existing pieces.
 
 During the reimplementation,
 we found that certain operations that we took for granted
@@ -121,18 +140,23 @@ The TensorFlow implementation is:
 
 $$\frac{1}{1 + e^{-x}}$$
 
-However, an alternative implementation includes:
+Which is equivalent to:
+
+$$\frac{1}{2} \text{tanh}(\frac{x}{2}) + \frac{1}{2}$$
+
+However, an alternative implementation often used in deep-learning
+omits the constant as it does not influence the performance:
 
 $$\frac{1}{2} \text{tanh}(x) + \frac{1}{2}$$
 
 Yet both are called "sigmoid" functions.
 Because their slopes differ,
 their outputs also differ drastically.
-We originally used the $\text{tanh}$ version,
+We originally used the version with ommited constant,
 but found a large discrepancy between the reimplemented model's output
 and the original's output.
 It took digging deep through the TensorFlow source code
-to realize that the exponentiated sigmoid was the one being used.
+to realize that the sigmoid being used does not omit the constant.
 
 A similar lesson was learned while reimplementing the L2 norm of our weights.
 
@@ -219,10 +243,19 @@ is a trace of 1900-long embedding.
 
 We also verified that the embeddings calculated using the pre-trained weights
 were informative for top models,
-and trained a model to predict avGFP brightness (as the authors did).
-Average performance across 5-fold cross-validation
-is shown in Figure 3.
-avGFP data came from [@sarkisyan2016local].
+and trained a model to predict the brightness
+of around 50'000 avGFP variants (as the authors did).
+avGFP is a green-fluorescent protein
+that has been extensively studied in the literature.
+Many studies generated mutants of this protein,
+measuring the changes in brightness for each mutant,
+to try to understand how protein sequence links to function or simply
+to increase brightness.
+
+We binarized brightness values into a "dark" and a "bright" class,
+and used scikit-learn's implementation of logistic regression for classification.
+Average performance across 5-fold cross-validation is shown in Figure 3.
+(avGFP data came from [@sarkisyan2016local].)
 
 ![
     GFP brightness classification using
@@ -268,9 +301,43 @@ To break free of framework lock-in,
 being able to translate between frameworks is highly valuable.
 Model reimplementation was highly beneficial for this.
 
+UniRep was implemented in Tensorflow 1.13.
+It is well-known that TF1's computation graph-oriented API
+does not promote ease of debugging in native Python.
+Hence, it may sometimes be difficult to find spots in a TF model
+where one could speed up computations.
+By instead treating neural network layers as functions
+that are eagerly evaluated,
+we could more easily debug model problems,
+in particular, the pernicious tensor shape issues.
+
+We believe that the speedup that we observed by reimplementing in JAX
+came primarily from eliminating graph compilation overhead
+and an enhanced version of the original API design.
+In anecdotal tests, graph compilation would take on the order of dozens of seconds
+before any computation occurred.
+Because the original implementation's `get_reps` function
+did not accept multiple sequences,
+one had to use a for-loop to pass sequence strings through the model.
+If a user were not careful,
+in a worst-case scenario,
+they would end up paying the compilation penalty
+on every loop iteration.
+
+By preprocessing strings in batches of the same size,
+and by keeping track of the original ordering,
+then we could (1) avoid compilation penalty,
+and (2) vectorize much of the tensor operations over the sample axis,
+before returning the representation vectors in the original order of the sequences.
+In ensuring that the enhanced `get_reps` API accepted multiple sequences,
+we also reduced cognitive load for a Python-speaking protein data scientist
+who might be seeking to use the model,
+as the function safely handles a single string and an iterable of strings.
+
+An overarching lesson we derive from this experience is  as follows.
 If "models are software 2.0" [@kaparthy2017software2],
 then data science teams might do well
-to treat model weights as software artefacts
+to treat fitted model weights as software artefacts
 that are shipped to end-users,
 and take care to design sane APIs
 that enable other developers to use it in ways
@@ -291,6 +358,8 @@ rather than needing to babysit a deep learning optimization routine.
 Like `get_reps()`, `evotune()` and its associated utility functions
 will have at least an example-based test,
 if not also a property-based test associated with them.
+
+Community contributions and enhancements are welcome as well.
 
 ## Software Repository
 
