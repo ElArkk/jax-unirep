@@ -349,7 +349,10 @@ def evotune(
         This controls the learning rate of the model.
         See source code for default configuration,
         at the definition of ``learning_rate_kwargs``.
-    :returns: A dictionary of optimized weights.
+    :returns:
+        - study - The optuna study object, containing information
+        about all evotuning trials.
+        - evotuned_params - A dictionary of optimized weights
     """
     if params is None:
         params = dict()
@@ -375,4 +378,4 @@ def evotune(
     evotuned_params = fit(
         params, sequences=sequences, n=num_epochs, step_size=learning_rate
     )
-    return evotuned_params
+    return study, evotuned_params

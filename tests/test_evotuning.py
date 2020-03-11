@@ -62,7 +62,7 @@ def test_evotune_step():
 def test_evotune():
     seqs = ["MTN", "BDD"] * 5
     n_epochs_config = {"high": 1}
-    params_new = evotune(
+    _, params_new = evotune(
         sequences=seqs,
         n_trials=1,
         params=None,
