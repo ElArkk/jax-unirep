@@ -45,6 +45,7 @@ def rep_arbitrary_lengths(
         If passing only a single sequence, it also needs to be passed inside a list.
     :returns: A 3-tuple of `np.array`s containing the reps.
         Each `np.array` has shape (n_sequences, 1900).
+        Return order: (h_avg, h_final, c_final).
     """
     order = batch_sequences(seqs)
     # TODO: Find a better way to do this, without code triplication
