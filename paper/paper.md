@@ -44,12 +44,12 @@ to process multiple sequences,
 requiring on the order of dozens of seconds to process dozens of sequences.
 The second was that its API was not sufficiently flexible
 to handle multiple sequences passed in at once;
-to get reps of multiple sequences, 
+to get reps of multiple sequences,
 one needed to write a manual for-loop,
 re-using a function inside which returns the reps for
 a single sequence.
-When fine-tuning model weights, 
-sequences needed to be batched and padded to equal lengths 
+When fine-tuning model weights,
+sequences needed to be batched and padded to equal lengths
 before being able to be passed in to the model.
 Neither appeared to be user-friendly.
 
@@ -110,12 +110,20 @@ in the call graph,
 meaning we were unable to conveniently peer into the internals of TF execution
 without digging further.
 
+<!--
+We might possibly want to add in a "hypothesis" statement:
+
+- Removing graph compilation.
+- Purely functional API that is executed upon calling...
+
+...could speed up the model.
+-->
+
 As is visible from the code profiling APIs that we used,
 we designed a cleaner and more expressive API
 that could be
-faster,
-handle multiple sequences
-of variable lengths,
+faster
+and handle multiple sequences of variable lengths,
 without introducing the mental overhead
 of TensorFlow's complex scoping syntax.
 An expressive and clean API was something that we would expect
