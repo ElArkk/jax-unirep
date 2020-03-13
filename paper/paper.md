@@ -44,12 +44,13 @@ to process multiple sequences,
 requiring on the order of dozens of seconds to process dozens of sequences.
 The second was that its API was not sufficiently flexible
 to handle multiple sequences passed in at once;
-to do so, one either needed to write a manual for-loop,
-<!-- @ElArkk please make the next four lines accurate.
-Don't want to mis-represent what their actual API is. -->
-or integer-encode the sequences
-and batch them into equal-length buckets
-before passing them through the model.
+to get reps of multiple sequences, 
+one needed to write a manual for-loop,
+re-using a function inside which returns the reps for
+a single sequence.
+When fine-tuning model weights, 
+sequences needed to be batched and padded to equal lengths 
+before being able to be passed in to the model.
 Neither appeared to be user-friendly.
 
 Thus, while the model itself holds great potential
