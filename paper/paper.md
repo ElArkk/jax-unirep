@@ -36,6 +36,21 @@ for unsupervised clustering or supervised prediction of protein properties.
 The original model was implemented in TensorFlow 1.13 [@abadi2016tensorflow],
 and its original API only allowed
 for one sequence to be transformed at once.
+While test-driving the model,
+we observed two problems with it.
+The first is that that the original implementation
+took an abnormally long amount of time
+to process multiple sequences,
+requiring on the order of dozens of seconds to process dozens of sequences.
+The second was that its API was not sufficiently flexible
+to handle multiple sequences passed in at once;
+to do so, one either needed to write a manual for-loop,
+<!-- @ElArkk please make the next four lines accurate.
+Don't want to mis-represent what their actual API is. -->
+or integer-encode the sequences
+and batch them into equal-length buckets
+before passing them through the model.
+Neither appeared to be user-friendly.
 
 Thus, while the model itself holds great potential
 for the protein engineering field,
@@ -50,174 +65,69 @@ In particular, our engineering goals were to provide:
 - Vectorizing the inputs to make it fast.
 - A single function call to "evotune" the global weights.
 
-## Reimplementation Main Points
+## Profiling tf-unirep and jax-unirep
 
-### Choice of JAX
-
-JAX was our library choice to reimplement it in,
-because it provides automatic differentiation machinery [@jax2018github]
-on top of the highly idiomatic and widely-used NumPy API [@oliphant2006guide].
-JAX uses a number of components shared with TensorFlow,
-in particular the use of the
-XLA (Accelerated Linear Algebra) library
-to provide automatic compilation from the NumPy API to GPU and TPU.
-
-Part of the exercise was also pedagogical:
-by reimplementing the model in a pure NumPy API,
-we are forced to become familiar with the mechanics of the model,
-and learn the translation between NumPy and TensorFlow operations.
-
-Because JAX provides automatic differentiation
-and a number of optimization routines as utility functions,
-we are thus not prohibited from fine-tuning UniRep weights
-through gradient descent.
-
-During the reimplementation,
-we also discovered that JAX provided convenient utilities
-(`lax.scan`, `vmap`, and `jit`)
-to convert loops into fast, vectorized operations on tensors.
-This had a pleasant effect of helping us write more performant code.
-We were also forced to reason clearly
-about the semantic meaning of our tensor dimensions,
-to make sure that vecotrization happened over the correct axes.
-We commented at every tensor operation step
-how the shapes of our input(s) and output(s) should look like.
-One example from our source:
+To investigate the performance of the original and our reimplementation,
+we used Python's `cProfile` facility to identify
+where the majority of time was spent in the respective codebases.
+The functions used for profiling were:
 
 ```python
-# layers.py
+# assume babbler is imported from tf-unirep
+def profile_tf_unirep(seqs):
+    with tf.variable_scope("embed_matrix", reuse=tf.AUTO_REUSE):
+        b = babbler(batch_size=batch_size, model_path=MODEL_WEIGHT_PATH)
+        for seq in seqs:
+            avg, final, cell = b.get_rep(seq)
 
-# Shape annotation
-# (:, 10) @ (10, 1900) * (:, 1900) @ (1900, 1900) => (:, 1900)
-m = np.matmul(x_t, params["wmx"]) * np.matmul(h_t, params["wmh"])
-
-# (:, 10) @ (10, 7600) * (:, 1900) @ (1900, 7600) + (7600, ) => (:, 7600)
-z = np.matmul(x_t, params["wx"]) + np.matmul(m, params["wh"]) + params["b"]
-
-# ...
+# assume get_reps is imported from jax-unirep
+def profile_jax_unirep(seqs):
+    get_reps(seqs)
 ```
 
-### Tensor Ops Reimplementation
+We then used SnakeViz to visualize the code execution profile results.
 
-The process of tensor ops reimplementation were as follows.
+![
+    Flame graph of the original UniRep's implementation,
+    down to 10 levels deep from the profiling function that was called.
+](./figures/unirep-profile.png)
 
-Firstly, we started from the RNN cell (`mlstm1900_step`),
-which sequentially walks down the protein sequence
-and generates the single step embedding.
-Secondly, we wrapped the RNN cell using `lax.scan`
-to scan over a single sequence, generating `mlstm1900_batch`.
-Thirdly, we then used `jax.vmap`
-to vectorize the operation over multiple sequences,
-thus generating `mlstm1900`.
-These are available in the source `jax_unirep/layers.py`.
+![
+    Flame graph of the jax-unirep reimplementation,
+    down to 10 levels deep from the profiling function that was called.
+](./figures/jax-unirep-profile.png)
 
-Besides reimplementation,
-we also took care to document the semantic meaning of tensor dimensions.
-This had the pleasant side effect of forcing us
-to order our tensor dimensions in a sane fashion,
-such that the "batch" or "sample" dimension was always the first one,
-with explicit documentation written to guide a new user on this convention.
+As is visible from the code execution flamegraph,
+the unreasonably long time that it takes to process ten sequences
+was probably due to the time spent in TensorFlow's session.
+Because of TensorFlow's compiled nature,
+we thus deduced that the majority of the execution time
+was most likely in the graph compilation phase.
+Unfortunately, cProfile could not give us any further detail
+beyond the `_pywrap_tensorflow_internal.TF_SessionRun_wrapper`
+in the call graph,
+meaning we were unable to conveniently peer into the internals of TF execution
+without digging further.
 
-While reimplementing the model, we also generated a test suite for it.
-Most of our tests check that the shapes of returned tensors were correct.
-For the unit RNN cell, we provided an example-based test with random matrices.
-The same applied to the batch function.
-However, for the full forward model, we provided a property-based test,
-which checked that tensor dimensions were correct
-given different numbers of samples.
-These are available in the source `tests/` directory.
-As a known benefit with software testing,
-our tests allowed us to rebuild the full model piece by piece,
-while always making sure that each new piece did not break
-the existing pieces.
-
-During the reimplementation,
-we found that certain operations that we took for granted
-to be implemented one way
-could actually be implemented in multiple ways.
-One example was the `sigmoid()` function.
-The TensorFlow implementation is:
-
-$$\frac{1}{1 + e^{-x}}$$
-
-Which is equivalent to:
-
-$$\frac{1}{2} \text{tanh}(\frac{x}{2}) + \frac{1}{2}$$
-
-However, an alternative implementation often used in deep-learning
-omits the constant as it does not influence the performance:
-
-$$\frac{1}{2} \text{tanh}(x) + \frac{1}{2}$$
-
-Yet both are called "sigmoid" functions.
-Because their slopes differ,
-their outputs also differ drastically.
-We originally used the version with ommited constant,
-but found a large discrepancy between the reimplemented model's output
-and the original's output.
-It took digging deep through the TensorFlow source code
-to realize that the sigmoid being used does not omit the constant.
-
-A similar lesson was learned while reimplementing the L2 norm of our weights.
-
-### Utility Reimplementation
-
-More tricky than the tensors are
-getting strings to tensor conversion done correct.
-For the `get_reps()` functionality,
-we copied quite a bit of source code from the original,
-including the original authors' implementation of
-embedding a sequence into an $l$-by-10 embedding matrix first.
-However, we added tests to guarantee that they were robust,
-as well as technical documentation to clarify how it works.
-
-We did this because one way that deep learning models can be fragile
-is that the input tensors can be generated incorrectly
-but still have the expected shapes.
-Thus, though the structure of input tensors might be correct,
-their semantic meaning would be completely wrong.
-(Adversarial examples can be generated this way.)
-Thus, the input to the model has to be carefully controlled.
-Moreover, input tensors are _not_ the raw-est form of data;
-for a protein engineer, the protein sequence is.
-Thus, having robustly tested functions that generate the input tensors
-with correct semantic meaning
-is crucial to having confidence
-that the model works correctly end-to-end.
-
-### APIs
-
-Because we expect the model to be used as a Python library,
-the model source and weights are packaged together.
-This makes it much more convenient for end-users,
-as the cognitive load of downloading starter weights is eliminated.
-
-The `get_reps()` function is designed
-such that it is flexible enough to accept a single sequence
-or an iterable of sequences.
-This also reduces cognitive load for end-users,
-some of whom might want to process only a single sequence,
-while others might be operating in batch mode.
-`get_reps()` also correctly handles sequences of multiple lengths,
-further simplifying usage for end-users.
-As usual, tests are provided,
-bringing the same degree of confidence as we would expect
-from tested software.
-
-## Reimplementation Performance
-
-Anecdotally, on our benchmarks using internal data,
-it takes about 30 seconds to process one sequence.
-On a "lifted-and-shifted" version of the model running on cloud GPUs,
-it took overnight to featurize 6,000 sequences.
-By contrast, with our reimplementation, processing 10,000 dummy sequences
-takes only 40 seconds on a single CPU core.
+As is visible from the code profiling APIs that we used,
+we designed a cleaner and more expressive API
+that could be
+faster,
+handle multiple sequences
+of variable lengths,
+without introducing the mental overhead
+of TensorFlow's complex scoping syntax.
+An expressive and clean API was something that we would expect
+a computational protein engineer would desire,
+as having this API form would lower mental overhead
+while also hopefully being faster to execute and write.
 
 A formal speed comparison using the same CPU is available below.
 
 ![
     Speed comparison between the original implementation (UniRep)
-    and our re-implementation (Jax-UniRep). Both one and ten random sequences of length ten
+    and our re-implementation (Jax-UniRep).
+    Both one and ten random sequences of length ten
     were transformed by both implementations.
     Our re-implementation could make use of vectorization
     in the multi-sequence case,
@@ -270,15 +180,193 @@ Average performance across 5-fold cross-validation is shown in Figure 3.
     classification accuracy of the model.
 ](./figures/top_model.png)
 
+## Reimplementation Main Points
+
+### Choice of JAX
+
+JAX was our library choice to reimplement it in,
+because it provides automatic differentiation machinery [@jax2018github]
+on top of the highly idiomatic and widely-used NumPy API [@oliphant2006guide].
+JAX uses a number of components shared with TensorFlow,
+in particular the use of the
+XLA (Accelerated Linear Algebra) library
+to provide automatic compilation from the NumPy API to GPU and TPU.
+
+Part of the exercise was also pedagogical:
+by reimplementing the model in a pure NumPy API,
+we are forced to become familiar with the mechanics of the model,
+and learn the translation between NumPy and TensorFlow operations.
+This helps us be flexible in moving between frameworks.
+
+Because JAX provides automatic differentiation
+and a number of optimization routines as utility functions,
+we are thus not prohibited from fine-tuning UniRep weights
+through gradient descent.
+
+During the reimplementation,
+we also discovered that JAX provided convenient utilities
+(`lax.scan`, `vmap`, and `jit`)
+to convert loops into fast, vectorized operations on tensors.
+This had a pleasant effect of helping us write more performant code.
+We were also forced to reason clearly
+about the semantic meaning of our tensor dimensions,
+to make sure that vecotrization happened over the correct axes.
+We commented at every tensor operation step
+how the shapes of our input(s) and output(s) should look like.
+One example from our source:
+
+```python
+# layers.py
+
+# Shape annotation
+# (:, 10) @ (10, 1900) * (:, 1900) @ (1900, 1900) => (:, 1900)
+m = np.matmul(x_t, params["wmx"]) * np.matmul(h_t, params["wmh"])
+
+# (:, 10) @ (10, 7600) * (:, 1900) @ (1900, 7600) + (7600, ) => (:, 7600)
+z = np.matmul(x_t, params["wx"]) + np.matmul(m, params["wh"]) + params["b"]
+
+# ...
+```
+
+### Tensor Ops Reimplementation
+
+The process of tensor ops reimplementation were as follows.
+
+Firstly, we started from the RNN cell (`mlstm1900_step`),
+which sequentially walks down the protein sequence
+and generates the single step embedding.
+We thus end up with a "unit cell" function:
+
+```python
+def mlstm1900_step(params, carry, x_t):
+    h_t, c_t = carry
+    # Unit cell implementation goes here
+    return (h_t, c_t), h_t
+```
+
+Secondly, we wrapped the RNN cell using `lax.scan`
+to scan over a single sequence.
+This is the `mlstm1900_batch` function:
+
+```python
+def mlstm1900_batch(params, batch):
+    h_t = np.zeros(params["wmh"].shape[0])
+    c_t = np.zeros(params["wmh"].shape[0])
+
+    step_func = partial(mlstm1900_step, params)
+    (h_final, c_final), outputs = lax.scan(
+        step_func, init=(h_t, c_t), xs=batch
+    )
+    return h_final, c_final, outputs
+```
+
+Thirdly, we then used `jax.vmap`
+to vectorize the operation over multiple sequences,
+thus generating `mlstm1900`:
+
+```python
+def mlstm1900(params, x):
+    def mlstm1900_vmappable(x):
+        return mlstm1900_batch(params=params, batch=x)
+
+    h_final, c_final, outputs = vmap(mlstm1900_vmappable)(x)
+    return h_final, c_final, outputs
+```
+
+Effectively, `jax.vmap` and `lax.scan`
+replace for-loops that we would otherwise write,
+which would incur Python type-checking overhead that would accumulate.
+`lax.scan` being effectively a pre-compiled for-loop
+enables pre-allocation of the necessary memory needed for backpropagation,
+which also contributes to a speed-up.
+As the for-loop type checking penalty is well-known in Python,
+a detailed comparison between `jax.vmap`, `lax.scan`, and a vanilal `for` loop
+is out of scope for this paper.
+The full source code is available in `jax_unirep/layers.py`.
+
+Besides reimplementation,
+we also took care to document the semantic meaning of tensor dimensions.
+This had the pleasant side effect of forcing us
+to order our tensor dimensions in a sane fashion,
+such that the "batch" or "sample" dimension was always the first one,
+with explicit documentation written to guide a new user on this convention.
+
+While reimplementing the model, we also generated a test suite for it.
+Most of our tests check that the shapes of returned tensors were correct.
+For the unit RNN cell, we provided an example-based test with random matrices.
+The same applied to the batch function.
+However, for the full forward model, we provided a property-based test,
+which checked that tensor dimensions were correct
+given different numbers of samples.
+These are available in the source `tests/` directory.
+As a known benefit with software testing,
+our tests allowed us to rebuild the full model piece by piece,
+while always making sure that each new piece did not break
+the existing pieces.
+
+### Utility Reimplementation
+
+More tricky than the tensors are
+getting strings to tensor conversion done correct.
+For the `get_reps()` functionality,
+we copied quite a bit of source code from the original,
+including the original authors' implementation of
+embedding a sequence into an $l$-by-10 embedding matrix first.
+However, we added tests to guarantee that they were robust,
+as well as technical documentation to clarify how it works.
+
+We did this because one way that deep learning models can be fragile
+is that the input tensors can be generated incorrectly
+but still have the expected shapes.
+Thus, though the structure of input tensors might be correct,
+their semantic meaning would be completely wrong.
+(Adversarial examples can be generated this way.)
+Thus, the input to the model has to be carefully controlled.
+Moreover, input tensors are _not_ the raw-est form of data;
+for a protein engineer, the protein sequence is.
+Thus, having robustly tested functions that generate the input tensors
+with correct semantic meaning
+is crucial to having confidence
+that the model works correctly end-to-end.
+
+### APIs
+
+Because we expect the model to be used as a Python library,
+the model source and weights are packaged together.
+This makes it much more convenient for end-users,
+as the cognitive load of downloading starter weights is eliminated.
+
+The `get_reps()` function is designed
+such that it is flexible enough to accept a single sequence
+or an iterable of sequences.
+This also reduces cognitive load for end-users,
+some of whom might want to process only a single sequence,
+while others might be operating in batch mode.
+`get_reps()` also correctly handles sequences of multiple lengths,
+further simplifying usage for end-users.
+In particular, we spent time ensuring that
+`get_reps()` correctly batches sequences of the same size together
+before calculating their reps,
+while returning the reps in the same order as the sequences passed in.
+As usual, tests are provided,
+bringing the same degree of confidence as we would expect
+from tested software.
+
 ## Lessons Learned
 
-We found the reimplementation exercise to be highly educational,
-and would not characterize it as a waste of time at all.
+We found the reimplementation exercise to be highly educational.
 In particular, we gained a mechanical understanding of the model,
 and through documenting the model functions thoroughly
 with the semantic meaning of tensor dimensions,
 we were able to greatly reduce our own confusion when
 debugging why the model would fail.
+
+During the reimplementation,
+we found the "sigmoid" function to be an overloaded term.
+We initially used a sigmoid that had an incorrect slope,
+yielding incorrect reps.
+Switching to the correct sigmoid rectified the problem.
+A similar lesson was learned while reimplementing the L2 norm of our weights.
 
 Writing automated tests for the model functions,
 in basically the same way as we would test software,
