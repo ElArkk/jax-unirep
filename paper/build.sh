@@ -16,6 +16,7 @@ pandoc paper.md -o index.html \
 # pandoc paper.tex -o paper.pdf
 
 pandoc paper.md -o paper.pdf \
+    --template=template.tex \
 	--filter pandoc-citeproc \
 	--bibliography references.bib \
 

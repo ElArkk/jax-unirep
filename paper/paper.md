@@ -240,7 +240,7 @@ We thus end up with a "unit cell" function:
 ```python
 def mlstm1900_step(params, carry, x_t):
     h_t, c_t = carry
-    # Unit cell implementation goes here
+    # Unit cell implementation goes here.
     return (h_t, c_t), h_t
 ```
 
@@ -250,10 +250,10 @@ This is the `mlstm1900_batch` function:
 
 ```python
 def mlstm1900_batch(params, batch):
-    h_t = np.zeros(params["wmh"].shape[0])
-    c_t = np.zeros(params["wmh"].shape[0])
-
+    # code setup goes here.
     step_func = partial(mlstm1900_step, params)
+
+    # use of lax.scan below:
     (h_final, c_final), outputs = lax.scan(
         step_func, init=(h_t, c_t), xs=batch
     )
@@ -365,7 +365,7 @@ During the reimplementation,
 we found the "sigmoid" function to be an overloaded term.
 We initially used a sigmoid that had an incorrect slope,
 yielding incorrect reps.
-Switching to the correct sigmoid rectified the problem.
+Switching to the correct sigmoid slope rectified the problem.
 A similar lesson was learned while reimplementing the L2 norm of our weights.
 
 Writing automated tests for the model functions,
@@ -402,14 +402,14 @@ in particular, the pernicious tensor shape issues.
 We believe that the speedup that we observed by reimplementing in JAX
 came primarily from eliminating graph compilation overhead
 and an enhanced version of the original API design.
-In anecdotal tests, graph compilation would take on the order of dozens of seconds
+In anecdotal tests, graph compilation would take on the order of seconds
 before any computation occurred.
 Because the original implementation's `get_reps` function
 did not accept multiple sequences,
 one had to use a for-loop to pass sequence strings through the model.
 If a user were not careful,
 in a worst-case scenario,
-they would end up paying the compilation penalty
+they would end up essentially paying the compilation penalty
 on every loop iteration.
 
 By preprocessing strings in batches of the same size,
@@ -422,7 +422,7 @@ we also reduced cognitive load for a Python-speaking protein data scientist
 who might be seeking to use the model,
 as the function safely handles a single string and an iterable of strings.
 
-An overarching lesson we derive from this experience is  as follows.
+An overarching lesson we derive from this experience is as follows.
 If "models are software 2.0" [@kaparthy2017software2],
 then data science teams might do well
 to treat fitted model weights as software artefacts
