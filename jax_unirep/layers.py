@@ -2,7 +2,8 @@ from functools import partial
 from typing import Dict, Tuple
 
 import jax.numpy as np
-from jax import lax, vmap
+from jax import lax, random, vmap
+from jax.nn.initializers import glorot_normal, normal
 
 from .activations import identity, sigmoid, tanh
 from .utils import l2_normalize
@@ -29,32 +30,112 @@ def dense(params: Dict[str, np.ndarray], x: np.ndarray, activation=identity):
     return a
 
 
-def mlstm1900(
-    params: Dict[str, np.ndarray], x: np.ndarray
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """
-    mLSTM layer for UniRep, in which we pass in the entire dataset.
-    :param params: A dictionary of parameters for the model.
-        See ``mlstm1900_step`` for exact definitions
-        of what parameter names are expected
-    :param x: Input tensor,
-        which should be of shape (n_samples, n_windows, n_features).
-    :returns: Three tensors.
-        `h_final` is of shape (n_samples, n_features).
-        `c_final` is of shape (n_samples, n_features).
-        `outputs` is of shape (n_samples, n_windows, n_features).
-    """
-    # Wrap mlstm1900_batch to only take one argument,
-    # so that we can vmap it properly.
-    # functools partial doesn't work very well
-    # with our design that puts params in the first kwarg position,
-    # because vmap will then try to pass x to the first positional argument.
-    # Explicit wrapping might be the better way to approach this.
-    def mlstm1900_vmappable(x):
-        return mlstm1900_batch(params=params, batch=x)
+## replace with mlstm1900 stax layer
+# def mlstm1900(
+#     params: Dict[str, np.ndarray], x: np.ndarray
+# ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+#     """
+#     mLSTM layer for UniRep, in which we pass in the entire dataset.
+#     :param params: A dictionary of parameters for the model.
+#         See ``mlstm1900_step`` for exact definitions
+#         of what parameter names are expected
+#     :param x: Input tensor,
+#         which should be of shape (n_samples, n_windows, n_features).
+#     :returns: Three tensors.
+#         `h_final` is of shape (n_samples, n_features).
+#         `c_final` is of shape (n_samples, n_features).
+#         `outputs` is of shape (n_samples, n_windows, n_features).
+#     """
+#     # Wrap mlstm1900_batch to only take one argument,
+#     # so that we can vmap it properly.
+#     # functools partial doesn't work very well
+#     # with our design that puts params in the first kwarg position,
+#     # because vmap will then try to pass x to the first positional argument.
+#     # Explicit wrapping might be the better way to approach this.
+#     def mlstm1900_vmappable(x):
+#         return mlstm1900_batch(params=params, batch=x)
 
-    h_final, c_final, outputs = vmap(mlstm1900_vmappable)(x)
-    return h_final, c_final, outputs
+#     h_final, c_final, outputs = vmap(mlstm1900_vmappable)(x)
+#     return h_final, c_final, outputs
+
+## write tests for init_fun , and stax layer with a sequence
+
+## we will need a stax layer that does the averaging of hidden states
+## and one that does concatenation for unirep fusion
+## both will not return weight in their init_fun, but instead an empty tuple.
+## see stax.elementwise
+
+
+def mlstm1900(output_dim=1900, W_init=glorot_normal(), b_init=normal()):
+    """
+    mLSTM cell from the UniRep paper, stax compatible
+    
+    This function works on a per-sequence basis,
+    meaning that mapping over batches of sequences
+    needs to happen outside this function, like this:
+
+    .. code-block:: python
+
+        def apply_fun_vmapped(x):
+            return apply_fun(params=params, inputs=x)
+        h_final, c_final, outputs = vmap(apply_fun_vmapped)(emb_seqs)
+
+    """
+
+    def init_fun(rng, input_shape):
+        """
+        Initialize parameters for mlstm1900
+        
+        output_dim: 
+            mlstm cell size -> (1900,)
+        input_shape:
+            one embedded sequence -> (n_letters, 10)
+        output_shape:
+            one sequence in 1900 dims -> (n_letters, 1900)
+            
+        """
+        input_dim = input_shape[1]
+
+        k1, k2, k3, k4 = random.split(rng, num=4)
+        wmx, wmh, wx, wh = (
+            W_init(k1, (input_dim, output_dim)),
+            W_init(k2, (output_dim, output_dim)),
+            W_init(k3, (input_dim, output_dim * 4)),
+            W_init(k4, (output_dim, output_dim * 4)),
+        )
+
+        k1, k2, k3, k4 = random.split(k1, num=4)
+        gmx, gmh, gx, gh = (
+            b_init(k1, (output_dim,)),
+            b_init(k2, (output_dim,)),
+            b_init(k3, (output_dim * 4,)),
+            b_init(k4, (output_dim * 4,)),
+        )
+
+        k1, k2 = random.split(k1)
+        b = b_init(k1, (output_dim * 4,))
+
+        params = {
+            "wmx": wmx,
+            "wmh": wmh,
+            "wx": wx,
+            "wh": wh,
+            "gmx": gmx,
+            "gmh": gmh,
+            "gx": gx,
+            "gh": gh,
+            "b": b,
+        }
+        output_shape = (input_shape[0], output_dim)
+        return output_shape, params
+
+    def apply_fun_scan(params, carry, x_t):
+        return mlstm1900_step(params=params, carry=carry, x_t=x_t)
+
+    def apply_fun(params, inputs, **kwargs):
+        return mlstm1900_batch(params=params, batch=inputs)
+
+    return init_fun, apply_fun
 
 
 def mlstm1900_batch(
