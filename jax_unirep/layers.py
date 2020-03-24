@@ -149,6 +149,8 @@ def mlstm1900_avghidden(output_dim=1900, **kwargs):
     """
 
     def init_fun(rng, input_shape):
+        # Maybe include a assertion here that output_dim == output_shape[0]?
+        # Not sure how to handle output_dim and output_shape here
         output_shape = (input_shape[1],)
         return output_shape, ()
 
@@ -169,6 +171,8 @@ def mlstm1900_fusion(output_dim=5700, **kwargs):
     """
 
     def init_fun(rng, input_shape):
+        # Maybe include a assertion here that output_dim == output_shape[0]?
+        # Not sure how to handle output_dim and output_shape here
         output_shape = (input_shape[1] * 3,)
         return output_shape, ()
 
