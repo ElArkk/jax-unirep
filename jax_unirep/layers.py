@@ -80,6 +80,9 @@ def mlstm1900(output_dim=1900, W_init=glorot_normal(), b_init=normal()):
             return apply_fun(params=params, inputs=x)
         h_final, c_final, outputs = vmap(apply_fun_vmapped)(emb_seqs)
 
+    It returns the average hidden, final hidden and final cell states
+    of the mlstm.
+
     """
 
     def init_fun(rng, input_shape):
@@ -134,6 +137,43 @@ def mlstm1900(output_dim=1900, W_init=glorot_normal(), b_init=normal()):
 
     def apply_fun(params, inputs, **kwargs):
         return mlstm1900_batch(params=params, batch=inputs)
+
+    return init_fun, apply_fun
+
+
+def mlstm1900_avghidden(output_dim=1900, **kwargs):
+    """
+    Returns the average hidden state of the mlstm.
+
+    This is the canonical "UniRep" representation from the paper.
+    """
+
+    def init_fun(rng, input_shape):
+        output_shape = (input_shape[1],)
+        return output_shape, ()
+
+    def apply_fun(params, inputs, **kwargs):
+        return inputs[2].mean(axis=0)
+
+    return init_fun, apply_fun
+
+
+def mlstm1900_fusion(output_dim=5700, **kwargs):
+    """
+    Returns the concatenation of all states of the mlstm.
+
+    This means, it concatenates the 
+    average hidden, final hidden and final cell states.
+
+    This is the canonical "UniRep fusion" representation from the paper.
+    """
+
+    def init_fun(rng, input_shape):
+        output_shape = (input_shape[1] * 3,)
+        return output_shape, ()
+
+    def apply_fun(params, inputs, **kwargs):
+        return np.concatenate((inputs[2].mean(axis=0), inputs[0], inputs[1]))
 
     return init_fun, apply_fun
 

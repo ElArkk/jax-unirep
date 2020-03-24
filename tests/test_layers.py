@@ -4,8 +4,15 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 from jax import random
+from jax.experimental import stax
 
-from jax_unirep.layers import mlstm1900, mlstm1900_batch, mlstm1900_step
+from jax_unirep.layers import (
+    mlstm1900,
+    mlstm1900_batch,
+    mlstm1900_step,
+    mlstm1900_avghidden,
+    mlstm1900_fusion,
+)
 from jax_unirep.utils import (
     get_embedding,
     get_embeddings,
@@ -101,3 +108,79 @@ def test_mlstm1900(data):
     assert params["b"].shape == (7600,)
 
     assert outputs.shape == (length + 1, 1900)
+
+
+@given(st.data())
+@settings(deadline=None, max_examples=20)
+def test_mlstm1900_avghidden(data):
+    params = load_params_1900()
+    length = data.draw(st.integers(min_value=1, max_value=10))
+    sequence = data.draw(
+        st.text(
+            alphabet="MRHKDESTNQCUGPAVIFYWLOXZBJ",
+            min_size=length,
+            max_size=length,
+        ),
+    )
+    embedding = load_embedding_1900()
+    x = get_embedding(sequence, embedding)
+    init_fun, apply_fun = stax.serial(
+        mlstm1900(output_dim=1900), mlstm1900_avghidden(output_dim=1900),
+    )
+    output_shape, params = init_fun(rng, (length, 10))
+
+    h_avg = apply_fun(params=params, inputs=x)
+
+    assert output_shape == (1900,)
+
+    assert params[0]["wmx"].shape == (10, 1900)
+    assert params[0]["wmh"].shape == (1900, 1900)
+    assert params[0]["wx"].shape == (10, 7600)
+    assert params[0]["wh"].shape == (1900, 7600)
+    assert params[0]["gmx"].shape == (1900,)
+    assert params[0]["gmh"].shape == (1900,)
+    assert params[0]["gx"].shape == (7600,)
+    assert params[0]["gh"].shape == (7600,)
+    assert params[0]["b"].shape == (7600,)
+
+    assert params[1] == ()
+
+    assert h_avg.shape == (1900,)
+
+
+@given(st.data())
+@settings(deadline=None, max_examples=20)
+def test_mlstm1900_fusion(data):
+    params = load_params_1900()
+    length = data.draw(st.integers(min_value=1, max_value=10))
+    sequence = data.draw(
+        st.text(
+            alphabet="MRHKDESTNQCUGPAVIFYWLOXZBJ",
+            min_size=length,
+            max_size=length,
+        ),
+    )
+    embedding = load_embedding_1900()
+    x = get_embedding(sequence, embedding)
+    init_fun, apply_fun = stax.serial(
+        mlstm1900(output_dim=1900), mlstm1900_fusion(output_dim=5700),
+    )
+    output_shape, params = init_fun(rng, (length, 10))
+
+    h_avg = apply_fun(params=params, inputs=x)
+
+    assert output_shape == (5700,)
+
+    assert params[0]["wmx"].shape == (10, 1900)
+    assert params[0]["wmh"].shape == (1900, 1900)
+    assert params[0]["wx"].shape == (10, 7600)
+    assert params[0]["wh"].shape == (1900, 7600)
+    assert params[0]["gmx"].shape == (1900,)
+    assert params[0]["gmh"].shape == (1900,)
+    assert params[0]["gx"].shape == (7600,)
+    assert params[0]["gh"].shape == (7600,)
+    assert params[0]["b"].shape == (7600,)
+
+    assert params[1] == ()
+
+    assert h_avg.shape == (5700,)
