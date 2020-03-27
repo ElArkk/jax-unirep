@@ -9,6 +9,8 @@ from jax import numpy as np
 from jax.experimental.optimizers import adam
 from jax.nn import softmax
 from sklearn.model_selection import KFold, train_test_split
+from jax.experimental.stax import Dense, Softmax
+from jax import random
 
 from .layers import dense, mlstm1900
 from .losses import neg_cross_entropy_loss
@@ -119,6 +121,9 @@ def predict(params, x) -> np.ndarray:
     _, _, x = mlstm1900(params["mlstm1900"], x)
     x = dense(params["dense"], x, activation=softmax)
     return x
+
+
+_, predict = stax.serial()
 
 
 def evotune_step(
