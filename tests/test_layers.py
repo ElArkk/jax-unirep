@@ -76,6 +76,19 @@ def test_mlstm1900_batch():
 #     assert h.shape == (len(sequences), length + 1, 1900)
 
 
+def validate_mlstm1900_params(params):
+    assert params["wmx"].shape == (10, 1900)
+    assert params["wmh"].shape == (1900, 1900)
+    assert params["wx"].shape == (10, 7600)
+    assert params["wh"].shape == (1900, 7600)
+    assert params["gmx"].shape == (1900,)
+    assert params["gmh"].shape == (1900,)
+    assert params["gx"].shape == (7600,)
+    assert params["gh"].shape == (7600,)
+    assert params["b"].shape == (7600,)
+    return None
+
+
 @given(st.data())
 @settings(deadline=None, max_examples=20)
 def test_mlstm1900(data):
@@ -97,15 +110,7 @@ def test_mlstm1900(data):
 
     assert output_shape == (length, 1900)
 
-    assert params["wmx"].shape == (10, 1900)
-    assert params["wmh"].shape == (1900, 1900)
-    assert params["wx"].shape == (10, 7600)
-    assert params["wh"].shape == (1900, 7600)
-    assert params["gmx"].shape == (1900,)
-    assert params["gmh"].shape == (1900,)
-    assert params["gx"].shape == (7600,)
-    assert params["gh"].shape == (7600,)
-    assert params["b"].shape == (7600,)
+    validate_mlstm1900_params(params)
 
     assert outputs.shape == (length + 1, 1900)
 
@@ -133,15 +138,7 @@ def test_mlstm1900_avghidden(data):
 
     assert output_shape == (1900,)
 
-    assert params[0]["wmx"].shape == (10, 1900)
-    assert params[0]["wmh"].shape == (1900, 1900)
-    assert params[0]["wx"].shape == (10, 7600)
-    assert params[0]["wh"].shape == (1900, 7600)
-    assert params[0]["gmx"].shape == (1900,)
-    assert params[0]["gmh"].shape == (1900,)
-    assert params[0]["gx"].shape == (7600,)
-    assert params[0]["gh"].shape == (7600,)
-    assert params[0]["b"].shape == (7600,)
+    validate_mlstm1900_params(params[0])
 
     assert params[1] == ()
 
@@ -171,15 +168,7 @@ def test_mlstm1900_fusion(data):
 
     assert output_shape == (5700,)
 
-    assert params[0]["wmx"].shape == (10, 1900)
-    assert params[0]["wmh"].shape == (1900, 1900)
-    assert params[0]["wx"].shape == (10, 7600)
-    assert params[0]["wh"].shape == (1900, 7600)
-    assert params[0]["gmx"].shape == (1900,)
-    assert params[0]["gmh"].shape == (1900,)
-    assert params[0]["gx"].shape == (7600,)
-    assert params[0]["gh"].shape == (7600,)
-    assert params[0]["b"].shape == (7600,)
+    validate_mlstm1900_params(params[0])
 
     assert params[1] == ()
 
