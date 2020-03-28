@@ -4,9 +4,9 @@ from typing import Callable, Dict
 
 import numpy as np
 import numpy.random as npr
-from multipledispatch import dispatch
 
 from jax_unirep.utils import proposal_valid_letters
+from multipledispatch import dispatch
 
 letters_sorted = sorted(proposal_valid_letters)
 

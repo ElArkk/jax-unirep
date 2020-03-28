@@ -15,7 +15,7 @@ def add_dense_params(
     return params
 
 
-def add_mlstm1900_params(
+def add_mLSTM1900_params(
     params: Dict, name: str, input_dim: int, output_dim: int
 ) -> Dict:
     params[name] = dict()

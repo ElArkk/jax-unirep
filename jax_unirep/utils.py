@@ -112,14 +112,10 @@ def load_dense_1900(name: str = "uniref50") -> Dict:
     The dense layer weights are used to predict next character
     from the output of the mLSTM1900.
     """
-    params = dict()
-    params["w"] = np.load(
-        weights_1900_dir / name / "fully_connected_weights:0.npy"
-    )
-    params["b"] = np.load(
-        weights_1900_dir / name / "fully_connected_biases:0.npy"
-    )
-    return params
+    # params = dict()
+    w = np.load(weights_1900_dir / name / "fully_connected_weights:0.npy")
+    b = np.load(weights_1900_dir / name / "fully_connected_biases:0.npy")
+    return w, b
 
 
 def load_params_1900(name: str = "uniref50") -> Dict:
@@ -156,14 +152,14 @@ def load_params_1900(name: str = "uniref50") -> Dict:
     return params
 
 
-def validate_mlstm1900_params(params: Dict):
+def validate_mLSTM1900_params(params: Dict):
     """
     Validate shapes of mLSTM1900 parameter dictionary.
 
-    Check that mlstm1900 params dictionary contains the correct set of keys
+    Check that mLSTM1900 params dictionary contains the correct set of keys
     and that the shapes of the params are correct.
 
-    :param params: A dictionary of mlstm1900 weights.
+    :param params: A dictionary of mLSTM1900 weights.
     """
     expected = {
         "gh": (7600,),

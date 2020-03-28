@@ -3,14 +3,16 @@ from typing import Dict, List, Optional, Tuple, Union
 import numpy as np
 
 from .errors import SequenceLengthsError
-from .layers import mlstm1900
+from .layers import mLSTM1900
 from .utils import (
     batch_sequences,
     get_embeddings,
     load_params_1900,
-    validate_mlstm1900_params,
+    validate_mLSTM1900_params,
 )
-
+from jax.random import PRNGKey
+from jax import vmap
+from functools import partial
 
 def rep_same_lengths(
     seqs: List[str], params: Dict
@@ -27,7 +29,10 @@ def rep_same_lengths(
 
     embedded_seqs = get_embeddings(seqs)
 
-    h_final, c_final, h = mlstm1900(params, embedded_seqs)
+    init_fun, apply_fun = mLSTM1900()
+    _, params = init_fun(PRNGKey(0), (-1, 10))
+
+    h_final, c_final, h = vmap(partial(apply_fun, params))(embedded_seqs)
     h_avg = h.mean(axis=1)
 
     return np.array(h_avg), np.array(h_final), np.array(c_final)
@@ -92,7 +97,7 @@ def get_reps(
     You should not use this function
     if you want to do further JAX-based computations
     on the output vectors!
-    In that case, the `DeviceArray` futures returned by `mlstm1900`
+    In that case, the `DeviceArray` futures returned by `mLSTM1900`
     should be passed directly into the next step
     instead of converting them to `np.array`s.
     The conversion to `np.array`s is done
@@ -104,11 +109,8 @@ def get_reps(
 
         b, gh, gmh, gmx, gx, wh, wmh, wmx, wx
 
-    
-
-
     :param seqs: A list of sequences as strings or a single string.
-    :param params: A dictionary of mlstm1900 weights. 
+    :param params: A dictionary of mLSTM1900 weights.
     :returns: A 3-tuple of `np.array`s containing the reps.
         Each `np.array` has shape (n_sequences, 1900).
     """
@@ -116,7 +118,7 @@ def get_reps(
     if params is None:
         params = load_params_1900()
     # Check that params have correct keys and shapes
-    validate_mlstm1900_params(params)
+    validate_mLSTM1900_params(params)
     # If single string sequence is passed, package it into a list
     if isinstance(seqs, str):
         seqs = [seqs]

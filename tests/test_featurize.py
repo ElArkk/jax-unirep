@@ -7,7 +7,8 @@ from jax_unirep import get_reps
 from jax_unirep.errors import SequenceLengthsError
 from jax_unirep.featurize import rep_arbitrary_lengths, rep_same_lengths
 from jax_unirep.utils import load_params_1900
-
+from jax_unirep.layers import mLSTM1900
+from jax.random import PRNGKey
 
 @pytest.mark.parametrize(
     "seqs, expected",
@@ -20,7 +21,10 @@ from jax_unirep.utils import load_params_1900
     ],
 )
 def test_rep_same_lengths(seqs, expected):
-    params = load_params_1900()
+    # params = load_params_1900()
+    init_fun, apply_fun = mLSTM1900()
+    _, params = init_fun(PRNGKey(0), (-1, 10))
+    params[0] = load_params_1900()
     with expected:
         assert rep_same_lengths(seqs, params) is not None
 
