@@ -3,19 +3,19 @@ from functools import partial
 from typing import Callable, Dict, List, Optional, Tuple
 
 import numpy as onp
-from jax import grad, jit
+import optuna
+from jax import grad, jit, lax
 from jax import numpy as np
-from jax import random
+from jax import random, vmap
+from jax.experimental import stax
 from jax.experimental.optimizers import adam
 from jax.experimental.stax import Dense, Softmax
-from jax.experimental import stax
 from jax.nn import softmax
-
-import optuna
-from .layers import mLSTM1900_AvgHidden, mLSTM1900_HiddenStates
 from sklearn.model_selection import KFold, train_test_split
 
-from .layers import mLSTM1900
+from jax_unirep.losses import _neg_cross_entropy_loss
+
+from .layers import mLSTM1900, mLSTM1900_AvgHidden, mLSTM1900_HiddenStates
 from .losses import neg_cross_entropy_loss
 from .params import add_dense_params
 from .utils import (
@@ -100,16 +100,15 @@ Please ensure that they are all of the same length before passing them in.
 
 
 # HERE LIES THE DRAG.. MODEL!
-init_fun, predict = stax.serial(mLSTM1900(), mLSTM1900_HiddenStates(), stax.Dense(25), stax.Softmax)
+init_fun, predict = stax.serial(
+    mLSTM1900(), mLSTM1900_HiddenStates(), stax.Dense(25), stax.Softmax
+)
 
-
-from jax_unirep.losses import _neg_cross_entropy_loss
 
 @jit
 def evotune_loss(params, inputs, targets):
     predictions = vmap(partial(predict, params))(inputs)
     return _neg_cross_entropy_loss(targets, predictions)
-
 
 
 def length_batch_input_outputs(
@@ -135,8 +134,6 @@ def length_batch_input_outputs(
         ys.append(y)
     return xs, ys
 
-from jax import vmap, jit
-from jax import lax
 
 def fit(
     params: Dict, sequences: List[str], n: int, step_size: float = 0.001
@@ -191,6 +188,7 @@ def fit(
 
     state = init(params)
     from time import time
+
     for i in range(n):
         for x, y in zip(xs, ys):
             state = step(i, state)
@@ -247,8 +245,6 @@ def fit(
 
 #     state = update(i, g, state)
 #     return state
-
-
 
 
 def objective(
@@ -325,7 +321,9 @@ def objective(
 
         sum_loss = 0
         for x, y in zip(xs, ys):
-            sum_loss += evotune_loss(evotuned_params, inputs=x, targets=y) * len(x)
+            sum_loss += evotune_loss(
+                evotuned_params, inputs=x, targets=y
+            ) * len(x)
         avg_test_losses.append(sum_loss / len(test_sequences))
 
     return sum(avg_test_losses) / len(avg_test_losses)

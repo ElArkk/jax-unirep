@@ -2,13 +2,14 @@ from contextlib import suppress as does_not_raise
 
 import numpy as np
 import pytest
+from jax.random import PRNGKey
 
 from jax_unirep import get_reps
 from jax_unirep.errors import SequenceLengthsError
 from jax_unirep.featurize import rep_arbitrary_lengths, rep_same_lengths
-from jax_unirep.utils import load_params_1900
 from jax_unirep.layers import mLSTM1900
-from jax.random import PRNGKey
+from jax_unirep.utils import load_params_1900
+
 
 @pytest.mark.parametrize(
     "seqs, expected",

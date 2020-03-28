@@ -1,6 +1,9 @@
+from functools import partial
 from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
+from jax import vmap
+from jax.random import PRNGKey
 
 from .errors import SequenceLengthsError
 from .layers import mLSTM1900
@@ -10,9 +13,7 @@ from .utils import (
     load_params_1900,
     validate_mLSTM1900_params,
 )
-from jax.random import PRNGKey
-from jax import vmap
-from functools import partial
+
 
 def rep_same_lengths(
     seqs: List[str], params: Dict

@@ -55,7 +55,6 @@ def test_mLSTM1900_batch():
     assert h.shape == (x.shape[0], 1900)
 
 
-
 def validate_mLSTM1900_params(params):
     assert params["wmx"].shape == (10, 1900)
     assert params["wmh"].shape == (1900, 1900)

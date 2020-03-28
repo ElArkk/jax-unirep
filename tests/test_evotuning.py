@@ -1,25 +1,25 @@
 """Evolutionary tuning function tests."""
 from contextlib import suppress as does_not_raise
+from functools import partial
 from typing import Dict
 
 import numpy as np
 import pytest
+from jax import vmap
 from jax.experimental.optimizers import adam
+from jax.random import PRNGKey
 
 from jax_unirep.evotuning import (
     evotune,
-    evotune_loss,
-    # evotune_step,
+    evotune_loss,  # evotune_step,
     evotuning_pairs,
     fit,
+    init_fun,
     input_output_pairs,
     length_batch_input_outputs,
     predict,
-    init_fun,
 )
 from jax_unirep.utils import load_dense_1900, load_params_1900
-from jax.random import PRNGKey
-
 
 
 @pytest.fixture
@@ -45,6 +45,7 @@ def test_input_output_pairs(seqs, expected):
         xs, ys = input_output_pairs(seqs)
         assert xs.shape == (len(seqs), len(seqs[0]) + 1, 10)
         assert ys.shape == (len(seqs), len(seqs[0]) + 1, 25)
+
 
 def test_evotune():
     """
@@ -75,8 +76,6 @@ def test_evotuning_pairs():
     assert x.shape == (len(sequence) + 1, 10)  # embeddings ("x") are width 10
     assert y.shape == (len(sequence) + 1, 25)  # output is one of 25 chars
 
-from jax import vmap
-from functools import partial
 
 def test_predict(params):
     """
@@ -100,6 +99,7 @@ def test_fit(params):
     sequences = ["ASDFGHJKL", "ASDYGHTKW"]
 
     fitted_params = fit(params, sequences, n=1)
+
 
 @pytest.mark.skip(reason="Execution test already done in ``test_evotune``.")
 def test_objective():
