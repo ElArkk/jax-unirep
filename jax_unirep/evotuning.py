@@ -385,7 +385,7 @@ def evotune(
     """
     if params is None:
         # _, params = init_fun(random.PRNGKey(0), input_shape=(-1, 10))
-        params = tuple([load_params_1900(), (), load_dense_1900()])
+        params = (load_params_1900(), (), load_dense_1900())
 
         # params = dict()
         # params["dense"] = load_dense_1900()
