@@ -2,7 +2,6 @@ from contextlib import suppress as does_not_raise
 
 import numpy as np
 import pytest
-from jax.random import PRNGKey
 
 from jax_unirep import get_reps
 from jax_unirep.errors import SequenceLengthsError
@@ -22,10 +21,8 @@ from jax_unirep.utils import load_params_1900
     ],
 )
 def test_rep_same_lengths(seqs, expected):
-    # params = load_params_1900()
-    init_fun, apply_fun = mLSTM1900()
-    _, params = init_fun(PRNGKey(0), (-1, 10))
-    params[0] = load_params_1900()
+    params = load_params_1900()
+
     with expected:
         assert rep_same_lengths(seqs, params) is not None
 
@@ -48,6 +45,7 @@ def test_rep_same_lengths(seqs, expected):
 )
 def test_rep_arbitrary_lengths(seqs, expected):
     params = load_params_1900()
+
     with expected:
         assert rep_arbitrary_lengths(seqs, params) is not None
 
