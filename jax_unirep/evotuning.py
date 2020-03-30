@@ -178,7 +178,7 @@ def fit(
         By structuring the function this way, we can JIT-compile it,
         and thus gain a massive speed-up!
 
-        ;param i: The current iteration of the training loop.
+        :param i: The current iteration of the training loop.
         :param state: Current state of parameters from jax.
         """
         params = get_params(state)
