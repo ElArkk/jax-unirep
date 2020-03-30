@@ -1,26 +1,31 @@
 """Evolutionary tuning function tests."""
 from contextlib import suppress as does_not_raise
+from functools import partial
 from typing import Dict
 
 import numpy as np
 import pytest
+from jax import vmap
 from jax.experimental.optimizers import adam
+from jax.random import PRNGKey
 
 from jax_unirep.evotuning import (
     evotune,
-    evotune_loss_funcs,
-    evotune_step,
+    evotune_loss,  # evotune_step,
     evotuning_pairs,
     fit,
+    init_fun,
     input_output_pairs,
     length_batch_input_outputs,
     predict,
 )
 from jax_unirep.utils import load_dense_1900, load_params_1900
 
-params = dict()
-params["dense"] = load_dense_1900()
-params["mlstm1900"] = load_params_1900()
+
+@pytest.fixture
+def params():
+    _, params = init_fun(PRNGKey(0), (-1, 10))
+    return params
 
 
 @pytest.mark.parametrize(
@@ -42,24 +47,10 @@ def test_input_output_pairs(seqs, expected):
         assert ys.shape == (len(seqs), len(seqs[0]) + 1, 25)
 
 
-def test_evotune_step():
-    seqs = ["MTB", "MBD", "MDT"]
-    xs, ys = length_batch_input_outputs(seqs)
-
-    init, update, get_params = adam(step_size=0.005)
-    optimizer_funcs = update, get_params
-
-    state = init(params)
-    for x, y in zip(xs, ys):
-        state = evotune_step(
-            0, state, optimizer_funcs, evotune_loss_funcs, x, y
-        )
-    params_new = get_params(state)
-
-    assert_param_shapes_equal(params, params_new)
-
-
 def test_evotune():
+    """
+    Simple execution test for evotune.
+    """
     seqs = ["MTN", "BDD"] * 5
     n_epochs_config = {"high": 1}
     _, params_new = evotune(
@@ -68,7 +59,6 @@ def test_evotune():
         params=None,
         n_epochs_config=n_epochs_config,
     )
-    assert_param_shapes_equal(params, params_new)
 
 
 def test_length_batch_input_outputs():
@@ -87,48 +77,28 @@ def test_evotuning_pairs():
     assert y.shape == (len(sequence) + 1, 25)  # output is one of 25 chars
 
 
-def test_predict():
+def test_predict(params):
     """
     Unit test for ``jax_unirep.evotuning.predict``.
 
     We test that the shape of the output of ``predict``
     is identical to the shape of the ys to predict.
     """
-    params = dict()
-    params["mlstm1900"] = load_params_1900()
-    params["dense"] = load_dense_1900()
 
     sequences = ["ASDFGHJKL", "ASDYGHTKW"]
     xs, ys = input_output_pairs(sequences)
-    res = predict(params, xs)
+    res = vmap(partial(predict, params))(xs)
 
     assert res.shape == ys.shape
 
 
-def test_fit():
+def test_fit(params):
     """
     Execution test for ``jax_unirep.evotuning.fit``.
-
-    Basically ensuring that the output arrays have the same shape,
-    and that there are no errors executing the function
-    on a gold-standard test.
     """
-    params = dict()
-    params["mlstm1900"] = load_params_1900()
-    params["dense"] = load_dense_1900()
-
     sequences = ["ASDFGHJKL", "ASDYGHTKW"]
 
     fitted_params = fit(params, sequences, n=1)
-
-    assert_param_shapes_equal(params, fitted_params)
-
-
-def assert_param_shapes_equal(params1: Dict, params2: Dict):
-    """Assert that two parameter dictionaries are equal."""
-    for k, v in params1.items():
-        for k2, v2 in v.items():
-            assert v2.shape == params2[k][k2].shape
 
 
 @pytest.mark.skip(reason="Execution test already done in ``test_evotune``.")

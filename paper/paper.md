@@ -101,14 +101,14 @@ z = np.matmul(x_t, params["wx"]) + np.matmul(m, params["wh"]) + params["b"]
 
 The process of tensor ops reimplementation were as follows.
 
-Firstly, we started from the RNN cell (`mlstm1900_step`),
+Firstly, we started from the RNN cell (`mLSTM1900_step`),
 which sequentially walks down the protein sequence
 and generates the single step embedding.
 Secondly, we wrapped the RNN cell using `lax.scan`
-to scan over a single sequence, generating `mlstm1900_batch`.
+to scan over a single sequence, generating `mLSTM1900_batch`.
 Thirdly, we then used `jax.vmap`
 to vectorize the operation over multiple sequences,
-thus generating `mlstm1900`.
+thus generating `mLSTM1900`.
 These are available in the source `jax_unirep/layers.py`.
 
 Besides reimplementation,
