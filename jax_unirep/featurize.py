@@ -1,5 +1,5 @@
 from functools import partial
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
 from jax import vmap
@@ -13,9 +13,12 @@ from .utils import (
     validate_mLSTM1900_params,
 )
 
+# instantiate the mLSTM
+_, apply_fun = mLSTM1900()
+
 
 def rep_same_lengths(
-    seqs: List[str], params: Dict, apply_fun: Callable
+    seqs: List[str], params: Dict
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     This function generates representations of protein sequences that have the same length,
@@ -36,7 +39,7 @@ def rep_same_lengths(
 
 
 def rep_arbitrary_lengths(
-    seqs: List[str], params: Dict, apply_fun: Callable
+    seqs: List[str], params: Dict
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     This function generates representations of protein sequences of arbitrary length,
@@ -57,7 +60,7 @@ def rep_arbitrary_lengths(
     for idxs in order:
         subset = [seqs[i] for i in idxs]
 
-        h_avg, h_final, c_final = rep_same_lengths(subset, params, apply_fun)
+        h_avg, h_final, c_final = rep_same_lengths(subset, params)
         ha_list.append(h_avg)
         hf_list.append(h_final)
         cf_list.append(c_final)
@@ -111,7 +114,6 @@ def get_reps(
     :returns: A 3-tuple of `np.array`s containing the reps.
         Each `np.array` has shape (n_sequences, 1900).
     """
-    _, apply_fun = mLSTM1900()
 
     if params is None:
         params = load_params_1900()
@@ -128,7 +130,7 @@ def get_reps(
     # 1. All sequences in the list have the same length
     # 2. There are sequences of different lengths in the list
     if len(set([len(s) for s in seqs])) == 1:
-        h_avg, h_final, c_final = rep_same_lengths(seqs, params, apply_fun)
+        h_avg, h_final, c_final = rep_same_lengths(seqs, params)
         return h_avg, h_final, c_final
     else:
         h_avg, h_final, c_final = rep_arbitrary_lengths(

@@ -22,13 +22,12 @@ from jax_unirep.utils import load_params_1900
 )
 def test_rep_same_lengths(seqs, expected):
     params = load_params_1900()
-    _, apply_fun = mLSTM1900()
 
     with expected:
-        assert rep_same_lengths(seqs, params, apply_fun) is not None
+        assert rep_same_lengths(seqs, params) is not None
 
     if expected == does_not_raise():
-        h_final, c_final, h_avg = rep_same_lengths(seqs, params, apply_fun)
+        h_final, c_final, h_avg = rep_same_lengths(seqs, params)
         assert h_final.shape == (len(seqs), 1900)
         assert c_final.shape == (len(seqs), 1900)
         assert h_avg.shape == (len(seqs), 1900)
@@ -46,15 +45,12 @@ def test_rep_same_lengths(seqs, expected):
 )
 def test_rep_arbitrary_lengths(seqs, expected):
     params = load_params_1900()
-    _, apply_fun = mLSTM1900()
 
     with expected:
-        assert rep_arbitrary_lengths(seqs, params, apply_fun) is not None
+        assert rep_arbitrary_lengths(seqs, params) is not None
 
     if expected == does_not_raise():
-        h_final, c_final, h_avg = rep_arbitrary_lengths(
-            seqs, params, apply_fun
-        )
+        h_final, c_final, h_avg = rep_arbitrary_lengths(seqs, params)
         assert h_final.shape == (len(seqs), 1900)
         assert c_final.shape == (len(seqs), 1900)
         assert h_avg.shape == (len(seqs), 1900)
