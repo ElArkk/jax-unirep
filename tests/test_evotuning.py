@@ -11,7 +11,7 @@ from jax.random import PRNGKey
 
 from jax_unirep.evotuning import (
     evotune,
-    evotune_loss,  # evotune_step,
+    evotune_loss,
     evotuning_pairs,
     fit,
     init_fun,

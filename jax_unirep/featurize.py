@@ -3,7 +3,6 @@ from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
 from jax import vmap
-from jax.random import PRNGKey
 
 from .errors import SequenceLengthsError
 from .layers import mLSTM1900
@@ -13,6 +12,9 @@ from .utils import (
     load_params_1900,
     validate_mLSTM1900_params,
 )
+
+# instantiate the mLSTM
+_, apply_fun = mLSTM1900()
 
 
 def rep_same_lengths(
@@ -29,9 +31,6 @@ def rep_same_lengths(
     """
 
     embedded_seqs = get_embeddings(seqs)
-
-    init_fun, apply_fun = mLSTM1900()
-    _, params = init_fun(PRNGKey(0), (-1, 10))
 
     h_final, c_final, h = vmap(partial(apply_fun, params))(embedded_seqs)
     h_avg = h.mean(axis=1)
@@ -134,5 +133,7 @@ def get_reps(
         h_avg, h_final, c_final = rep_same_lengths(seqs, params)
         return h_avg, h_final, c_final
     else:
-        h_avg, h_final, c_final = rep_arbitrary_lengths(seqs, params)
+        h_avg, h_final, c_final = rep_arbitrary_lengths(
+            seqs, params, apply_fun
+        )
         return h_avg, h_final, c_final
