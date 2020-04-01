@@ -419,6 +419,9 @@ def evotune_manual(
     Evolutionarily tune the model to a set of sequences,
     Same as evotune() function but manually selecting epochs and learning rate,
     instead of using Optuna.
+    :param sequences: The set of sequences to tune to.
+    :param n_epochs: The number of epochs to fit.
+    :param learning_rate: Optimizer learning rate.
     """
 
     evotuned_params = fit(
