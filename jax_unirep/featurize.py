@@ -1,15 +1,20 @@
+from functools import partial
 from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
+from jax import vmap
 
 from .errors import SequenceLengthsError
-from .layers import mlstm1900
+from .layers import mLSTM1900
 from .utils import (
     batch_sequences,
     get_embeddings,
     load_params_1900,
-    validate_mlstm1900_params,
+    validate_mLSTM1900_params,
 )
+
+# instantiate the mLSTM
+_, apply_fun = mLSTM1900()
 
 
 def rep_same_lengths(
@@ -27,7 +32,7 @@ def rep_same_lengths(
 
     embedded_seqs = get_embeddings(seqs)
 
-    h_final, c_final, h = mlstm1900(params, embedded_seqs)
+    h_final, c_final, h = vmap(partial(apply_fun, params))(embedded_seqs)
     h_avg = h.mean(axis=1)
 
     return np.array(h_avg), np.array(h_final), np.array(c_final)
@@ -92,7 +97,7 @@ def get_reps(
     You should not use this function
     if you want to do further JAX-based computations
     on the output vectors!
-    In that case, the `DeviceArray` futures returned by `mlstm1900`
+    In that case, the `DeviceArray` futures returned by `mLSTM1900`
     should be passed directly into the next step
     instead of converting them to `np.array`s.
     The conversion to `np.array`s is done
@@ -104,11 +109,8 @@ def get_reps(
 
         b, gh, gmh, gmx, gx, wh, wmh, wmx, wx
 
-    
-
-
     :param seqs: A list of sequences as strings or a single string.
-    :param params: A dictionary of mlstm1900 weights. 
+    :param params: A dictionary of mLSTM1900 weights.
     :returns: A 3-tuple of `np.array`s containing the reps.
         Each `np.array` has shape (n_sequences, 1900).
     """
@@ -116,7 +118,7 @@ def get_reps(
     if params is None:
         params = load_params_1900()
     # Check that params have correct keys and shapes
-    validate_mlstm1900_params(params)
+    validate_mLSTM1900_params(params)
     # If single string sequence is passed, package it into a list
     if isinstance(seqs, str):
         seqs = [seqs]
@@ -131,5 +133,7 @@ def get_reps(
         h_avg, h_final, c_final = rep_same_lengths(seqs, params)
         return h_avg, h_final, c_final
     else:
-        h_avg, h_final, c_final = rep_arbitrary_lengths(seqs, params)
+        h_avg, h_final, c_final = rep_arbitrary_lengths(
+            seqs, params, apply_fun
+        )
         return h_avg, h_final, c_final

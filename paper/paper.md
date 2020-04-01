@@ -258,7 +258,7 @@ z = np.matmul(x_t, params["wx"]) + np.matmul(m, params["wh"]) + params["b"]
 
 The process of tensor ops reimplementation were as follows.
 
-Firstly, we started from the RNN cell (`mlstm1900_step`),
+Firstly, we started from the RNN cell (`mLSTM1900_step`),
 which sequentially walks down the protein sequence
 and generates the single step embedding.
 We thus end up with a "unit cell" function:
