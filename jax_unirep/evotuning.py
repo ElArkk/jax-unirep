@@ -390,6 +390,7 @@ def evotune(
         # params["mLSTM1900"] = load_params_1900()
 
     # Check that params have correct keys and shapes
+
     validate_mLSTM1900_params(params[0])
 
     study = optuna.create_study()
@@ -409,3 +410,19 @@ def evotune(
         params, sequences=sequences, n=num_epochs, step_size=learning_rate
     )
     return study, evotuned_params
+
+
+def evotune_manual(
+    sequences: List[str], n_epochs: int = 65, learning_rate: float = 0.00001
+):
+    """
+    Evolutionarily tune the model to a set of sequences,
+    Same as evotune() function but manually selecting epochs and learning rate,
+    instead of using Optuna.
+    """
+
+    evotuned_params = fit(
+        params, sequences=sequences, n=num_epochs, step_size=learning_rate
+    )
+
+    return evotuned_params
