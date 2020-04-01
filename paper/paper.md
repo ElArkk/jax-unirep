@@ -110,19 +110,36 @@ in the call graph,
 meaning we were unable to conveniently peer into the internals of TF execution
 without digging further.
 
-<!--
-We might possibly want to add in a "hypothesis" statement:
+On the basis of this profiling,
+we hypothesized that the cause of speed problems was graph compilation in TF1.x,
+and that we could obtain speedups by using a non-graph-compiled tensor library.
+There were three choices for us at this point: TF2.x, PyTorch and JAX,
+and we chose the latter.
+Our choice was motivated by the following reasons:
 
-- Removing graph compilation.
-- Purely functional API that is executed upon calling...
+1. JAX uses the NumPy API,
+which is idiomatic in the Python scientific computing community.
+1. JAX provides automatic differentiation,
+which would enable us to reimplement weights fine-tuning.
+1. JAX encourages functional programming,
+which makes implementation of neural network layers
+different from class-based implementations (e.g. PyTorch and Keras).
+This was an intellectual curiosity point for us.
+1. JAX is "eagerly" executable like PyTorch and TF2,
+which aids debugging.
 
-...could speed up the model.
--->
+Besides these _a priori_ motivating reasons,
+we also uncovered other reasons to use JAX midway:
 
+1. JAX's compiled and automatically differentiable primitives (e.g. `lax.scan`)
+allowed us to write performant RNN code.
+1. `jit` and `vmap` helped with writing performant training loops.
+
+We thus reimplemented the model in JAX/NumPy.
+(See "Reimplementation Main Points" section for details.)
 As is visible from the code profiling APIs that we used,
 we designed a cleaner and more expressive API
-that could be
-faster
+that could be faster
 and handle multiple sequences of variable lengths,
 without introducing the mental overhead
 of TensorFlow's complex scoping syntax.
@@ -315,8 +332,8 @@ the existing pieces.
 
 ### Utility Reimplementation
 
-More tricky than the tensors are
-getting strings to tensor conversion done correct.
+More tricky than the tensors
+are getting strings to tensor conversion done correct.
 For the `get_reps()` functionality,
 we copied quite a bit of source code from the original,
 including the original authors' implementation of
