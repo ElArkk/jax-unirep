@@ -332,8 +332,6 @@ the existing pieces.
 
 ### Utility Reimplementation
 
-More tricky than the tensors
-are getting strings to tensor conversion done correct.
 For the `get_reps()` functionality,
 we copied quite a bit of source code from the original,
 including the original authors' implementation of
