@@ -41,7 +41,7 @@ we observed two problems with it.
 The first is that that the original implementation
 took an abnormally long amount of time
 to process multiple sequences,
-requiring on the order of dozens of seconds to process dozens of sequences.
+requiring on the order of dozens of seconds to process single sequences.
 The second was that its API was not sufficiently flexible
 to handle multiple sequences passed in at once;
 to get reps of multiple sequences,
