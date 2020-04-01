@@ -306,7 +306,7 @@ which would incur Python type-checking overhead that would accumulate.
 enables pre-allocation of the necessary memory needed for backpropagation,
 which also contributes to a speed-up.
 As the for-loop type checking penalty is well-known in Python,
-a detailed comparison between `jax.vmap`, `lax.scan`, and a vanilal `for` loop
+a detailed comparison between `jax.vmap`, `lax.scan`, and a vanilla `for` loop
 is out of scope for this paper.
 The full source code is available in `jax_unirep/layers.py`.
 
