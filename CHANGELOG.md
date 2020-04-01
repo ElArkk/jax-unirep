@@ -4,4 +4,4 @@ In the changelog, @ElArkk and @ericmjl would like to acknowledge contributors wh
 
 <Please add your contribution to the top>
 
-- 30 March 2019: Code fixes for correctness and readability by @ivanjayapurna.
+- 30 March 2019: Code fixes for correctness and readability, and a manual evotuning function by @ivanjayapurna,
