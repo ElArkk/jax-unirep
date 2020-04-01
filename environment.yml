@@ -4,12 +4,10 @@ channels:
   - defaults
 dependencies:
   - python=3.7
-  - black=19.10b0
   - pandoc=2.9.1.1
   - conda=4.8.2
   - coverage=5.0.3
   - hypothesis=5.2.0
-  - isort=4.3.21
   - jax=0.1.57
   - jaxlib=0.1.37
   - jupyter
@@ -24,6 +22,11 @@ dependencies:
   - optuna=1.1.0
   - scikit-learn=0.22.1
   - pip
+# Code style
+  - black=19.10b0
+  - isort=4.3.21
+  - pylint
+  - pydocstyle
   - pip:
     - pandoc-fignos
     - pandoc-eqnos
