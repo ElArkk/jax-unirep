@@ -194,6 +194,26 @@ def fit(
     return get_params(state)
 
 
+def avg_loss(sequences, params):
+    """
+    Return average loss of a set of parameters,
+    on a set of sequences.
+
+    :param sequences: sequences (in standard AA format)
+    :param params: parameters (i.e. from training)
+    """
+
+    sequences = onp.array(sequences)
+
+    xs, ys = length_batch_input_outputs(sequences)
+
+    sum_loss = 0
+    for x, y in zip(xs, ys):
+        sum_loss += evotune_loss(params, inputs=x, targets=y) * len(x)
+
+    return sum_loss / len(sequences)
+
+
 def fit_manual(
     params: Dict,
     train_seqs: List[str],
@@ -270,33 +290,14 @@ def fit_manual(
         if (i + 1) % steps_per_print == 0:
 
             # calculate loss for in & out domain validation sets
-
-            kf = KFold(shuffle=True)
-            in_val_seqs = onp.array(in_val_seqs)
-            out_val_seqs = onp.array(out_val_seqs)
-
-            xs_in, ys_in = length_batch_input_outputs(in_val_seqs)
-            xs_out, ys_out = length_batch_input_outputs(out_val_seqs)
-
-            sum_in_loss = 0
-            for x, y in zip(xs_in, ys_in):
-                sum_loss += evotune_loss(
-                    evotuned_params, inputs=x, targets=y
-                ) * len(x)
-            avg_in_losses = sum_in_loss / len(in_val_seqs)
-
-            sum_out_loss = 0
-            for x, y in zip(xs_out, ys_out):
-                sum_loss += evotune_loss(
-                    evotuned_params, inputs=x, targets=y
-                ) * len(x)
-            avg_out_losses = sum_out_loss / len(out_val_seqs)
-
-            # print loss - TODO: print to a .log file?
+            # then print it.
+            # TODO: print to .log file??
 
             print(
                 "Iteration {0}: in-val-loss={1}, out-val-loss:{2}".format(
-                    i, avg_in_losses, avg_out_losses
+                    i,
+                    avg_loss(in_val_seqs, params),
+                    avg_loss(out_val_seqs, params),
                 )
             )
 
