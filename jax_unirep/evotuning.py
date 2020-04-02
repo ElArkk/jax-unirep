@@ -202,9 +202,6 @@ def avg_loss(sequences, params):
     :param sequences: sequences (in standard AA format)
     :param params: parameters (i.e. from training)
     """
-
-    sequences = onp.array(sequences)
-
     xs, ys = length_batch_input_outputs(sequences)
 
     sum_loss = 0
