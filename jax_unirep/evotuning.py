@@ -292,9 +292,8 @@ def fit_manual(
 
             print(
                 f"Iteration {i}: "
-                f"in-val-loss={avg_loss(in_val_seqs, params)}, "
-                f"out-val-loss:{avg_loss(out_val_seqs, params)}"
-                )
+                + f"in-val-loss={avg_loss(in_val_seqs, params)}, "
+                + f"out-val-loss:{avg_loss(out_val_seqs, params)}"
             )
 
             # TODO: dump current params in case run crashes or loss increases.
