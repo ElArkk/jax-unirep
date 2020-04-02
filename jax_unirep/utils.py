@@ -1,4 +1,5 @@
 """jax-unirep utils."""
+import os
 from collections import Counter
 from pathlib import Path
 from random import choice
@@ -54,7 +55,7 @@ def dump_params(params, step, dir_name="temp"):
     Dumps the current params of model being trained to a .npy file.
 
     :param params: the parameters at the current state of training,
-        inputted as a dict.
+        inputted as a tuple of dicts
     :param step: the number of training steps to get to this state. 
     :param dir_name: directory params will save to [not full path].
     """
@@ -66,7 +67,9 @@ def dump_params(params, step, dir_name="temp"):
     )
 
     # iterate through and save params as npy files.
-    for name, val in params.items():
+    # unsure what params[1] and params[2] are...
+    # it seems only params[0] matters?
+    for name, val in params[0].items():
         onp.save(
             os.path.join(
                 weights_dir, name.replace("/", "_") + "_" + str(step) + ".npy"

@@ -562,7 +562,7 @@ def evotune_manual(
         train_seqs=train_seqs,
         in_val_seqs=in_val_seqs,
         out_val_seqs=out_val_seqs,
-        n=num_epochs,
+        n=n_epochs,
         step_size=learning_rate,
         steps_per_print=steps_per_print,
     )
