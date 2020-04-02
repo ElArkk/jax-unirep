@@ -217,7 +217,8 @@ def fit_manual(
     train_seqs: List[str],
     in_val_seqs: List[str],
     out_val_seqs: List[str],
-    n: int,
+    proj_name: str = "temp",
+    n: int = 65,
     step_size: float = 0.001,
     steps_per_print: int = 200,
 ) -> Dict:
@@ -246,6 +247,9 @@ def fit_manual(
         to check for loss on to prevent overfitting.
     :param out_val_seqs: Out-domain validation set of sequences,
         to check for loss on to prevent overfitting.
+        This input is optional if only 1 validation set exists.
+    :param proj_name: Name of the project,
+        used to name created output directory.
     :param n: The number of iterations to evotune on.
     :param step_size: Optimizer learning rate. 
     :param steps_per_print: Iteration spacing between
@@ -281,24 +285,32 @@ def fit_manual(
     from time import time
 
     for i in range(n):
+
+        print(f"Starting iteration {i + 1}")
+
         for x, y in zip(xs, ys):
             state = step(i, state)
             params = get_params(state)
 
         if (i + 1) % steps_per_print == 0:
 
-            # calculate loss for in & out domain validation sets
-            # then print it.
-            # TODO: print to .log file??
+            # calculate and print loss for validation sets
 
-            print(
-                f"Iteration {i}: "
-                + f"in-val-loss={avg_loss(in_val_seqs, params)}, "
-                + f"out-val-loss:{avg_loss(out_val_seqs, params)}"
-            )
+            if out_val_seqs is None:
+                print(
+                    f"Iteration {i + 1}: "
+                    + f"in-val-loss={avg_loss(in_val_seqs, params)}, "
+                )
+
+            else:
+                print(
+                    f"Iteration {i + 1}: "
+                    + f"in-val-loss={avg_loss(in_val_seqs, params)}, "
+                    + f"out-val-loss:{avg_loss(out_val_seqs, params)}"
+                )
 
             # TODO: dump current params in case run crashes or loss increases.
-            dump_params(get_params(state), (i + 1))
+            dump_params(get_params(state), (i + 1), proj_name)
 
     return get_params(state)
 
@@ -524,11 +536,12 @@ def evotune(
 def evotune_manual(
     train_seqs: List[str],
     in_val_seqs: List[str],
-    out_val_seqs: List[str],
+    out_val_seqs: List[str] = None,
+    proj_name: Optional[str] = "temp",
     params: Optional[Dict] = None,
-    n_epochs: int = 65,
-    learning_rate: float = 0.00001,
-    steps_per_print: int = 200,
+    n_epochs: Optional[int] = 65,
+    learning_rate: Optional[float] = 0.00001,
+    steps_per_print: Optional[int] = 200,
 ):
     """
     Evolutionarily tune the model to a set of training sequences,
@@ -541,6 +554,9 @@ def evotune_manual(
         to check for loss on to prevent overfitting.
     :param out_val_seqs: Out-domain validation set of sequences,
         to check for loss on to prevent overfitting.
+        This input is optional if only 1 validation set exists.
+    :param proj_name: Name of the project,
+        used to name created output directory.
     :param params: Parameters to be passed into `mLSTM1900`.
         Optional; if None, will default to mLSTM1900 from paper,
         or you can pass in your own set of parameters,
@@ -558,10 +574,11 @@ def evotune_manual(
     validate_mLSTM1900_params(params[0])
 
     evotuned_params = fit_manual(
-        params,
+        params=params,
         train_seqs=train_seqs,
         in_val_seqs=in_val_seqs,
         out_val_seqs=out_val_seqs,
+        proj_name=proj_name,
         n=n_epochs,
         step_size=learning_rate,
         steps_per_print=steps_per_print,

@@ -1,6 +1,6 @@
 """Functions for evolutionary tuning."""
 
-from jax_unirep import evotune, evotune_manual
+from jax_unirep import evotune
 from jax_unirep.evotuning import fit
 from jax_unirep.params import add_dense_params
 from jax_unirep.utils import load_params_1900

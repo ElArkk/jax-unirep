@@ -52,7 +52,8 @@ weights_1900_dir = Path(
 
 def dump_params(params, step, dir_name="temp"):
     """
-    Dumps the current params of model being trained to a .npy file.
+    Dumps the current params of model being trained to a .npy file,
+    into folder jax-unirep/jax_unirep/weights/dir_name
 
     :param params: the parameters at the current state of training,
         inputted as a tuple of dicts
@@ -66,6 +67,11 @@ def dump_params(params, step, dir_name="temp"):
         )
     )
 
+    # create directory if it doesn't already exist:
+    if not os.path.exists(weights_dir):
+        os.makedirs(weights_dir)
+        print(f"created directory for {dir_name}")
+
     # iterate through and save params as npy files.
     # unsure what params[1] and params[2] are...
     # it seems only params[0] matters?
@@ -76,6 +82,7 @@ def dump_params(params, step, dir_name="temp"):
             ),
             onp.array(val),
         )
+    print("Weights successfully dumped!")
 
 
 def aa_seq_to_int(s):
