@@ -19,6 +19,7 @@ from .params import add_dense_params
 from .utils import (
     aa_seq_to_int,
     batch_sequences,
+    dump_params,
     get_embeddings,
     load_dense_1900,
     load_embeddings,
@@ -297,6 +298,7 @@ def fit_manual(
             )
 
             # TODO: dump current params in case run crashes or loss increases.
+            dump_params(get_params(state), (i + 1))
 
     return get_params(state)
 

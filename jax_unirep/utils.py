@@ -49,6 +49,32 @@ weights_1900_dir = Path(
 )
 
 
+def dump_params(params, step, dir_name="temp"):
+    """
+    Dumps the current params of model being trained to a .npy file.
+
+    :param params: the parameters at the current state of training,
+        inputted as a dict.
+    :param step: the number of training steps to get to this state. 
+    :param dir_name: directory params will save to [not full path].
+    """
+
+    weights_dir = Path(
+        pkg_resources.resource_filename(
+            "jax_unirep", "weights/" + dir_name + "/"
+        )
+    )
+
+    # iterate through and save params as npy files.
+    for name, val in params.items():
+        onp.save(
+            os.path.join(
+                weights_dir, name.replace("/", "_") + "_" + str(step) + ".npy"
+            ),
+            onp.array(val),
+        )
+
+
 def aa_seq_to_int(s):
     """Return the int sequence as a list for a given string of amino acids."""
     # Make sure only valid aa's are passed
