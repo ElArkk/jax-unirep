@@ -194,6 +194,117 @@ def fit(
     return get_params(state)
 
 
+def fit_manual(
+    params: Dict,
+    train_seqs: List[str],
+    in_val_seqs: List[str],
+    out_val_seqs: List[str],
+    n: int,
+    step_size: float = 0.001,
+    steps_per_print: int = 200,
+) -> Dict:
+    """
+    Return weights fitted to predict the next letter in each sequence.
+
+    The training loop is as follows.
+    Per step in the training loop,
+    we loop over each "length batch" of sequences and tune weights
+    in order of the length of each sequence.
+    For example, if we have sequences of length 302, 305, and 309,
+    over K training epochs,
+    we will perform 3xK updates,
+    one step of updates for each length.
+
+    To get batching of sequences by length done,
+    we call on ``batch_sequences`` from our ``utils.py`` module,
+    which returns a list of sub-lists,
+    in which each sub-list contains the indices
+    in the original list of sequences
+    that are of a particular length.
+
+    :param params: mLSTM1900 parameters.
+    :param train_seqs: The set of training sequences to tune to.
+    :param in_val_seqs: In-domain validation set of sequences,
+        to check for loss on to prevent overfitting.
+    :param out_val_seqs: Out-domain validation set of sequences,
+        to check for loss on to prevent overfitting.
+    :param n: The number of iterations to evotune on.
+    :param step_size: Optimizer learning rate. 
+    :param steps_per_print: Iteration spacing between
+        printing current params and loss. 
+
+    """
+    xs, ys = length_batch_input_outputs(train_seqs)
+
+    init, update, get_params = adam(step_size=step_size)
+    # optimizer_funcs = jit(update), jit(get_params)
+
+    @jit
+    def step(i, state):
+        """
+        Perform one step of evolutionary updating.
+
+        This function is closed inside `fit` because we need access
+        to the variables in its scope,
+        particularly the update and get_params functions.
+
+        By structuring the function this way, we can JIT-compile it,
+        and thus gain a massive speed-up!
+
+        :param i: The current iteration of the training loop.
+        :param state: Current state of parameters from jax.
+        """
+        params = get_params(state)
+        g = grad(evotune_loss)(params, x, y)
+        state = update(i, g, state)
+        return state
+
+    state = init(params)
+    from time import time
+
+    for i in range(n):
+        for x, y in zip(xs, ys):
+            state = step(i, state)
+            params = get_params(state)
+
+        if (i + 1) % steps_per_print == 0:
+
+            # calculate loss for in & out domain validation sets
+
+            kf = KFold(shuffle=True)
+            in_val_seqs = onp.array(in_val_seqs)
+            out_val_seqs = onp.array(out_val_seqs)
+
+            xs_in, ys_in = length_batch_input_outputs(in_val_seqs)
+            xs_out, ys_out = length_batch_input_outputs(out_val_seqs)
+
+            sum_in_loss = 0
+            for x, y in zip(xs_in, ys_in):
+                sum_loss += evotune_loss(
+                    evotuned_params, inputs=x, targets=y
+                ) * len(x)
+            avg_in_losses = sum_in_loss / len(in_val_seqs)
+
+            sum_out_loss = 0
+            for x, y in zip(xs_out, ys_out):
+                sum_loss += evotune_loss(
+                    evotuned_params, inputs=x, targets=y
+                ) * len(x)
+            avg_out_losses = sum_out_loss / len(out_val_seqs)
+
+            # print loss - TODO: print to a .log file?
+
+            print(
+                "Iteration {0}: in-val-loss={1}, out-val-loss:{2}".format(
+                    i, avg_in_losses, avg_out_losses
+                )
+            )
+
+            # TODO: dump current params in case run crashes or loss increases.
+
+    return get_params(state)
+
+
 # def evotune_step(
 #     i: int,
 #     state,
@@ -413,19 +524,49 @@ def evotune(
 
 
 def evotune_manual(
-    sequences: List[str], n_epochs: int = 65, learning_rate: float = 0.00001
+    train_seqs: List[str],
+    in_val_seqs: List[str],
+    out_val_seqs: List[str],
+    params: Optional[Dict] = None,
+    n_epochs: int = 65,
+    learning_rate: float = 0.00001,
+    steps_per_print: int = 200,
 ):
     """
-    Evolutionarily tune the model to a set of sequences,
-    Same as evotune() function but manually selecting epochs and learning rate,
+    Evolutionarily tune the model to a set of training sequences,
+    Largely the same as evotune() function but manually selecting epochs and learning rate,
     instead of using Optuna.
-    :param sequences: The set of sequences to tune to.
+    Also takes in validation sets to check for loss on.
+
+    :param train_seqs: The set of training sequences to tune to.
+    :param in_val_seqs: In-domain validation set of sequences,
+        to check for loss on to prevent overfitting.
+    :param out_val_seqs: Out-domain validation set of sequences,
+        to check for loss on to prevent overfitting.
+    :param params: Parameters to be passed into `mLSTM1900`.
+        Optional; if None, will default to mLSTM1900 from paper,
+        or you can pass in your own set of parameters,
+        as long as they are stax-compatible.
+    :param steps_per_print: the number of steps between each print,
+        will print out current evotuned_params.
     :param n_epochs: The number of epochs to fit.
     :param learning_rate: Optimizer learning rate.
     """
+    if params is None:
+        params = (load_params_1900(), (), load_dense_1900())
 
-    evotuned_params = fit(
-        params, sequences=sequences, n=num_epochs, step_size=learning_rate
+    # Check that params have correct keys and shapes
+
+    validate_mLSTM1900_params(params[0])
+
+    evotuned_params = fit_manual(
+        params,
+        train_seqs=train_seqs,
+        in_val_seqs=in_val_seqs,
+        out_val_seqs=out_val_seqs,
+        n=num_epochs,
+        step_size=learning_rate,
+        steps_per_print=steps_per_print,
     )
 
     return evotuned_params
