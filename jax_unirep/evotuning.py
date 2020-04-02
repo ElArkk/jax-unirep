@@ -291,10 +291,9 @@ def fit_manual(
             # TODO: print to .log file??
 
             print(
-                "Iteration {0}: in-val-loss={1}, out-val-loss:{2}".format(
-                    i,
-                    avg_loss(in_val_seqs, params),
-                    avg_loss(out_val_seqs, params),
+                f"Iteration {i}: "
+                f"in-val-loss={avg_loss(in_val_seqs, params)}, "
+                f"out-val-loss:{avg_loss(out_val_seqs, params)}"
                 )
             )
 
