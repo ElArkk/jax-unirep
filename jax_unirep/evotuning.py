@@ -19,7 +19,6 @@ from .params import add_dense_params
 from .utils import (
     aa_seq_to_int,
     batch_sequences,
-    dump_params,
     get_embeddings,
     load_dense_1900,
     load_embeddings,
