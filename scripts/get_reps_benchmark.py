@@ -3,7 +3,6 @@ from random import choice
 from time import time
 
 import numpy as np
-
 from jax_unirep.featurize import get_reps
 from jax_unirep.utils import aa_to_int
 
