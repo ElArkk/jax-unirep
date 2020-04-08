@@ -8,7 +8,6 @@ import pytest
 from jax import vmap
 from jax.experimental.optimizers import adam
 from jax.random import PRNGKey
-
 from jax_unirep.evotuning import (
     evotune,
     evotune_loss,

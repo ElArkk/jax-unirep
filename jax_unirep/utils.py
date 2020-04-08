@@ -1,4 +1,5 @@
 """jax-unirep utils."""
+import os
 from collections import Counter
 from pathlib import Path
 from random import choice
@@ -47,6 +48,34 @@ proposal_valid_letters = "ACDEFGHIKLMNPQRSTVWY"
 weights_1900_dir = Path(
     pkg_resources.resource_filename("jax_unirep", "weights/1900_weights")
 )
+
+
+def dump_params(params, step, dir_path="temp"):
+    """
+    Dumps the current params of model being trained to a .npy file,
+    into folder as specified by dir_path. The folder will be created,
+    if it does not exist yet.
+
+    :param params: the parameters at the current state of training,
+        inputted as a tuple of dicts
+    :param step: the number of training steps to get to this state. 
+    :param dir_name: path of directory params will save to.
+    """
+
+    # create directory if it doesn't already exist:
+    if not os.path.exists(dir_path):
+        os.makedirs(dir_path)
+        print(f"created directory at {dir_path}")
+
+    # iterate through and save (non-dense) params as npy files.
+    for name, val in params[0].items():
+        onp.save(
+            os.path.join(
+                dir_path, name.replace("/", "_") + "_" + str(step) + ".npy"
+            ),
+            onp.array(val),
+        )
+    print("Weights successfully dumped!")
 
 
 def aa_seq_to_int(s):

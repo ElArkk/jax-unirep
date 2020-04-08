@@ -109,7 +109,7 @@ lr_config = {"low": 0.001, "high": 0.1}
 study, evotuned_params = evotune(
     sequences=sequences,
     n_trials=20, # how many trials optuna should do
-    params=None # defaults to weights from the paper
+    params=None, # defaults to weights from the paper
     n_epochs_config=n_epochs_config,
     learning_rate_config=lr_config
 )

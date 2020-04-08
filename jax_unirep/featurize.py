@@ -133,7 +133,5 @@ def get_reps(
         h_avg, h_final, c_final = rep_same_lengths(seqs, params)
         return h_avg, h_final, c_final
     else:
-        h_avg, h_final, c_final = rep_arbitrary_lengths(
-            seqs, params, apply_fun
-        )
+        h_avg, h_final, c_final = rep_arbitrary_lengths(seqs, params)
         return h_avg, h_final, c_final
