@@ -12,19 +12,27 @@ long_seqs = [
     "JDHJKDHJKDHJKDGDKJLGDJHDGDHDGKJDHGKJDLHDKJHFKJLHFJKDJHIDHDIOUDHODHUKDUHDHDUHDKUHDKUDHKDUKKKK",
 ] * 5
 
+holdout_seqs = [
+    "AJBGAJHLVSJHLVDJLGDAKGHDKJDGBFGFJKHFBKJHDBDHKJGDHJDGKLGLKJSGSHDGVHJDBDKLAAKJFHDJGDHKJLSGHJSG",
+    "HDKJLFGHLKJFGFKLHJGFDHJDGHJDFGJKDFGDJKDGLHJKDGDAAAHDKJDHJKDGDLHJKGDLJHDKDLDJKDHJDJHGDJKGSDJG",
+] * 2
+
 # params = dict()
 # params = add_dense_params(params, "dense", 1900, 25)
 # params["mLSTM1900"] = load_params_1900()
 # params = fit(params=params, sequences=sequences, n=10)
 
-n_epochs_config = {"high": 1}
-lr_config = {"low": 0.1, "high": 0.5}
+n_epochs_config = {"low": 1, "high": 20}
+lr_config = {"low": 0.00001, "high": 0.01}
 evotuned_params = evotune(
-    params=None,
     sequences=long_seqs,
-    n_trials=2,
+    params=None,
+    proj_name='temp',
+    out_dom_seqs=holdout_seqs,
+    n_trials=20,
     n_epochs_config=n_epochs_config,
     learning_rate_config=lr_config,
+    steps_per_print=1,
 )
 
-print(evotuned_params)
+print("Evotuning done! Find output weights in" + PROJECT_NAME)

@@ -19,6 +19,7 @@ from .params import add_dense_params
 from .utils import (
     aa_seq_to_int,
     batch_sequences,
+    dump_params,
     get_embeddings,
     load_dense_1900,
     load_embeddings,
@@ -133,8 +134,31 @@ def length_batch_input_outputs(
     return xs, ys
 
 
+def avg_loss(sequences, params):
+    """
+    Return average loss of a set of parameters,
+    on a set of sequences.
+
+    :param sequences: sequences (in standard AA format)
+    :param params: parameters (i.e. from training)
+    """
+    xs, ys = length_batch_input_outputs(sequences)
+
+    sum_loss = 0
+    for x, y in zip(xs, ys):
+        sum_loss += evotune_loss(params, inputs=x, targets=y) * len(x)
+
+    return sum_loss / len(sequences)
+
+
 def fit(
-    params: Dict, sequences: List[str], n: int, step_size: float = 0.001
+    params: Dict,
+    sequences: List[str],
+    n: int,
+    step_size: float = 0.001,
+    out_dom_seqs: Optional[List[str]] = None,
+    proj_name: Optional[str] = "temp",
+    steps_per_print: Optional[int] = 200,
 ) -> Dict:
     """
     Return weights fitted to predict the next letter in each sequence.
@@ -185,12 +209,29 @@ def fit(
         return state
 
     state = init(params)
-    from time import time
 
     for i in range(n):
+        
+        print(f"Starting iteration {i + 1}")
+
         for x, y in zip(xs, ys):
             state = step(i, state)
             params = get_params(state)
+
+
+        if (i + 1) % steps_per_print == 0:
+            
+            if out_val_seqs is not None:
+
+                # calculate and print loss for out-domain holdout set
+                print(
+                    f"Iteration {i + 1}: "
+                    + f"in-val-loss={avg_loss(out_dom_seqs, params)}, "
+                )
+
+                # dump current params in case run crashes or loss increases
+                dump_params(get_params(state), (i + 1), proj_name)
+
     return get_params(state)
 
 
@@ -329,10 +370,13 @@ def objective(
 
 def evotune(
     sequences: List[str],
-    n_trials: int = 20,
     params: Optional[Dict] = None,
+    proj_name: Optional[str] = "temp",
+    out_dom_seqs: Optional[List[str]] = None,
+    n_trials: int = 20,
     n_epochs_config: Dict = None,
     learning_rate_config: Dict = None,
+    steps_per_print: Optional[int] = 200,
 ) -> Dict:
     """
     Evolutionarily tune the model to a set of sequences.
@@ -358,7 +402,11 @@ def evotune(
         from jax.random import PRNGKey
         _, params = init_fun(PRNGKey(0), input_shape=(-1, 10))
 
+    :param proj_name: Name of the project,
+        used to name created output directory.
     :param sequences: Sequences to evotune against.
+    :param out_dom_seqs: Out-domain holdout set of sequences,
+        to check for loss on to prevent overfitting.
     :param n_trials: The number of trials Optuna should attempt.
     :param params: Parameters to be passed into `mLSTM1900`.
         Optional; if None, will default to mLSTM1900 from paper,
@@ -376,6 +424,8 @@ def evotune(
         This controls the learning rate of the model.
         See source code for default configuration,
         at the definition of ``learning_rate_kwargs``.
+    :param steps_per_print: the number of steps between each print,
+        will print out current evotuned_params.
     :returns:
         - study - The optuna study object, containing information
         about all evotuning trials.
@@ -407,6 +457,12 @@ def evotune(
     learning_rate = float(study.best_params["learning_rate"])
 
     evotuned_params = fit(
-        params, sequences=sequences, n=num_epochs, step_size=learning_rate
+        params=params,
+        sequences=sequences,
+        n=num_epochs,
+        step_size=learning_rate,
+        out_dom_seqs=out_dom_seqs,
+        proj_name=proj_name,
+        steps_per_print=steps_per_print,
     )
     return study, evotuned_params
