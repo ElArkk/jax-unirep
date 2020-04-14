@@ -226,7 +226,7 @@ def fit(
 
         if (i + 1) % steps_per_print == 0:
 
-            if out_val_seqs is not None:
+            if out_dom_seqs is not None:
 
                 # calculate and print loss for out-domain holdout set
                 print(
@@ -379,7 +379,7 @@ def evotune(
     proj_name: Optional[str] = "temp",
     use_optuna: bool = True,
     out_dom_seqs: Optional[List[str]] = None,
-    n_trials: int = 20,
+    n_trials: Optional[int] = 20,
     n_epochs_config: Dict = None,
     learning_rate_config: Dict = None,
     steps_per_print: Optional[int] = 200,
