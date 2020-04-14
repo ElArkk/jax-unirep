@@ -24,7 +24,7 @@ holdout_seqs = [
 
 n_epochs_config = {"low": 1, "high": 20}
 lr_config = {"low": 0.00001, "high": 0.01}
-evotuned_params = evotune(
+study, evotuned_params = evotune(
     sequences=long_seqs,
     params=None,
     proj_name="temp",
