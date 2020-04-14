@@ -3,7 +3,7 @@ import os
 from collections import Counter
 from pathlib import Path
 from random import choice
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 
 import jax.numpy as np
 import numpy as onp
@@ -188,29 +188,31 @@ def load_params(dir_path: str, n: Optional[int] = None) -> Dict:
 
     if n is None:
 
-        params["gh"] = np.load(dir_path / "gh.npy")
-        params["gmh"] = np.load(dir_path / "gmh.npy")
-        params["gmx"] = np.load(dir_path / "gmx.npy")
+        params["gh"] = np.load(dir_path + "/gh.npy")
+        params["gmh"] = np.load(dir_path + "/gmh.npy")
+        params["gmx"] = np.load(dir_path + "/gmx.npy")
+        params["gx"] = np.load(dir_path + "/gx.npy")
 
-        params["wh"] = np.load(dir_path / "wh.npy")
-        params["wmh"] = np.load(dir_path / "wmh.npy")
-        params["wmx"] = np.load(dir_path / "wmx.npy")
-        params["wx"] = np.load(dir_path / "wx.npy")
+        params["wh"] = np.load(dir_path + "/wh.npy")
+        params["wmh"] = np.load(dir_path + "/wmh.npy")
+        params["wmx"] = np.load(dir_path + "/wmx.npy")
+        params["wx"] = np.load(dir_path + "/wx.npy")
 
-        params["b"] = np.load(dir_path / "b.npy")
+        params["b"] = np.load(dir_path + "/b.npy")
 
     else:
 
-        params["gh"] = np.load(dir_path / "gh_" + str(n) + ".npy")
-        params["gmh"] = np.load(dir_path / "gmh_" + str(n) + ".npy")
-        params["gmx"] = np.load(dir_path / "gmx_" + str(n) + ".npy")
+        params["gh"] = np.load(dir_path + "/gh_" + str(n) + ".npy")
+        params["gmh"] = np.load(dir_path + "/gmh_" + str(n) + ".npy")
+        params["gmx"] = np.load(dir_path + "/gmx_" + str(n) + ".npy")
+        params["gx"] = np.load(dir_path + "/gx_" + str(n) + ".npy")
 
-        params["wh"] = np.load(dir_path / "wh_" + str(n) + ".npy")
-        params["wmh"] = np.load(dir_path / "wmh_" + str(n) + ".npy")
-        params["wmx"] = np.load(dir_path / "wmx_" + str(n) + ".npy")
-        params["wx"] = np.load(dir_path / "wx_" + str(n) + ".npy")
+        params["wh"] = np.load(dir_path + "/wh_" + str(n) + ".npy")
+        params["wmh"] = np.load(dir_path + "/wmh_" + str(n) + ".npy")
+        params["wmx"] = np.load(dir_path + "/wmx_" + str(n) + ".npy")
+        params["wx"] = np.load(dir_path + "/wx_" + str(n) + ".npy")
 
-        params["b"] = np.load(dir_path / "b_" + str(n) + ".npy")
+        params["b"] = np.load(dir_path + "/b_" + str(n) + ".npy")
 
     return params
 
