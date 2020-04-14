@@ -5,4 +5,4 @@ In the changelog, @ElArkk and @ericmjl would like to acknowledge contributors wh
 <Please add your contribution to the top>
 
 - 30 March 2020: Code fixes for correctness and readability, and a parameter dumping function by @ivanjayapurna,
-- 14 April 2020: Modify evotuning function to add the option to supply an out-domain holdout set and print params as training progresses
+- 14 April 2020: Modify evotuning function to add (1) option to supply an out-domain holdout set and print params as training progresses, (2) evotuning without Optuna

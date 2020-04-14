@@ -182,6 +182,12 @@ def fit(
     :param params: mLSTM1900 parameters.
     :param sequences: List of sequences to evotune on.
     :param n: The number of iterations to evotune on.
+    :param step_size: The learning rate
+    :param out_dom_seqs: Out of domain holdout set,
+        an optional input.
+    :param proj_name: The directory path for weights to be output to.
+    :param steps_per_print: Number of steps per print and weights to
+        be dumped.
     """
     xs, ys = length_batch_input_outputs(sequences)
 
@@ -402,33 +408,37 @@ def evotune(
         from jax.random import PRNGKey
         _, params = init_fun(PRNGKey(0), input_shape=(-1, 10))
 
-    :param proj_name: Name of the project,
-        used to name created output directory.
     :param sequences: Sequences to evotune against.
-    :param out_dom_seqs: Out-domain holdout set of sequences,
-        to check for loss on to prevent overfitting.
-    :param n_trials: The number of trials Optuna should attempt.
     :param params: Parameters to be passed into `mLSTM1900`.
         Optional; if None, will default to mLSTM1900 from paper,
         or you can pass in your own set of parameters,
-        as long as they are stax-compatible.
+        as long as they are stax-compatible.    
+    :param proj_name: Name of the project,
+        used to name created output directory.
+    :param use_optuna: Toggles if Optuna will be used or not.
+    :param out_dom_seqs: Out-domain holdout set of sequences,
+        to check for loss on to prevent overfitting.
+    :param n_trials: The number of trials Optuna should attempt.
     :param n_epochs_config: A dictionary of kwargs
         to ``trial.suggest_discrete_uniform``,
         which are: ``name``, ``low``, ``high``, ``q``.
         This controls how many epochs to have Optuna test.
         See source code for default configuration,
         at the definition of ``n_epochs_kwargs``.
+        Only define "high" if not using Optuna.
     :param learning_rate_config: A dictionary of kwargs
         to ``trial.suggest_loguniform``,
         which are: ``name``, ``low``, ``high``.
         This controls the learning rate of the model.
         See source code for default configuration,
         at the definition of ``learning_rate_kwargs``.
+        Only define "high" if not using Optuna.
     :param steps_per_print: the number of steps between each print,
         will print out current evotuned_params.
     :returns:
         - study - The optuna study object, containing information
         about all evotuning trials.
+        If not using Optuna, study will return 'None'.
         - evotuned_params - A dictionary of optimized weights
     """
     if params is None:
