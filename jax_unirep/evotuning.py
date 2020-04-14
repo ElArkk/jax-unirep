@@ -211,16 +211,15 @@ def fit(
     state = init(params)
 
     for i in range(n):
-        
+
         print(f"Starting iteration {i + 1}")
 
         for x, y in zip(xs, ys):
             state = step(i, state)
             params = get_params(state)
 
-
         if (i + 1) % steps_per_print == 0:
-            
+
             if out_val_seqs is not None:
 
                 # calculate and print loss for out-domain holdout set
