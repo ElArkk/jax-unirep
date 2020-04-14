@@ -181,6 +181,40 @@ def load_params_1900(name: str = "uniref50") -> Dict:
     return params
 
 
+def load_params(dir_path: str, n: Optional[int] = None) -> Dict:
+    """Load pre-trained mLSTM1900 weights from any JAX-unirep outputted source."""
+
+    params = dict()
+
+    if n is None:
+
+        params["gh"] = np.load(dir_path / "gh.npy")
+        params["gmh"] = np.load(dir_path / "gmh.npy")
+        params["gmx"] = np.load(dir_path / "gmx.npy")
+
+        params["wh"] = np.load(dir_path / "wh.npy")
+        params["wmh"] = np.load(dir_path / "wmh.npy")
+        params["wmx"] = np.load(dir_path / "wmx.npy")
+        params["wx"] = np.load(dir_path / "wx.npy")
+
+        params["b"] = np.load(dir_path / "b.npy")
+
+    else:
+
+        params["gh"] = np.load(dir_path / "gh_" + str(n) + ".npy")
+        params["gmh"] = np.load(dir_path / "gmh_" + str(n) + ".npy")
+        params["gmx"] = np.load(dir_path / "gmx_" + str(n) + ".npy")
+
+        params["wh"] = np.load(dir_path / "wh_" + str(n) + ".npy")
+        params["wmh"] = np.load(dir_path / "wmh_" + str(n) + ".npy")
+        params["wmx"] = np.load(dir_path / "wmx_" + str(n) + ".npy")
+        params["wx"] = np.load(dir_path / "wx_" + str(n) + ".npy")
+
+        params["b"] = np.load(dir_path / "b_" + str(n) + ".npy")
+
+    return params
+
+
 def validate_mLSTM1900_params(params: Dict):
     """
     Validate shapes of mLSTM1900 parameter dictionary.
