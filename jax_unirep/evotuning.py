@@ -371,6 +371,7 @@ def evotune(
     sequences: List[str],
     params: Optional[Dict] = None,
     proj_name: Optional[str] = "temp",
+    use_optuna: bool = True,
     out_dom_seqs: Optional[List[str]] = None,
     n_trials: int = 20,
     n_epochs_config: Dict = None,
@@ -442,18 +443,26 @@ def evotune(
 
     validate_mLSTM1900_params(params[0])
 
-    study = optuna.create_study()
+    if use_optuna:
 
-    objective_func = lambda x: objective(
-        x,
-        params=params,
-        sequences=sequences,
-        n_epochs_config=n_epochs_config,
-        learning_rate_config=learning_rate_config,
-    )
-    study.optimize(objective_func, n_trials=n_trials)
-    num_epochs = int(study.best_params["n_epochs"])
-    learning_rate = float(study.best_params["learning_rate"])
+        study = optuna.create_study()
+
+        objective_func = lambda x: objective(
+            x,
+            params=params,
+            sequences=sequences,
+            n_epochs_config=n_epochs_config,
+            learning_rate_config=learning_rate_config,
+        )
+        study.optimize(objective_func, n_trials=n_trials)
+        num_epochs = int(study.best_params["n_epochs"])
+        learning_rate = float(study.best_params["learning_rate"])
+
+    else:
+
+        study = None
+        num_epochs = n_epochs_config["high"]
+        learning_rate = learning_rate_config["high"]
 
     evotuned_params = fit(
         params=params,
@@ -464,4 +473,5 @@ def evotune(
         proj_name=proj_name,
         steps_per_print=steps_per_print,
     )
+
     return study, evotuned_params
