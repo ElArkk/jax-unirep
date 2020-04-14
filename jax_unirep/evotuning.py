@@ -484,4 +484,7 @@ def evotune(
         steps_per_print=steps_per_print,
     )
 
+    # dump final params
+    dump_params(evotuned_params, num_epochs, proj_name)
+
     return study, evotuned_params
