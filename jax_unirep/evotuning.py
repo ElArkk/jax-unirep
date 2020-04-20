@@ -10,7 +10,8 @@ from jax import random, vmap
 from jax.experimental import stax
 from jax.experimental.optimizers import adam
 from jax.experimental.stax import Dense, Softmax
-from jax.nn import softmax
+
+# from jax.nn import softmax
 from sklearn.model_selection import KFold, train_test_split
 
 from jax_unirep.losses import _neg_cross_entropy_loss
