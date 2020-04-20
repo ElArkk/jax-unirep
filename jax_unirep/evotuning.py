@@ -107,6 +107,7 @@ init_fun, predict = stax.serial(
 @jit
 def evotune_loss(params, inputs, targets):
     predictions = vmap(partial(predict, params))(inputs)
+
     return _neg_cross_entropy_loss(targets, predictions)
 
 
@@ -151,6 +152,20 @@ def avg_loss(sequences, params):
     return sum_loss / len(sequences)
 
 
+def get_batch_len(batched_seqs):
+    """
+    Returns the average length of each batch as well as a full array of batch distribution.
+    :param batched_seqs: list of lists of sequences, grouped by length.
+    """
+    batch_lens = []
+    for batch in batched_seqs:
+        batch_lens.append(len(batch))
+
+    batch_lens = np.array(batch_lens)
+
+    return np.mean(batch_lens), batch_lens
+
+
 def fit(
     params: Dict,
     sequences: List[str],
@@ -191,6 +206,14 @@ def fit(
     """
     xs, ys = length_batch_input_outputs(sequences)
 
+    avg_len, batch_lens = get_batch_len(xs)
+
+    print(
+        f"Number of batches: {len(xs)}, "
+        + f"Average batch length: {avg_len}, "
+        + f"Batch lengths: {batch_lens}, "
+    )
+
     init, update, get_params = adam(step_size=step_size)
     # optimizer_funcs = jit(update), jit(get_params)
 
@@ -212,17 +235,21 @@ def fit(
         params = get_params(state)
         g = grad(evotune_loss)(params, x, y)
         state = update(i, g, state)
+
         return state
 
     state = init(params)
 
     for i in range(n):
 
-        print(f"Starting iteration {i + 1}")
+        print(f"Starting epoch {i + 1}")
 
         for x, y in zip(xs, ys):
             state = step(i, state)
+
+            # for debugging only
             params = get_params(state)
+            print(vmap(partial(predict, params))(x))
 
         if (i + 1) % steps_per_print == 0:
 
@@ -230,8 +257,8 @@ def fit(
 
                 # calculate and print loss for out-domain holdout set
                 print(
-                    f"Iteration {i + 1}: "
-                    + f"in-val-loss={avg_loss(out_dom_seqs, params)}, "
+                    f"Epoch {i + 1}: "
+                    + f"out-val-loss={avg_loss(out_dom_seqs, get_params(state))}, "
                 )
 
                 # dump current params in case run crashes or loss increases
