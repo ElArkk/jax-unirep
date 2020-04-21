@@ -11,6 +11,7 @@ from jax.experimental.stax import Dense, Softmax, serial
 from jax_unirep.losses import _neg_cross_entropy_loss
 from sklearn.model_selection import KFold, train_test_split
 
+from .activations import softmax
 from .layers import mLSTM1900, mLSTM1900_AvgHidden, mLSTM1900_HiddenStates
 from .losses import neg_cross_entropy_loss
 from .params import add_dense_params
@@ -36,18 +37,6 @@ init_fun, predict = serial(
 # --> Commented out and showed it made no difference!
 # Now I'll just implement softmax manually.
 init_fun, predict = serial(mLSTM1900(), mLSTM1900_HiddenStates(), Dense(25))
-
-
-def softmax(y_hat):
-    """
-    Returns a 3D array of the same dimensions but with softmax applied to the probabilities,
-    to make them probabilities!
-    :param y_hat: A 3D array of dimensions (# sequences, # AA's, 25),
-        input sequences will be batched to have consistent # AA's,
-        & 25 represents a probability of each possible AA.
-
-    """
-    return np.exp(y_hat) / np.sum(np.exp(y_hat), axis=2, keepdims=True)
 
 
 @jit

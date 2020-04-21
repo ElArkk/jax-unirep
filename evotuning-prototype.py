@@ -59,7 +59,7 @@ print(study.trials_dataframe())
 
 # Evotuning without Optuna
 
-N_EPOCHS = 1
+N_EPOCHS = 3
 LEARN_RATE = 1e-4
 PROJECT_NAME = "temp"
 
