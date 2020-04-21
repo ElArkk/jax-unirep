@@ -293,12 +293,7 @@ def fit(
                 # dump current params in case run crashes or loss increases
                 dump_params(get_params(state), (i + 1), proj_name)
 
-    # dump final params
-    evotuned_params = get_params(state)
-
-    dump_params(evotuned_params, n, proj_name)
-
-    return evotuned_params
+    return get_params(state)
 
 
 # def evotune_step(
