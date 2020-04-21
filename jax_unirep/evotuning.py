@@ -296,7 +296,7 @@ def fit(
     # dump final params
     evotuned_params = get_params(state)
 
-    dump_params(evotuned_params, num_epochs, proj_name)
+    dump_params(evotuned_params, n, proj_name)
 
     return evotuned_params
 
