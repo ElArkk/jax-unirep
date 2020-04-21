@@ -6,10 +6,8 @@ import numpy as onp
 import optuna
 from jax import numpy as np
 from jax import grad, jit, lax, random, vmap
-from jax.experimental import stax
 from jax.experimental.optimizers import adam
-from jax.experimental.stax import Dense, Softmax
-from jax.nn import softmax
+from jax.experimental.stax import Dense, Softmax, serial
 from jax_unirep.losses import _neg_cross_entropy_loss
 from sklearn.model_selection import KFold, train_test_split
 
@@ -27,6 +25,53 @@ from .utils import (
     one_hots,
     validate_mLSTM1900_params,
 )
+
+# HERE LIES THE DRAG.. MODEL!
+"""
+init_fun, predict = serial(
+    mLSTM1900(), mLSTM1900_HiddenStates(), Dense(25), Softmax
+)
+"""
+# I hypothesized the Softmax layer wasn't working
+# --> Commented out and showed it made no difference!
+# Now I'll just implement softmax manually.
+init_fun, predict = serial(mLSTM1900(), mLSTM1900_HiddenStates(), Dense(25))
+
+
+def softmax(y_hat):
+    """
+    Returns a 3D array of the same dimensions but with softmax applied to the probabilities,
+    to make them probabilities!
+    :param y_hat: A 3D array of dimensions (# sequences, # AA's, 25),
+        input sequences will be batched to have consistent # AA's,
+        & 25 represents a probability of each possible AA.
+
+    """
+    return np.exp(y_hat) / np.sum(np.exp(y_hat), axis=2, keepdims=True)
+
+
+@jit
+def evotune_loss(params, inputs, targets):
+    predictions = softmax(vmap(partial(predict, params))(inputs))
+
+    return _neg_cross_entropy_loss(targets, predictions)
+
+
+def avg_loss(sequences, params):
+    """
+    Return average loss of a set of parameters,
+    on a set of sequences.
+
+    :param sequences: sequences (in standard AA format)
+    :param params: parameters (i.e. from training)
+    """
+    xs, ys = length_batch_input_outputs(sequences)
+
+    sum_loss = 0
+    for x, y in zip(xs, ys):
+        sum_loss += evotune_loss(params, inputs=x, targets=y) * len(x)
+
+    return sum_loss / len(sequences)
 
 
 def evotuning_pairs(s: str) -> Tuple[np.ndarray, np.ndarray]:
@@ -98,19 +143,6 @@ Please ensure that they are all of the same length before passing them in.
     return np.stack(xs), np.stack(ys)
 
 
-# HERE LIES THE DRAG.. MODEL!
-init_fun, predict = stax.serial(
-    mLSTM1900(), mLSTM1900_HiddenStates(), stax.Dense(25), stax.Softmax
-)
-
-
-@jit
-def evotune_loss(params, inputs, targets):
-    predictions = vmap(partial(predict, params))(inputs)
-
-    return _neg_cross_entropy_loss(targets, predictions)
-
-
 def length_batch_input_outputs(
     sequences: List[str],
 ) -> Tuple[List[np.ndarray], List[np.ndarray]]:
@@ -133,23 +165,6 @@ def length_batch_input_outputs(
         xs.append(x)
         ys.append(y)
     return xs, ys
-
-
-def avg_loss(sequences, params):
-    """
-    Return average loss of a set of parameters,
-    on a set of sequences.
-
-    :param sequences: sequences (in standard AA format)
-    :param params: parameters (i.e. from training)
-    """
-    xs, ys = length_batch_input_outputs(sequences)
-
-    sum_loss = 0
-    for x, y in zip(xs, ys):
-        sum_loss += evotune_loss(params, inputs=x, targets=y) * len(x)
-
-    return sum_loss / len(sequences)
 
 
 def get_batch_len(batched_seqs):
@@ -204,10 +219,19 @@ def fit(
     :param steps_per_print: Number of steps per print and weights to
         be dumped.
     """
+
+    # Load and check that params have correct keys and shapes
+    if params is None:
+        params = (load_params_1900(), (), load_dense_1900())
+
+    validate_mLSTM1900_params(params[0])
+
+    # batch sequences by length
     xs, ys = length_batch_input_outputs(sequences)
 
     avg_len, batch_lens = get_batch_len(xs)
 
+    # for debugging, but could be desirable to keep permanently
     print(
         f"Number of batches: {len(xs)}, "
         + f"Average batch length: {avg_len}, "
@@ -248,8 +272,9 @@ def fit(
             state = step(i, state)
 
             # for debugging only
-            params = get_params(state)
-            print(vmap(partial(predict, params))(x))
+            # params = get_params(state)
+            # print(f"Shape of y: {(len(y), len(y[0]), len(y[0][0]))}")
+            # print(softmax(vmap(partial(predict, params))(x)))
 
         if (i + 1) % steps_per_print == 0:
 
@@ -264,7 +289,12 @@ def fit(
                 # dump current params in case run crashes or loss increases
                 dump_params(get_params(state), (i + 1), proj_name)
 
-    return get_params(state)
+    # dump final params
+    evotuned_params = get_params(state)
+
+    dump_params(evotuned_params, num_epochs, proj_name)
+
+    return evotuned_params
 
 
 # def evotune_step(
@@ -388,14 +418,7 @@ def objective(
             params, train_sequences, n=int(n_epochs), step_size=learning_rate
         )
 
-        xs, ys = length_batch_input_outputs(test_sequences)
-
-        sum_loss = 0
-        for x, y in zip(xs, ys):
-            sum_loss += evotune_loss(
-                evotuned_params, inputs=x, targets=y
-            ) * len(x)
-        avg_test_losses.append(sum_loss / len(test_sequences))
+        avg_test_losses.append(avg_loss(test_sequences, evotuned_params))
 
     return sum(avg_test_losses) / len(avg_test_losses)
 
@@ -404,7 +427,6 @@ def evotune(
     sequences: List[str],
     params: Optional[Dict] = None,
     proj_name: Optional[str] = "temp",
-    use_optuna: bool = True,
     out_dom_seqs: Optional[List[str]] = None,
     n_trials: Optional[int] = 20,
     n_epochs_config: Dict = None,
@@ -442,7 +464,6 @@ def evotune(
         as long as they are stax-compatible.    
     :param proj_name: Name of the project,
         used to name created output directory.
-    :param use_optuna: Toggles if Optuna will be used or not.
     :param out_dom_seqs: Out-domain holdout set of sequences,
         to check for loss on to prevent overfitting.
     :param n_trials: The number of trials Optuna should attempt.
@@ -469,37 +490,23 @@ def evotune(
         - evotuned_params - A dictionary of optimized weights
     """
     if params is None:
-        # _, params = init_fun(random.PRNGKey(0), input_shape=(-1, 10))
         params = (load_params_1900(), (), load_dense_1900())
 
-        # params = dict()
-        # params["dense"] = load_dense_1900()
-        # params["mLSTM1900"] = load_params_1900()
-
     # Check that params have correct keys and shapes
-
     validate_mLSTM1900_params(params[0])
 
-    if use_optuna:
+    study = optuna.create_study()
 
-        study = optuna.create_study()
-
-        objective_func = lambda x: objective(
-            x,
-            params=params,
-            sequences=sequences,
-            n_epochs_config=n_epochs_config,
-            learning_rate_config=learning_rate_config,
-        )
-        study.optimize(objective_func, n_trials=n_trials)
-        num_epochs = int(study.best_params["n_epochs"])
-        learning_rate = float(study.best_params["learning_rate"])
-
-    else:
-
-        study = None
-        num_epochs = n_epochs_config["high"]
-        learning_rate = learning_rate_config["high"]
+    objective_func = lambda x: objective(
+        x,
+        params=params,
+        sequences=sequences,
+        n_epochs_config=n_epochs_config,
+        learning_rate_config=learning_rate_config,
+    )
+    study.optimize(objective_func, n_trials=n_trials)
+    num_epochs = int(study.best_params["n_epochs"])
+    learning_rate = float(study.best_params["learning_rate"])
 
     evotuned_params = fit(
         params=params,
@@ -510,8 +517,5 @@ def evotune(
         proj_name=proj_name,
         steps_per_print=steps_per_print,
     )
-
-    # dump final params
-    dump_params(evotuned_params, num_epochs, proj_name)
 
     return study, evotuned_params
