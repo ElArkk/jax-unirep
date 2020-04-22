@@ -28,16 +28,10 @@ from .utils import (
     validate_mLSTM1900_params,
 )
 
-# HERE LIES THE DRAG.. MODEL!
-"""
+model_layers = (mLSTM1900(), mLSTM1900_HiddenStates(), Dense(25), Softmax)
 init_fun, predict = serial(
-    mLSTM1900(), mLSTM1900_HiddenStates(), Dense(25), Softmax
+    *model_layers
 )
-"""
-# I hypothesized the Softmax layer wasn't working
-# --> Commented out and showed it made no difference!
-# Now I'll just implement softmax manually.
-init_fun, predict = serial(mLSTM1900(), mLSTM1900_HiddenStates(), Dense(25))
 
 
 @jit
