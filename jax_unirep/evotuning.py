@@ -36,7 +36,8 @@ init_fun, predict = serial(
 
 @jit
 def evotune_loss(params, inputs, targets):
-    predictions = softmax(vmap(partial(predict, params))(inputs))
+    # predictions = softmax(vmap(partial(predict, params))(inputs))
+    predictions = vmap(partial(predict, params))(inputs)
 
     return _neg_cross_entropy_loss(targets, predictions)
 
