@@ -177,7 +177,7 @@ def fit(
     sequences: List[str],
     n: int,
     step_size: float = 0.001,
-    out_dom_seqs: Optional[List[str]] = None,
+    holdout_seqs: Optional[List[str]] = None,
     proj_name: Optional[str] = "temp",
     steps_per_print: Optional[int] = 200,
 ) -> Dict:
@@ -207,8 +207,7 @@ def fit(
     :param sequences: List of sequences to evotune on.
     :param n: The number of iterations to evotune on.
     :param step_size: The learning rate
-    :param out_dom_seqs: Out of domain holdout set,
-        an optional input.
+    :param holdout_seqs: Holdout set, an optional input.
     :param proj_name: The directory path for weights to be output to.
     :param steps_per_print: Number of steps per print and weights to
         be dumped.
@@ -232,7 +231,7 @@ def fit(
         + f"Batch lengths: {batch_lens}, "
     )
 
-    init, update, get_params = adam(step_size=step_size)
+    init, update, get_params = adamW(step_size=step_size)
     # optimizer_funcs = jit(update), jit(get_params)
 
     @jit
@@ -272,12 +271,12 @@ def fit(
 
         if (i + 1) % steps_per_print == 0:
 
-            if out_dom_seqs is not None:
+            if holdout_seqs is not None:
 
                 # calculate and print loss for out-domain holdout set
                 print(
                     f"Epoch {i + 1}: "
-                    + f"out-val-loss={avg_loss(out_dom_seqs, get_params(state))}, "
+                    + f"holdout-loss={avg_loss(holdout_seqs, get_params(state))}, "
                 )
 
                 # dump current params in case run crashes or loss increases
@@ -343,6 +342,7 @@ def objective(
     params: Optional[Dict] = None,
     n_epochs_config: Dict = None,
     learning_rate_config: Dict = None,
+    n_splits: Optional[int] = 5,
 ) -> float:
     """
     Objective function for an Optuna trial.
@@ -366,6 +366,8 @@ def objective(
         This controls how many epochs to have Optuna test.
         See source code for default configuration,
         at the definition of ``n_epochs_kwargs``.
+    :param n_splits: The number of folds of cross-validation to do.
+
     :returns: Average of 5-fold test loss.
     """
     # Default settings for n_epochs_kwargs
@@ -392,7 +394,7 @@ def objective(
     learning_rate = trial.suggest_loguniform(**learning_rate_kwargs)
     print(f"Trying out {n_epochs} epochs with learning rate {learning_rate}.")
 
-    kf = KFold(shuffle=True)
+    kf = KFold(n_splits=n_splits, shuffle=True)
     sequences = onp.array(sequences)
 
     avg_test_losses = []
@@ -420,6 +422,7 @@ def evotune(
     n_trials: Optional[int] = 20,
     n_epochs_config: Dict = None,
     learning_rate_config: Dict = None,
+    n_splits: Optional[int] = 5,
     steps_per_print: Optional[int] = 200,
 ) -> Dict:
     """
@@ -474,6 +477,7 @@ def evotune(
         This controls the learning rate of the model.
         See source code for default configuration,
         at the definition of ``learning_rate_kwargs``.
+    :param n_splits: The number of folds of cross-validation to do.
     :param steps_per_print: the number of steps between each print,
         will print out current evotuned_params.
 
@@ -496,6 +500,7 @@ def evotune(
         sequences=sequences,
         n_epochs_config=n_epochs_config,
         learning_rate_config=learning_rate_config,
+        n_splits=n_splits,
     )
     study.optimize(objective_func, n_trials=n_trials)
     num_epochs = int(study.best_params["n_epochs"])
@@ -506,7 +511,7 @@ def evotune(
         sequences=sequences,
         n=num_epochs,
         step_size=learning_rate,
-        out_dom_seqs=out_dom_seqs,
+        holdout_seqs=out_dom_seqs,
         proj_name=proj_name,
         steps_per_print=steps_per_print,
     )
