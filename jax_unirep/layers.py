@@ -74,9 +74,6 @@ def mLSTM1900(output_dim=1900, W_init=glorot_normal(), b_init=normal()):
         output_shape = (input_shape[0], output_dim)
         return output_shape, params
 
-    def apply_fun_scan(params, carry, x_t):
-        return mLSTM1900_step(params=params, carry=carry, x_t=x_t)
-
     def apply_fun(params, inputs, **kwargs):
         return mLSTM1900_batch(params=params, batch=inputs)
 
