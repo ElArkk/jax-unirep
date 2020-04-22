@@ -8,6 +8,7 @@ from typing import Dict, List, Optional, Tuple
 import jax.numpy as np
 import numpy as onp
 import pkg_resources
+from pathlib import Path
 
 from .errors import SequenceLengthsError
 
@@ -52,13 +53,31 @@ weights_1900_dir = Path(
 
 def dump_params(params, step, dir_path="temp"):
     """
-    Dumps the current params of model being trained to a .npy file,
-    into folder as specified by dir_path. The folder will be created,
-    if it does not exist yet.
+    Dumps the current params of model being trained to a .npy file.
+
+    The directory is specified by dir_path,
+    and will be created, if it does not exist yet.
+
+    The weights that will be dumped are only the mLSTM weights.
+    The weights will have the same naming convention as the original:
+
+        dir_path/iter_x/rnn_mlstm_mlstm_b:0.npy
+        dir_path/iter_x/rnn_mlstm_mlstm_gh:0.npy
+        dir_path/iter_x/rnn_mlstm_mlstm_gmh:0.npy
+        dir_path/iter_x/rnn_mlstm_mlstm_gmx:0.npy
+        dir_path/iter_x/rnn_mlstm_mlstm_gx:0.npy
+        dir_path/iter_x/rnn_mlstm_mlstm_wh:0.npy
+        dir_path/iter_x/rnn_mlstm_mlstm_wmh:0.npy
+        dir_path/iter_x/rnn_mlstm_mlstm_wmx:0.npy
+        dir_path/iter_x/rnn_mlstm_mlstm_wx:0.npy
+
+    `dir_path`, by convention, should be relative to
+    the current working directory
+    in which you executed your Python script or Jupyter notebook.
 
     :param params: the parameters at the current state of training,
-        inputted as a tuple of dicts
-    :param step: the number of training steps to get to this state. 
+        input as a tuple of dicts.
+    :param step: the number of training steps to get to this state.
     :param dir_name: path of directory params will save to.
     """
 
@@ -69,10 +88,17 @@ def dump_params(params, step, dir_path="temp"):
 
     # iterate through and save (non-dense) params as npy files.
     for name, val in params[0].items():
+        # Construct filename
+        fname = fr"rnn_mlstm_mlstm_{name}:0.npy"
+
+        # Construct directory for dumping.
+        iteration_path = Path(dir_path) / f"iter_{step}"
+        iteration_path.mkdir(exist_ok=True)
+
+        # Save file
+        fpath = iteration_path / fname
         onp.save(
-            os.path.join(
-                dir_path, name.replace("/", "_") + "_" + str(step) + ".npy"
-            ),
+            fpath,
             onp.array(val),
         )
     print("Weights successfully dumped!")
