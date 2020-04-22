@@ -6,20 +6,20 @@ from jax.experimental.optimizers import make_schedule, optimizer
 def adamW(step_size, b1=0.9, b2=0.999, eps=1e-8, w=0.01):
     """Construct optimizer triple for Adam.
 
-  Args:
-    step_size: positive scalar, or a callable representing a step size schedule
-      that maps the iteration index to positive scalar.
-    b1: optional, a positive scalar value for beta_1, the exponential decay rate
-      for the first moment estimates (default 0.9).
-    b2: optional, a positive scalar value for beta_2, the exponential decay rate
-      for the second moment estimates (default 0.999).
-    eps: optional, a positive scalar value for epsilon, a small constant for
-      numerical stability (default 1e-8).
-    w: optional, weight decay term (default 0.01)
+    Args:
+        step_size: positive scalar, or a callable representing a step size schedule
+            that maps the iteration index to positive scalar.
+        b1: optional, a positive scalar value for beta_1, the exponential decay rate
+            for the first moment estimates (default 0.9).
+        b2: optional, a positive scalar value for beta_2, the exponential decay rate
+            for the second moment estimates (default 0.999).
+        eps: optional, a positive scalar value for epsilon, a small constant for
+            numerical stability (default 1e-8).
+        w: optional, weight decay term (default 0.01)
 
-  Returns:
-    An (init_fun, update_fun, get_params) triple.
-  """
+    Returns:
+        An (init_fun, update_fun, get_params) triple.
+    """
     step_size = make_schedule(step_size)
 
     def init(x0):
