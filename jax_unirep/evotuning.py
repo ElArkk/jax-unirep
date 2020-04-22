@@ -14,6 +14,7 @@ from sklearn.model_selection import KFold, train_test_split
 from .activations import softmax
 from .layers import mLSTM1900, mLSTM1900_AvgHidden, mLSTM1900_HiddenStates
 from .losses import neg_cross_entropy_loss
+from .optimizers import adamW
 from .params import add_dense_params
 from .utils import (
     aa_seq_to_int,
