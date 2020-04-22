@@ -148,15 +148,16 @@ def mLSTM1900_batch(
     found here:
     https://github.com/churchlab/UniRep/blob/master/unirep.py#L43,
     for a batch of data.
-    This layer processes one encoded sequence at a time,
-    passed as a two dimensional array, with number of rows
-    being number of sliding windows, and number of columns
-    being the size of the sliding window (for the exact
-    reimplementation, window size is fixed to length 10)
+
+    This function processes a single embedded sequence,
+    passed in as a two dimensional array,
+    with number of rows being number of sequence positions,
+    and the number of columns being the embedding of each sequence letter.
+
     :param params: All weights and biases for a single
-        mLSTM1900 rnn cell.
-    :param batch: One sequence batch, sliced by window size,
-        into an array of shape (:, n_windows, n_features).
+        mLSTM1900 RNN cell.
+    :param batch: One sequence embedded in a (n, 10) matrix,
+        where `n` is the number of sequences
     :returns:
     """
     h_t = np.zeros(params["wmh"].shape[0])
