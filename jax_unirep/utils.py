@@ -50,7 +50,9 @@ weights_1900_dir = Path(
 )
 
 
-def dump_params(params, step, dir_path="temp"):
+def dump_params(
+    params: Dict, dir_path: Optional[str] = "temp",
+):
     """
     Dumps the current params of model being trained to a .npy file,
     into folder as specified by dir_path. The folder will be created,
@@ -70,9 +72,7 @@ def dump_params(params, step, dir_path="temp"):
     # iterate through and save (non-dense) params as npy files.
     for name, val in params[0].items():
         onp.save(
-            os.path.join(
-                dir_path, name.replace("/", "_") + "_" + str(step) + ".npy"
-            ),
+            os.path.join(dir_path, name.replace("/", "_") + ".npy"),
             onp.array(val),
         )
     print("Weights successfully dumped!")

@@ -3,7 +3,7 @@
 import pandas as pd
 from jax_unirep import evotune, fit
 from jax_unirep.params import add_dense_params
-from jax_unirep.utils import load_params_1900
+from jax_unirep.utils import dump_params, load_params_1900
 
 # Test sequences:
 sequences = ["HASTA", "VISTA", "ALAVA", "LIMED", "HAST", "HAS", "HASVASTA"] * 5
@@ -41,6 +41,7 @@ study, evotuned_params = evotune(
     steps_per_print=1,
 )
 
+dump_params(evotuned_params, PROJECT_NAME)
 print("Evotuning done! Find output weights in", PROJECT_NAME)
 print(study.trials_dataframe())
 
@@ -61,5 +62,6 @@ evotuned_params = fit(
     steps_per_print=1,
 )
 
+dump_params(evotuned_params, PROJECT_NAME)
 print("Evotuning done! Find output weights in", PROJECT_NAME)
 """

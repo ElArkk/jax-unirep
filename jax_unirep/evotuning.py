@@ -280,7 +280,8 @@ def fit(
                 )
 
                 # dump current params in case run crashes or loss increases
-                dump_params(get_params(state), (i + 1), proj_name)
+                # steps printed are 1-indexed i.e. starts at epoch 1 not 0.
+                dump_params(get_params(state), proj_name + "_" + str((i + 1)))
 
     return get_params(state)
 
