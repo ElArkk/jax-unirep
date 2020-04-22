@@ -458,7 +458,7 @@ def evotune(
     :param params: Parameters to be passed into `mLSTM1900`.
         Optional; if None, will default to mLSTM1900 from paper,
         or you can pass in your own set of parameters,
-        as long as they are stax-compatible.    
+        as long as they are stax-compatible.
     :param proj_name: Name of the project,
         used to name created output directory.
     :param out_dom_seqs: Out-domain holdout set of sequences,
