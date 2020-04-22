@@ -215,8 +215,11 @@ def fit(
 
     # Load and check that params have correct keys and shapes
     if params is None:
-        params = (load_params_1900(), (), load_dense_1900())
+        params = (load_params_1900(), (), load_dense_1900(), ())
 
+    # Defensive programming checks
+    if len(params) != len(model_layers):
+        raise ValueError("The number of parameters specified must match the number of stax.serial layers")
     validate_mLSTM1900_params(params[0])
 
     # batch sequences by length
