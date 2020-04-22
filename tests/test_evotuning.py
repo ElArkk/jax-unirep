@@ -82,6 +82,9 @@ def test_predict(params):
 
     We test that the shape of the output of ``predict``
     is identical to the shape of the ys to predict.
+
+    We also test that the evotune `predict` function gives us bounded values
+    that are between 0 and 1.
     """
 
     sequences = ["ASDFGHJKL", "ASDYGHTKW"]
@@ -89,6 +92,8 @@ def test_predict(params):
     res = vmap(partial(predict, params))(xs)
 
     assert res.shape == ys.shape
+    assert res.min() >= 0
+    assert res.max() <= 1
 
 
 def test_fit(params):
