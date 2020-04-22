@@ -11,7 +11,6 @@ from jax.experimental.stax import Dense, Softmax, serial
 from jax_unirep.losses import _neg_cross_entropy_loss
 from sklearn.model_selection import KFold, train_test_split
 
-from .activations import softmax
 from .layers import mLSTM1900, mLSTM1900_AvgHidden, mLSTM1900_HiddenStates
 from .losses import neg_cross_entropy_loss
 from .optimizers import adamW
@@ -485,11 +484,11 @@ def evotune(
         about all evotuning trials.
         - evotuned_params - A dictionary of optimized weights
     """
-    if params is None:
-        params = (load_params_1900(), (), load_dense_1900())
+    # if params is None:
+    #     params = (load_params_1900(), (), load_dense_1900())
 
-    # Check that params have correct keys and shapes
-    validate_mLSTM1900_params(params[0])
+    # # Check that params have correct keys and shapes
+    # validate_mLSTM1900_params(params[0])
 
     study = optuna.create_study()
 
