@@ -1,5 +1,5 @@
 import jax.numpy as np
-
+from jax.experimental.optimizers import optimizer
 
 def make_schedule(scalar_or_schedule):
     if callable(scalar_or_schedule):
