@@ -177,9 +177,12 @@ def mLSTM1900_step(
 ) -> Tuple[Tuple[np.ndarray, np.ndarray], np.ndarray]:
     """
     Implementation of mLSTMCell from UniRep paper, with weight normalization.
+
     Exact source code reference:
     https://github.com/churchlab/UniRep/blob/master/unirep.py#L75
+
     Shapes of parameters:
+
     - wmx: 10, 1900
     - wmh: 1900, 1900
     - wx: 10, 7600
@@ -189,7 +192,9 @@ def mLSTM1900_step(
     - gx: 7600
     - gh: 7600
     - b: 7600
+
     Shapes of inputs:
+
     - x_t: (1, 10)
     - carry:
         - h_t: (1, 1900)
