@@ -51,7 +51,9 @@ weights_1900_dir = Path(
 )
 
 
-def dump_params(params, step, dir_path="temp"):
+def dump_params(
+    params: Dict, dir_path: Optional[str] = "temp",
+):
     """
     Dumps the current params of model being trained to a .npy file.
 

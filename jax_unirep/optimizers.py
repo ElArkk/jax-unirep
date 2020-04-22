@@ -1,13 +1,5 @@
 import jax.numpy as np
-
-
-def make_schedule(scalar_or_schedule):
-    if callable(scalar_or_schedule):
-        return scalar_or_schedule
-    elif np.ndim(scalar_or_schedule) == 0:
-        return constant(scalar_or_schedule)
-    else:
-        raise TypeError(type(scalar_or_schedule))
+from jax.experimental.optimizers import make_schedule, optimizer
 
 
 @optimizer
