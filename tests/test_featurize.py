@@ -2,6 +2,7 @@ from contextlib import suppress as does_not_raise
 
 import numpy as np
 import pytest
+
 from jax_unirep import get_reps
 from jax_unirep.errors import SequenceLengthsError
 from jax_unirep.featurize import rep_arbitrary_lengths, rep_same_lengths
@@ -62,3 +63,9 @@ def test_get_reps():
     assert np.array_equal(a, d)
     assert np.array_equal(b, e)
     assert np.array_equal(c, f)
+
+    h_final, c_final, h_avg = get_reps(["ABC", "DEFGH", "DEF"])
+
+    assert h_final.shape == (3, 1900)
+    assert c_final.shape == (3, 1900)
+    assert h_avg.shape == (3, 1900)

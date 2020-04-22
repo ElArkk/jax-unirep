@@ -4,12 +4,15 @@ from typing import Callable, Dict, List, Optional, Tuple
 
 import numpy as onp
 import optuna
+from jax import grad, jit, lax
 from jax import numpy as np
 from jax import grad, jit, lax, random, vmap
 from jax.experimental.optimizers import adam
 from jax.experimental.stax import Dense, Softmax, serial
 from jax_unirep.losses import _neg_cross_entropy_loss
 from sklearn.model_selection import KFold, train_test_split
+
+from jax_unirep.losses import _neg_cross_entropy_loss
 
 from .layers import mLSTM1900, mLSTM1900_AvgHidden, mLSTM1900_HiddenStates
 from .losses import neg_cross_entropy_loss
