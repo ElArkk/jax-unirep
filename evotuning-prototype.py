@@ -1,6 +1,6 @@
 """Functions for evolutionary tuning."""
 
-import pandas as pd
+# import pandas as pd
 from jax_unirep import evotune, fit
 from jax_unirep.params import add_dense_params
 from jax_unirep.utils import dump_params, load_params_1900

@@ -11,7 +11,6 @@ from jax.experimental.stax import Dense, Softmax, serial
 from jax_unirep.losses import _neg_cross_entropy_loss
 from sklearn.model_selection import KFold, train_test_split
 
-from .activations import softmax
 from .layers import mLSTM1900, mLSTM1900_AvgHidden, mLSTM1900_HiddenStates
 from .losses import neg_cross_entropy_loss
 from .optimizers import adamW
@@ -28,21 +27,16 @@ from .utils import (
     validate_mLSTM1900_params,
 )
 
-# HERE LIES THE DRAG.. MODEL!
-"""
+model_layers = (mLSTM1900(), mLSTM1900_HiddenStates(), Dense(25), Softmax)
 init_fun, predict = serial(
-    mLSTM1900(), mLSTM1900_HiddenStates(), Dense(25), Softmax
+    *model_layers
 )
-"""
-# I hypothesized the Softmax layer wasn't working
-# --> Commented out and showed it made no difference!
-# Now I'll just implement softmax manually.
-init_fun, predict = serial(mLSTM1900(), mLSTM1900_HiddenStates(), Dense(25))
 
 
 @jit
 def evotune_loss(params, inputs, targets):
-    predictions = softmax(vmap(partial(predict, params))(inputs))
+    # predictions = softmax(vmap(partial(predict, params))(inputs))
+    predictions = vmap(partial(predict, params))(inputs)
 
     return _neg_cross_entropy_loss(targets, predictions)
 
@@ -215,8 +209,11 @@ def fit(
 
     # Load and check that params have correct keys and shapes
     if params is None:
-        params = (load_params_1900(), (), load_dense_1900())
+        params = (load_params_1900(), (), load_dense_1900(), ())
 
+    # Defensive programming checks
+    if len(params) != len(model_layers):
+        raise ValueError("The number of parameters specified must match the number of stax.serial layers")
     validate_mLSTM1900_params(params[0])
 
     # batch sequences by length
@@ -460,7 +457,7 @@ def evotune(
     :param params: Parameters to be passed into `mLSTM1900`.
         Optional; if None, will default to mLSTM1900 from paper,
         or you can pass in your own set of parameters,
-        as long as they are stax-compatible.    
+        as long as they are stax-compatible.
     :param proj_name: Name of the project,
         used to name created output directory.
     :param out_dom_seqs: Out-domain holdout set of sequences,
@@ -487,11 +484,11 @@ def evotune(
         about all evotuning trials.
         - evotuned_params - A dictionary of optimized weights
     """
-    if params is None:
-        params = (load_params_1900(), (), load_dense_1900())
+    # if params is None:
+    #     params = (load_params_1900(), (), load_dense_1900())
 
-    # Check that params have correct keys and shapes
-    validate_mLSTM1900_params(params[0])
+    # # Check that params have correct keys and shapes
+    # validate_mLSTM1900_params(params[0])
 
     study = optuna.create_study()
 
