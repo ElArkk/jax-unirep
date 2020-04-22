@@ -28,9 +28,7 @@ from .utils import (
 )
 
 model_layers = (mLSTM1900(), mLSTM1900_HiddenStates(), Dense(25), Softmax)
-init_fun, predict = serial(
-    *model_layers
-)
+init_fun, predict = serial(*model_layers)
 
 
 @jit
@@ -213,7 +211,9 @@ def fit(
 
     # Defensive programming checks
     if len(params) != len(model_layers):
-        raise ValueError("The number of parameters specified must match the number of stax.serial layers")
+        raise ValueError(
+            "The number of parameters specified must match the number of stax.serial layers"
+        )
     validate_mLSTM1900_params(params[0])
 
     # batch sequences by length
@@ -278,7 +278,7 @@ def fit(
 
                 # dump current params in case run crashes or loss increases
                 # steps printed are 1-indexed i.e. starts at epoch 1 not 0.
-                dump_params(get_params(state), proj_name + "_" + str((i + 1)))
+                dump_params(get_params(state), proj_name, (i + 1))
 
     return get_params(state)
 

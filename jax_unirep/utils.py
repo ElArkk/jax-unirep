@@ -8,7 +8,6 @@ from typing import Dict, List, Optional, Tuple
 import jax.numpy as np
 import numpy as onp
 import pkg_resources
-from pathlib import Path
 
 from .errors import SequenceLengthsError
 
@@ -52,7 +51,7 @@ weights_1900_dir = Path(
 
 
 def dump_params(
-    params: Dict, dir_path: Optional[str] = "temp",
+    params: Dict, dir_path: Optional[str] = "temp", step: Optional[int] = 0,
 ):
     """
     Dumps the current params of model being trained to a .npy file.
@@ -100,8 +99,7 @@ def dump_params(
         # Save file
         fpath = iteration_path / fname
         onp.save(
-            fpath,
-            onp.array(val),
+            fpath, onp.array(val),
         )
     print("Weights successfully dumped!")
 
@@ -209,38 +207,22 @@ def load_params_1900(name: str = "uniref50") -> Dict:
     return params
 
 
-def load_params(dir_path: str, n: Optional[int] = None) -> Dict:
+def load_params(dir_path: str) -> Dict:
     """Load pre-trained mLSTM1900 weights from any JAX-unirep outputted source."""
 
     params = dict()
 
-    if n is None:
+    params["gh"] = np.load(dir_path + "/rnn_mlstm_mlstm_gh/0.npy")
+    params["gmh"] = np.load(dir_path + "/rnn_mlstm_mlstm_gmh/0.npy")
+    params["gmx"] = np.load(dir_path + "/rnn_mlstm_mlstm_gmx/0.npy")
+    params["gx"] = np.load(dir_path + "/rnn_mlstm_mlstm_gx/0.npy")
 
-        params["gh"] = np.load(dir_path + "/gh.npy")
-        params["gmh"] = np.load(dir_path + "/gmh.npy")
-        params["gmx"] = np.load(dir_path + "/gmx.npy")
-        params["gx"] = np.load(dir_path + "/gx.npy")
+    params["wh"] = np.load(dir_path + "/rnn_mlstm_mlstm_wh/0.npy")
+    params["wmh"] = np.load(dir_path + "/rnn_mlstm_mlstm_wmh/0.npy")
+    params["wmx"] = np.load(dir_path + "/rnn_mlstm_mlstm_wmx/0.npy")
+    params["wx"] = np.load(dir_path + "/rnn_mlstm_mlstm_wx/0.npy")
 
-        params["wh"] = np.load(dir_path + "/wh.npy")
-        params["wmh"] = np.load(dir_path + "/wmh.npy")
-        params["wmx"] = np.load(dir_path + "/wmx.npy")
-        params["wx"] = np.load(dir_path + "/wx.npy")
-
-        params["b"] = np.load(dir_path + "/b.npy")
-
-    else:
-
-        params["gh"] = np.load(dir_path + "/gh_" + str(n) + ".npy")
-        params["gmh"] = np.load(dir_path + "/gmh_" + str(n) + ".npy")
-        params["gmx"] = np.load(dir_path + "/gmx_" + str(n) + ".npy")
-        params["gx"] = np.load(dir_path + "/gx_" + str(n) + ".npy")
-
-        params["wh"] = np.load(dir_path + "/wh_" + str(n) + ".npy")
-        params["wmh"] = np.load(dir_path + "/wmh_" + str(n) + ".npy")
-        params["wmx"] = np.load(dir_path + "/wmx_" + str(n) + ".npy")
-        params["wx"] = np.load(dir_path + "/wx_" + str(n) + ".npy")
-
-        params["b"] = np.load(dir_path + "/b_" + str(n) + ".npy")
+    params["b"] = np.load(dir_path + "/rnn_mlstm_mlstm_b/0.npy")
 
     return params
 
