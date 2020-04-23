@@ -1,6 +1,5 @@
 import numpy as np
 import pytest
-
 from jax_unirep.utils import batch_sequences, l2_normalize
 
 

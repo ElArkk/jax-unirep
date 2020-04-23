@@ -1,18 +1,16 @@
 """API for evolutionary tuning."""
+import logging
 from functools import partial
 from typing import Callable, Dict, List, Optional, Tuple
 
 import numpy as onp
 import optuna
-from jax import grad, jit, lax
 from jax import numpy as np
 from jax import grad, jit, lax, random, vmap
 from jax.experimental.optimizers import adam
 from jax.experimental.stax import Dense, Softmax, serial
 from jax_unirep.losses import _neg_cross_entropy_loss
 from sklearn.model_selection import KFold, train_test_split
-
-from jax_unirep.losses import _neg_cross_entropy_loss
 
 from .layers import mLSTM1900, mLSTM1900_AvgHidden, mLSTM1900_HiddenStates
 from .losses import neg_cross_entropy_loss
@@ -29,6 +27,13 @@ from .utils import (
     one_hots,
     validate_mLSTM1900_params,
 )
+
+logging.basicConfig(
+    filename=("most_recent.log"),
+    level=logging.INFO,
+    format="%(asctime)s :: %(levelname)s :: %(message)s",
+)
+
 
 model_layers = (mLSTM1900(), mLSTM1900_HiddenStates(), Dense(25), Softmax)
 init_fun, predict = serial(*model_layers)
@@ -225,7 +230,7 @@ def fit(
     avg_len, batch_lens = get_batch_len(xs)
 
     # for debugging, but could be desirable to keep permanently
-    print(
+    logging.info(
         f"Number of batches: {len(xs)}, "
         + f"Average batch length: {avg_len}, "
         + f"Batch lengths: {batch_lens}, "
@@ -259,22 +264,27 @@ def fit(
 
     for i in range(n):
 
-        print(f"Starting epoch {i + 1}")
+        logging.info(f"Starting epoch {i + 1}")
 
         for x, y in zip(xs, ys):
             state = step(i, state)
 
             # for debugging only
             # params = get_params(state)
-            # print(f"Shape of y: {(len(y), len(y[0]), len(y[0][0]))}")
-            # print(softmax(vmap(partial(predict, params))(x)))
+            # logging.info(f"Shape of y: {(len(y), len(y[0]), len(y[0][0]))}")
+            # logging.info(softmax(vmap(partial(predict, params))(x)))
 
         if (i + 1) % steps_per_print == 0:
+
+            logging.info(
+                f"Epoch {i + 1}: "
+                + f"train-loss={avg_loss(sequences, get_params(state))}, "
+            )
 
             if holdout_seqs is not None:
 
                 # calculate and print loss for out-domain holdout set
-                print(
+                logging.info(
                     f"Epoch {i + 1}: "
                     + f"holdout-loss={avg_loss(holdout_seqs, get_params(state))}, "
                 )
@@ -393,14 +403,16 @@ def objective(
 
     n_epochs = trial.suggest_discrete_uniform(**n_epochs_kwargs)
     learning_rate = trial.suggest_loguniform(**learning_rate_kwargs)
-    print(f"Trying out {n_epochs} epochs with learning rate {learning_rate}.")
+    logging.info(
+        f"Trying out {n_epochs} epochs with learning rate {learning_rate}."
+    )
 
     kf = KFold(n_splits=n_splits, shuffle=True)
     sequences = onp.array(sequences)
 
     avg_test_losses = []
     for i, (train_index, test_index) in enumerate(kf.split(sequences)):
-        print(f"Split #{i}")
+        logging.info(f"Split #{i}")
         train_sequences, test_sequences = (
             sequences[train_index],
             sequences[test_index],

@@ -1,8 +1,5 @@
 import numpy as np
 import pytest
-from hypothesis import given, settings
-from hypothesis import strategies as st
-
 from jax_unirep import get_reps
 from jax_unirep.sampler import (
     hamming_distance,
@@ -11,6 +8,9 @@ from jax_unirep.sampler import (
     sample_one_chain,
 )
 from jax_unirep.utils import proposal_valid_letters
+
+from hypothesis import strategies as st
+from hypothesis import given, settings
 
 
 @given(st.data())
