@@ -1,7 +1,7 @@
 """API for evolutionary tuning."""
 import logging
 from functools import partial
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Callable, Dict, Iterable, List, Optional, Tuple
 
 import numpy as onp
 import optuna
@@ -159,7 +159,7 @@ def length_batch_input_outputs(
     return xs, ys
 
 
-def get_batch_len(batched_seqs):
+def get_batch_len(batched_seqs: Iterable[str]) -> Tuple[np.ndarray, List]:
     """
     Returns the average length of each batch as well as a full array of batch distribution.
 
@@ -231,7 +231,6 @@ def fit(
 
     avg_len, batch_lens = get_batch_len(xs)
 
-    # for debugging, but could be desirable to keep permanently
     logger.info(
         f"Number of batches: {len(xs)}, "
         + f"Average batch length: {avg_len}, "
@@ -270,10 +269,9 @@ def fit(
         for x, y in zip(xs, ys):
             state = step(i, state)
 
-            # for debugging only
-            # params = get_params(state)
-            # logger.info(f"Shape of y: {(len(y), len(y[0]), len(y[0][0]))}")
-            # logger.info(softmax(vmap(partial(predict, params))(x)))
+            # change logger level to display debug prints
+            logger.debug(f"Shape of y: {(len(y), len(y[0]), len(y[0][0]))}")
+            logger.debug(vmap(partial(predict, get_params(state)))(x))
 
         if (i + 1) % steps_per_print == 0:
 
@@ -500,11 +498,6 @@ def evotune(
         about all evotuning trials.
         - evotuned_params - A dictionary of optimized weights
     """
-    # if params is None:
-    #     params = (load_params_1900(), (), load_dense_1900())
-
-    # # Check that params have correct keys and shapes
-    # validate_mLSTM1900_params(params[0])
 
     study = optuna.create_study()
 
