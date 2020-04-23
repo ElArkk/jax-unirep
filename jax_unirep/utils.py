@@ -207,26 +207,6 @@ def load_params_1900(name: str = "uniref50") -> Dict:
     return params
 
 
-def load_params(dir_path: str) -> Dict:
-    """Load pre-trained mLSTM1900 weights from any JAX-unirep outputted source."""
-
-    params = dict()
-
-    params["gh"] = np.load(dir_path + "/rnn_mlstm_mlstm_gh/0.npy")
-    params["gmh"] = np.load(dir_path + "/rnn_mlstm_mlstm_gmh/0.npy")
-    params["gmx"] = np.load(dir_path + "/rnn_mlstm_mlstm_gmx/0.npy")
-    params["gx"] = np.load(dir_path + "/rnn_mlstm_mlstm_gx/0.npy")
-
-    params["wh"] = np.load(dir_path + "/rnn_mlstm_mlstm_wh/0.npy")
-    params["wmh"] = np.load(dir_path + "/rnn_mlstm_mlstm_wmh/0.npy")
-    params["wmx"] = np.load(dir_path + "/rnn_mlstm_mlstm_wmx/0.npy")
-    params["wx"] = np.load(dir_path + "/rnn_mlstm_mlstm_wx/0.npy")
-
-    params["b"] = np.load(dir_path + "/rnn_mlstm_mlstm_b/0.npy")
-
-    return params
-
-
 def validate_mLSTM1900_params(params: Dict):
     """
     Validate shapes of mLSTM1900 parameter dictionary.
