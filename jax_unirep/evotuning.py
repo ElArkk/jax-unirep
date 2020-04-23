@@ -203,7 +203,7 @@ def fit(
     in the original list of sequences
     that are of a particular length.
 
-    You can optionally dump parameters and print weights every k steps
+    You can optionally dump parameters and print weights every `steps_per_print` steps
     to monitor training progress.
 
     :param params: mLSTM1900 parameters.
