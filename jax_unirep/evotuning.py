@@ -185,7 +185,7 @@ def fit(
     steps_per_print: Optional[int] = 200,
 ) -> Dict:
     """
-    Returns weights fitted to predict the next letter in each sequence.
+    Return weights fitted to predict the next letter in each sequence.
 
     The training loop is as follows.
     Per step in the training loop,
