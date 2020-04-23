@@ -239,7 +239,6 @@ def fit(
     )
 
     init, update, get_params = adamW(step_size=step_size)
-    # optimizer_funcs = jit(update), jit(get_params)
 
     @jit
     def step(i, state):
