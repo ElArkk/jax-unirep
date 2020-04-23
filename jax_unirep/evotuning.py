@@ -28,13 +28,16 @@ from .utils import (
     validate_mLSTM1900_params,
 )
 
-logging.basicConfig(
-    filename=("most_recent.log"),
-    level=logging.INFO,
-    format="%(asctime)s :: %(levelname)s :: %(message)s",
-)
+# setup logger
+logger = logging.getLogger("evotuning")
+logger.setLevel(logging.INFO)
+fh = logging.FileHandler("evotuning.log")
+fh.setLevel(logging.INFO)
+formatter = logging.Formatter("%(asctime)s :: %(levelname)s :: %(message)s")
+fh.setFormatter(formatter)
+logger.addHandler(fh)
 
-
+# setup model
 model_layers = (mLSTM1900(), mLSTM1900_HiddenStates(), Dense(25), Softmax)
 init_fun, predict = serial(*model_layers)
 
@@ -230,7 +233,7 @@ def fit(
     avg_len, batch_lens = get_batch_len(xs)
 
     # for debugging, but could be desirable to keep permanently
-    logging.info(
+    logger.info(
         f"Number of batches: {len(xs)}, "
         + f"Average batch length: {avg_len}, "
         + f"Batch lengths: {batch_lens}, "
@@ -264,19 +267,19 @@ def fit(
 
     for i in range(n):
 
-        logging.info(f"Starting epoch {i + 1}")
+        logger.info(f"Starting epoch {i + 1}")
 
         for x, y in zip(xs, ys):
             state = step(i, state)
 
             # for debugging only
             # params = get_params(state)
-            # logging.info(f"Shape of y: {(len(y), len(y[0]), len(y[0][0]))}")
-            # logging.info(softmax(vmap(partial(predict, params))(x)))
+            # logger.info(f"Shape of y: {(len(y), len(y[0]), len(y[0][0]))}")
+            # logger.info(softmax(vmap(partial(predict, params))(x)))
 
         if (i + 1) % steps_per_print == 0:
 
-            logging.info(
+            logger.info(
                 f"Epoch {i + 1}: "
                 + f"train-loss={avg_loss(sequences, get_params(state))}, "
             )
@@ -284,7 +287,7 @@ def fit(
             if holdout_seqs is not None:
 
                 # calculate and print loss for out-domain holdout set
-                logging.info(
+                logger.info(
                     f"Epoch {i + 1}: "
                     + f"holdout-loss={avg_loss(holdout_seqs, get_params(state))}, "
                 )
@@ -403,7 +406,7 @@ def objective(
 
     n_epochs = trial.suggest_discrete_uniform(**n_epochs_kwargs)
     learning_rate = trial.suggest_loguniform(**learning_rate_kwargs)
-    logging.info(
+    logger.info(
         f"Trying out {n_epochs} epochs with learning rate {learning_rate}."
     )
 
@@ -412,7 +415,7 @@ def objective(
 
     avg_test_losses = []
     for i, (train_index, test_index) in enumerate(kf.split(sequences)):
-        logging.info(f"Split #{i}")
+        logger.info(f"Split #{i}")
         train_sequences, test_sequences = (
             sequences[train_index],
             sequences[test_index],
@@ -518,6 +521,10 @@ def evotune(
     study.optimize(objective_func, n_trials=n_trials)
     num_epochs = int(study.best_params["n_epochs"])
     learning_rate = float(study.best_params["learning_rate"])
+
+    logger.info(
+        f"Optuna done, starting tuning with learning rate={learning_rate}, "
+    )
 
     evotuned_params = fit(
         params=params,
