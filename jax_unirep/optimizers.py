@@ -6,6 +6,9 @@ from jax.experimental.optimizers import make_schedule, optimizer
 def adamW(step_size, b1=0.9, b2=0.999, eps=1e-8, w=0.01):
     """Construct optimizer triple for Adam.
 
+    This docstring is different from the rest because we want to submit this
+    to the jax library, so DON'T CHANGE IT TO SPHINX-STYLE!
+
     Args:
         step_size: positive scalar, or a callable representing a step size schedule
             that maps the iteration index to positive scalar.
