@@ -269,9 +269,10 @@ def fit(
         for x, y in zip(xs, ys):
             state = step(i, state)
 
-            # change logger level to display debug prints
-            logger.debug(f"Shape of y: {(len(y), len(y[0]), len(y[0][0]))}")
-            logger.debug(vmap(partial(predict, get_params(state)))(x))
+            # change logger level and uncomment to display debug prints
+            # commenting this out as it causes memory issues at high epochs
+            # logger.debug(f"Shape of y: {(len(y), len(y[0]), len(y[0][0]))}")
+            # logger.debug(vmap(partial(predict, get_params(state)))(x))
 
         if (i + 1) % steps_per_print == 0:
 
