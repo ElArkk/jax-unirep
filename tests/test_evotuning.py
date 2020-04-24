@@ -73,7 +73,7 @@ def test_get_batch_len():
     batched_seqs = [["ABC", "ACD"], ["AABC", "EKQJ"], ["QWLRJK", "QJEFLK"]]
     mean_batch_length, batch_lengths = get_batch_len(batched_seqs)
     assert mean_batch_length == 2
-    assert batch_lens == [2, 2, 2]
+    assert batch_lengths == [2, 2, 2]
 
 
 def test_evotuning_pairs():
