@@ -13,6 +13,7 @@ from jax_unirep.evotuning import (
     evotune_loss,
     evotuning_pairs,
     fit,
+    get_batch_len,
     init_fun,
     input_output_pairs,
     length_batch_input_outputs,
