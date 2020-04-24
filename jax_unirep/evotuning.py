@@ -164,9 +164,7 @@ def get_batch_len(batched_seqs: Iterable[str]) -> Tuple[np.ndarray, List]:
 
     :param batched_seqs: list of lists of sequences, grouped by length.
     """
-    batch_lens = []
-    for batch in batched_seqs:
-        batch_lens.append(len(batch))
+    batch_lens = [len(batch) for batch in batched_seqs]
 
     batch_lens = np.array(batch_lens)
 
