@@ -8,12 +8,12 @@ import pytest
 from jax import vmap
 from jax.experimental.optimizers import adam
 from jax.random import PRNGKey
-
 from jax_unirep.evotuning import (
     evotune,
     evotune_loss,
     evotuning_pairs,
     fit,
+    get_batch_len,
     init_fun,
     input_output_pairs,
     length_batch_input_outputs,
@@ -69,6 +69,13 @@ def test_length_batch_input_outputs():
     assert len(ys) == len(set([len(x) for x in sequences]))
 
 
+def test_get_batch_len():
+    batched_seqs = [["ABC", "ACD"], ["AABC", "EKQJ"], ["QWLRJK", "QJEFLK"]]
+    mean_batch_length, batch_lengths = get_batch_len(batched_seqs)
+    assert mean_batch_length == 2
+    assert batch_lengths == [2, 2, 2]
+
+
 def test_evotuning_pairs():
     """Unit test for evotuning_pairs function."""
     sequence = "ACGHJKL"
@@ -83,6 +90,9 @@ def test_predict(params):
 
     We test that the shape of the output of ``predict``
     is identical to the shape of the ys to predict.
+
+    We also test that the evotune `predict` function gives us bounded values
+    that are between 0 and 1.
     """
 
     sequences = ["ASDFGHJKL", "ASDYGHTKW"]
@@ -90,6 +100,8 @@ def test_predict(params):
     res = vmap(partial(predict, params))(xs)
 
     assert res.shape == ys.shape
+    assert res.min() >= 0
+    assert res.max() <= 1
 
 
 def test_fit(params):
