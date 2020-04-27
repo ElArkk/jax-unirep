@@ -135,7 +135,7 @@ def aa_seq_to_int(s):
     return [24] + [aa_to_int[a] for a in s] + [25]
 
 
-def load_embedding_1900(folderpath: str = None):
+def load_embedding_1900(folderpath: Optional[str] = None):
     """Load pre-trained embedding weights for uniref50 model."""
     if folderpath:
         weights_1900_dir = Path(folderpath)
@@ -188,7 +188,7 @@ Sequence length: number of sequences information in the dictionary below.
     return onp.stack(seq_embeddings, axis=0)
 
 
-def load_dense_1900(folderpath: str = None) -> Tuple:
+def load_dense_1900(folderpath: Optional[str] = None) -> Tuple:
     """
     Load pre-trained dense layer weights from the UniRep paper.
 
@@ -209,7 +209,7 @@ def load_dense_1900(folderpath: str = None) -> Tuple:
     return w, b
 
 
-def load_params_1900(folderpath: str = None) -> Dict:
+def load_params_1900(folderpath: Optional[str] = None) -> Dict:
     """Load pre-trained mLSTM1900 weights from the UniRep paper."""
     if folderpath:
         print(folderpath)
@@ -264,7 +264,7 @@ def validate_mLSTM1900_params(params: Dict):
             )
 
 
-def load_params(folderpath: str = None):
+def load_params(folderpath: Optional[str] = None):
     return (
         load_params_1900(folderpath=folderpath),
         (),
