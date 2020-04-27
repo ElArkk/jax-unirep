@@ -97,6 +97,7 @@ The [`evotune`][evotunefunc] function uses `optuna` under the hood
 to automatically find: 
 1. the optimal number of epochs to train for, and
 2.  the optimal learning rate, 
+
 given a set of sequences.
 The `study` object will contain all the information
 about the training process of each trial. 
