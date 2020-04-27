@@ -1,6 +1,4 @@
-"""Functions for evolutionary tuning."""
-
-# import pandas as pd
+"""Evotuning two ways."""
 from jax_unirep import evotune, fit
 from jax_unirep.params import add_dense_params
 from jax_unirep.utils import dump_params, load_params_1900
@@ -16,16 +14,7 @@ holdout_sequences = [
     "HASVALTA",
 ] * 5
 
-# To start with Random params instead of mLSTM weights from UniRep:
-"""
-params = dict()
-params = add_dense_params(params, "dense", 1900, 25)
-params["mLSTM1900"] = load_params_1900()
-params = fit(params=params, sequences=sequences, n=10)
-"""
-
-# Evotuning with Optuna
-
+## 1. Evotuning with Optuna
 PROJECT_NAME = "temp"
 n_epochs_config = {"low": 1, "high": 1}
 lr_config = {"low": 1e-5, "high": 1e-3}
@@ -46,8 +35,8 @@ print("Evotuning done! Find output weights in", PROJECT_NAME)
 print(study.trials_dataframe())
 
 
-# Evotuning without Optuna
-"""
+## 2. Evotuning without Optuna
+
 N_EPOCHS = 3
 LEARN_RATE = 1e-4
 PROJECT_NAME = "temp"
@@ -64,4 +53,3 @@ evotuned_params = fit(
 
 dump_params(evotuned_params, PROJECT_NAME)
 print("Evotuning done! Find output weights in", PROJECT_NAME)
-"""

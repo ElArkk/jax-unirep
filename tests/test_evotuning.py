@@ -8,6 +8,7 @@ import pytest
 from jax import vmap
 from jax.experimental.optimizers import adam
 from jax.random import PRNGKey
+
 from jax_unirep.evotuning import (
     evotune,
     evotune_loss,
@@ -67,13 +68,6 @@ def test_length_batch_input_outputs():
     xs, ys = length_batch_input_outputs(sequences)
     assert len(xs) == len(set([len(x) for x in sequences]))
     assert len(ys) == len(set([len(x) for x in sequences]))
-
-
-def test_get_batch_len():
-    batched_seqs = [["ABC", "ACD"], ["AABC", "EKQJ"], ["QWLRJK", "QJEFLK"]]
-    mean_batch_length, batch_lengths = get_batch_len(batched_seqs)
-    assert mean_batch_length == 2
-    assert batch_lengths == [2, 2, 2]
 
 
 def test_evotuning_pairs():

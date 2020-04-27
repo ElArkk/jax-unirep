@@ -2,6 +2,7 @@ from contextlib import suppress as does_not_raise
 
 import numpy as np
 import pytest
+
 from jax_unirep import get_reps
 from jax_unirep.errors import SequenceLengthsError
 from jax_unirep.featurize import rep_arbitrary_lengths, rep_same_lengths

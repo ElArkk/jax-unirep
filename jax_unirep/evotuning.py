@@ -5,12 +5,14 @@ from typing import Callable, Dict, Iterable, List, Optional, Tuple
 
 import numpy as onp
 import optuna
+from jax import grad, jit, lax
 from jax import numpy as np
-from jax import grad, jit, lax, random, vmap
+from jax import random, vmap
 from jax.experimental.optimizers import adam
 from jax.experimental.stax import Dense, Softmax, serial
-from jax_unirep.losses import _neg_cross_entropy_loss
 from sklearn.model_selection import KFold, train_test_split
+
+from jax_unirep.losses import _neg_cross_entropy_loss
 
 from .layers import mLSTM1900, mLSTM1900_AvgHidden, mLSTM1900_HiddenStates
 from .optimizers import adamW
@@ -19,6 +21,7 @@ from .utils import (
     aa_seq_to_int,
     batch_sequences,
     dump_params,
+    get_batch_len,
     get_embeddings,
     load_dense_1900,
     load_embeddings,
@@ -156,19 +159,6 @@ def length_batch_input_outputs(
         xs.append(x)
         ys.append(y)
     return xs, ys
-
-
-def get_batch_len(batched_seqs: Iterable[str]) -> Tuple[np.ndarray, List]:
-    """
-    Returns the average length of each batch as well as a full array of batch distribution.
-
-    :param batched_seqs: list of lists of sequences, grouped by length.
-    """
-    batch_lens = [len(batch) for batch in batched_seqs]
-
-    batch_lens = np.array(batch_lens)
-
-    return np.mean(batch_lens), batch_lens
 
 
 def fit(

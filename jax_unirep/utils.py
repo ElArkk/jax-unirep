@@ -3,7 +3,7 @@ import os
 from collections import Counter
 from pathlib import Path
 from random import choice
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Iterable, List, Optional, Tuple
 
 import jax.numpy as np
 import numpy as onp
@@ -287,6 +287,16 @@ def batch_sequences(seqs: List[str]) -> List[List]:
     for l in set([len(s) for s in seqs]):
         order.append([i for i, s in enumerate(seqs) if len(s) == l])
     return order
+
+
+def get_batch_len(batched_seqs: Iterable[str]) -> Tuple[np.ndarray, List]:
+    """
+    Returns the average length of each batch as well as a full array of batch distribution.
+
+    :param batched_seqs: list of lists of sequences, grouped by length.
+    """
+    batch_lens = np.array([len(batch) for batch in batched_seqs])
+    return np.mean(batch_lens), batch_lens
 
 
 # This block of code generates one-hot-encoded arrays.
