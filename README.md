@@ -103,10 +103,10 @@ training process of each trial.
 from the trial with the lowest test set loss.
 
 If you want to directly fine-tune the weights for a fixed number
-of epochs and with a fixed learning rate, then you should use
-the [`fit`][fitfunc] function.
+of epochs and with a fixed learning rate, you should use
+the [`fit`][fitfunc] function instead.
 
-You can find an example usage of both functions [here][exampleevotune]
+You can find an example usage of both functions [here][exampleevotune].
 
 If you want to pass a set of mLSTM and dense weights that were
 dumped in an earlier run, create params as follows:
