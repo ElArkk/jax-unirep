@@ -91,8 +91,7 @@ Given a set of starter weights for the mLSTM (defaults to
 the weights from the paper) as well as a set of sequences,
 the weights get fine-tuned in such a way that test set loss
 in the 'next-aa prediction task' is minimized.
-There are two functions with differing levels of
-control available for the task.
+There are two functions with differing levels of control available.
 
 The [`evotune`][evotunefunc] function uses `optuna` under the hood
 to automatically find: 
