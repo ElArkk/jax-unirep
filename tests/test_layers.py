@@ -1,8 +1,11 @@
 import numpy as np
 import numpy.random as npr
 import pytest
+from hypothesis import given, settings
+from hypothesis import strategies as st
 from jax import random
 from jax.experimental import stax
+
 from jax_unirep.layers import (
     mLSTM1900,
     mLSTM1900_AvgHidden,
@@ -16,9 +19,6 @@ from jax_unirep.utils import (
     load_embedding_1900,
     load_params_1900,
 )
-
-from hypothesis import strategies as st
-from hypothesis import given, settings
 
 rng = random.PRNGKey(0)
 

@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
-from jax_unirep.utils import batch_sequences, l2_normalize
+
+from jax_unirep.utils import batch_sequences, l2_normalize, get_batch_len
 
 
 def test_l2_normalize():
@@ -28,3 +29,10 @@ def test_l2_normalize():
 )
 def test_batch_sequences(seqs, expected):
     assert batch_sequences(seqs) == expected
+
+
+def test_get_batch_len():
+    batched_seqs = [["ABC", "ACD"], ["AABC", "EKQJ"], ["QWLRJK", "QJEFLK"]]
+    mean_batch_length, batch_lengths = get_batch_len(batched_seqs)
+    assert mean_batch_length == 2
+    assert np.all(batch_lengths == np.array([2, 2, 2]))
