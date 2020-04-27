@@ -45,9 +45,11 @@ aa_to_int = {
 proposal_valid_letters = "ACDEFGHIKLMNPQRSTVWY"
 
 
-weights_1900_dir = Path(
-    pkg_resources.resource_filename("jax_unirep", "weights/1900_weights")
-)
+# weights_1900_dir = Path(
+#     pkg_resources.resource_filename(
+#         "jax_unirep", "weights/1900_weights/uniref50"
+#     )
+# )
 
 
 def dump_params(
@@ -59,9 +61,12 @@ def dump_params(
     The directory is specified by dir_path,
     and will be created, if it does not exist yet.
 
-    The weights that will be dumped are only the mLSTM weights.
+    The weights that will be dumped are the mLSTM weights as well
+    as the dense layer weights. The embedding matrix weights are
+    not dumped, as they never get modified.
     The weights will have the same naming convention as the original:
-
+        dir_path/iter_x/fully_connected_biases:0.npy
+        dir_path/iter_x/fully_connected_weights:0.npy
         dir_path/iter_x/rnn_mlstm_mlstm_b:0.npy
         dir_path/iter_x/rnn_mlstm_mlstm_gh:0.npy
         dir_path/iter_x/rnn_mlstm_mlstm_gmh:0.npy
@@ -87,10 +92,10 @@ def dump_params(
         os.makedirs(dir_path)
         print(f"created directory at {dir_path}")
 
-    # iterate through and save (non-dense) params as npy files.
+    # iterate through and save mlstm params as npy files.
     for name, val in params[0].items():
         # Construct filename
-        fname = fr"rnn_mlstm_mlstm_{name}:0.npy"
+        fname = f"rnn_mlstm_mlstm_{name}:0.npy"
 
         # Construct directory for dumping.
         iteration_path = Path(dir_path) / f"iter_{step}"
@@ -98,6 +103,21 @@ def dump_params(
 
         # Save file
         fpath = iteration_path / fname
+        onp.save(
+            fpath, onp.array(val),
+        )
+    # iterate through and save dense params as npy files.
+    dense_names = [
+        "fully_connected_biases:0.npy",
+        "fully_connected_weights:0.npy",
+    ]
+    for i, val in enumerate(params[2]):
+        # Construct directory for dumping.
+        iteration_path = Path(dir_path) / f"iter_{step}"
+        iteration_path.mkdir(exist_ok=True)
+
+        # Save file
+        fpath = iteration_path / dense_names[i]
         onp.save(
             fpath, onp.array(val),
         )
@@ -115,9 +135,17 @@ def aa_seq_to_int(s):
     return [24] + [aa_to_int[a] for a in s] + [25]
 
 
-def load_embedding_1900(name: str = "uniref50"):
-    """Load pre-trained weights for uniref50 model."""
-    return np.load(weights_1900_dir / name / "embed_matrix:0.npy")
+def load_embedding_1900(folderpath: str = None):
+    """Load pre-trained embedding weights for uniref50 model."""
+    if folderpath:
+        weights_1900_dir = Path(folderpath)
+    else:
+        weights_1900_dir = Path(
+            pkg_resources.resource_filename(
+                "jax_unirep", "weights/1900_weights/uniref50"
+            )
+        )
+    return np.load(weights_1900_dir / "embed_matrix:0.npy")
 
 
 def get_embedding(sequence: str, embeddings: np.ndarray) -> np.ndarray:
@@ -160,49 +188,50 @@ Sequence length: number of sequences information in the dictionary below.
     return onp.stack(seq_embeddings, axis=0)
 
 
-def load_dense_1900(name: str = "uniref50") -> Dict:
+def load_dense_1900(folderpath: str = None) -> Tuple:
     """
     Load pre-trained dense layer weights from the UniRep paper.
 
     The dense layer weights are used to predict next character
     from the output of the mLSTM1900.
     """
+    if folderpath:
+        weights_1900_dir = Path(folderpath)
+    else:
+        weights_1900_dir = Path(
+            pkg_resources.resource_filename(
+                "jax_unirep", "weights/1900_weights/uniref50"
+            )
+        )
     # params = dict()
-    w = np.load(weights_1900_dir / name / "fully_connected_weights:0.npy")
-    b = np.load(weights_1900_dir / name / "fully_connected_biases:0.npy")
+    w = np.load(weights_1900_dir / "fully_connected_weights:0.npy")
+    b = np.load(weights_1900_dir / "fully_connected_biases:0.npy")
     return w, b
 
 
-def load_params_1900(name: str = "uniref50") -> Dict:
+def load_params_1900(folderpath: str = None) -> Dict:
     """Load pre-trained mLSTM1900 weights from the UniRep paper."""
+    if folderpath:
+        print(folderpath)
+        weights_1900_dir = Path(folderpath)
+    else:
+        weights_1900_dir = Path(
+            pkg_resources.resource_filename(
+                "jax_unirep", "weights/1900_weights/uniref50"
+            )
+        )
     params = dict()
-    params["gh"] = np.load(
-        weights_1900_dir / name / "rnn_mlstm_mlstm_gh:0.npy"
-    )
-    params["gmh"] = np.load(
-        weights_1900_dir / name / "rnn_mlstm_mlstm_gmh:0.npy"
-    )
-    params["gmx"] = np.load(
-        weights_1900_dir / name / "rnn_mlstm_mlstm_gmx:0.npy"
-    )
-    params["gx"] = np.load(
-        weights_1900_dir / name / "rnn_mlstm_mlstm_gx:0.npy"
-    )
+    params["gh"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_gh:0.npy")
+    params["gmh"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_gmh:0.npy")
+    params["gmx"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_gmx:0.npy")
+    params["gx"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_gx:0.npy")
 
-    params["wh"] = np.load(
-        weights_1900_dir / name / "rnn_mlstm_mlstm_wh:0.npy"
-    )
-    params["wmh"] = np.load(
-        weights_1900_dir / name / "rnn_mlstm_mlstm_wmh:0.npy"
-    )
-    params["wmx"] = np.load(
-        weights_1900_dir / name / "rnn_mlstm_mlstm_wmx:0.npy"
-    )
-    params["wx"] = np.load(
-        weights_1900_dir / name / "rnn_mlstm_mlstm_wx:0.npy"
-    )
+    params["wh"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_wh:0.npy")
+    params["wmh"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_wmh:0.npy")
+    params["wmx"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_wmx:0.npy")
+    params["wx"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_wx:0.npy")
 
-    params["b"] = np.load(weights_1900_dir / name / "rnn_mlstm_mlstm_b:0.npy")
+    params["b"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_b:0.npy")
 
     return params
 
@@ -235,9 +264,18 @@ def validate_mLSTM1900_params(params: Dict):
             )
 
 
-def load_embeddings(name: str = "uniref50"):
-    """Load embeddings of amino acids for the uniref50 model."""
-    return np.load(weights_1900_dir / name / "embed_matrix:0.npy")
+def load_params(folderpath: str = None):
+    return (
+        load_params_1900(folderpath=folderpath),
+        (),
+        load_dense_1900(folderpath=folderpath),
+        (),
+    )
+
+
+# def load_embeddings(path: str = None):
+#     """Load embeddings of amino acids for the uniref50 model."""
+#     return np.load(weights_1900_dir / "embed_matrix:0.npy")
 
 
 def l2_normalize(arr, axis, epsilon=1e-12):
