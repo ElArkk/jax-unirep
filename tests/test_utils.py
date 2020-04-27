@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from jax_unirep.utils import batch_sequences, l2_normalize, get_batch_len
+from jax_unirep.utils import batch_sequences, get_batch_len, l2_normalize
 
 
 def test_l2_normalize():
