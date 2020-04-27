@@ -488,8 +488,9 @@ def evotune(
         See source code for default configuration,
         at the definition of ``learning_rate_kwargs``.
     :param n_splits: The number of folds of cross-validation to do.
-    :param steps_per_print: the number of steps between each print,
-        will print out current evotuned_params.
+    :param steps_per_print: The number of steps between each
+        printing and dumping of weights in the final
+        evotuning step using the optimized hyperparameters.
 
     :returns:
         - study - The optuna study object, containing information
