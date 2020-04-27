@@ -102,9 +102,10 @@ training process of each trial.
 `evotuned_params` will contain the fine-tuned mLSTM and dense weights 
 from the trial with the lowest test set loss.
 
-If you want to directly fine-tune the weights for a fixed number
-of epochs and with a fixed learning rate, you should use
-the [`fit`][fitfunc] function instead.
+If you want to directly fine-tune the weights
+for a fixed number of epochs
+while using a fixed learning rate,
+you should use the [`fit`][fitfunc] function instead.
 
 You can find an example usage of both functions [here][exampleevotune].
 
