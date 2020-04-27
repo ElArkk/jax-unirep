@@ -23,9 +23,8 @@ from .utils import (
     dump_params,
     get_batch_len,
     get_embeddings,
-    load_dense_1900,
-    load_embeddings,
-    load_params_1900,
+    load_params,
+    load_embedding_1900,
     one_hots,
     validate_mLSTM1900_params,
 )
@@ -97,7 +96,7 @@ def evotuning_pairs(s: str) -> Tuple[np.ndarray, np.ndarray]:
     """
     seq_int = aa_seq_to_int(s[:-1])
     next_letters_int = aa_seq_to_int(s[1:])
-    embeddings = load_embeddings()
+    embeddings = load_embedding_1900()
     x = np.stack([embeddings[i] for i in seq_int])
     y = np.stack([one_hots[i] for i in next_letters_int])
     return x, y
@@ -204,7 +203,7 @@ def fit(
 
     # Load and check that params have correct keys and shapes
     if params is None:
-        params = (load_params_1900(), (), load_dense_1900(), ())
+        params = load_params()
 
     # Defensive programming checks
     if len(params) != len(model_layers):
@@ -276,9 +275,9 @@ def fit(
                     + f"holdout-loss={avg_loss(holdout_seqs, get_params(state))}, "
                 )
 
-                # dump current params in case run crashes or loss increases
-                # steps printed are 1-indexed i.e. starts at epoch 1 not 0.
-                dump_params(get_params(state), proj_name, (i + 1))
+            # dump current params in case run crashes or loss increases
+            # steps printed are 1-indexed i.e. starts at epoch 1 not 0.
+            dump_params(get_params(state), proj_name, (i + 1))
 
     return get_params(state)
 
