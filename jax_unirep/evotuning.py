@@ -167,7 +167,7 @@ def fit(
     step_size: float = 0.001,
     holdout_seqs: Optional[List[str]] = None,
     proj_name: Optional[str] = "temp",
-    steps_per_print: Optional[int] = None,
+    steps_per_print: Optional[int] = 200,
 ) -> Dict:
     """
     Return weights fitted to predict the next letter in each sequence.
