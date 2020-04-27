@@ -50,6 +50,18 @@ proposal_valid_letters = "ACDEFGHIKLMNPQRSTVWY"
 #         "jax_unirep", "weights/1900_weights/uniref50"
 #     )
 # )
+def get_weights_dir(folderpath: Optional[str] = None):
+    """
+    Fetch the paper weights per default, or from a specified folderpath
+    """
+    if folderpath:
+        return Path(folderpath)
+    else:
+        return Path(
+            pkg_resources.resource_filename(
+                "jax_unirep", "weights/1900_weights/uniref50"
+            )
+        )
 
 
 def dump_params(
@@ -137,14 +149,8 @@ def aa_seq_to_int(s):
 
 def load_embedding_1900(folderpath: Optional[str] = None):
     """Load pre-trained embedding weights for uniref50 model."""
-    if folderpath:
-        weights_1900_dir = Path(folderpath)
-    else:
-        weights_1900_dir = Path(
-            pkg_resources.resource_filename(
-                "jax_unirep", "weights/1900_weights/uniref50"
-            )
-        )
+    weights_1900_dir = get_weights_dir(folderpath=folderpath)
+
     return np.load(weights_1900_dir / "embed_matrix:0.npy")
 
 
@@ -195,15 +201,8 @@ def load_dense_1900(folderpath: Optional[str] = None) -> Tuple:
     The dense layer weights are used to predict next character
     from the output of the mLSTM1900.
     """
-    if folderpath:
-        weights_1900_dir = Path(folderpath)
-    else:
-        weights_1900_dir = Path(
-            pkg_resources.resource_filename(
-                "jax_unirep", "weights/1900_weights/uniref50"
-            )
-        )
-    # params = dict()
+    weights_1900_dir = get_weights_dir(folderpath=folderpath)
+
     w = np.load(weights_1900_dir / "fully_connected_weights:0.npy")
     b = np.load(weights_1900_dir / "fully_connected_biases:0.npy")
     return w, b
@@ -211,15 +210,8 @@ def load_dense_1900(folderpath: Optional[str] = None) -> Tuple:
 
 def load_params_1900(folderpath: Optional[str] = None) -> Dict:
     """Load pre-trained mLSTM1900 weights from the UniRep paper."""
-    if folderpath:
-        print(folderpath)
-        weights_1900_dir = Path(folderpath)
-    else:
-        weights_1900_dir = Path(
-            pkg_resources.resource_filename(
-                "jax_unirep", "weights/1900_weights/uniref50"
-            )
-        )
+    weights_1900_dir = get_weights_dir(folderpath=folderpath)
+
     params = dict()
     params["gh"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_gh:0.npy")
     params["gmh"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_gmh:0.npy")
