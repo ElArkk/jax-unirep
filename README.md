@@ -126,10 +126,9 @@ from jax.random import PRNGKey
 _, params = init_fun(PRNGKey(0), input_shape=(-1, 10))
 ```
 
-The weights used in the 10-dimensional embedding
-of the input sequences always default to the 
-weights from the paper, since they do not
-get updated during evotuning.
+The weights used in the 10-dimensional embedding of the input sequences
+always default to the weights from the paper,
+since they do not get updated during evotuning.
 
 ### UniRep stax
 
