@@ -108,8 +108,9 @@ the [`fit`][fitfunc] function instead.
 
 You can find an example usage of both functions [here][exampleevotune].
 
-If you want to pass a set of mLSTM and dense weights that were
-dumped in an earlier run, create params as follows:
+If you want to pass a set of mLSTM and dense weights
+that were dumped in an earlier run,
+create params as follows:
 
 ```python
 from jax_unirep.utils import load_params
