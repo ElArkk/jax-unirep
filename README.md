@@ -94,11 +94,13 @@ in the 'next-aa prediction task' is minimized.
 There are two functions with differing levels of
 control available for the task.
 
-The [`evotune`][evotunefunc] function uses `optuna` under the hood, to automatically
-find the optimal number of epochs to train for given a set of sequences,
-as well as the optimal learning rate. 
-The `study` object will contain all the information about the
-training process of each trial. 
+The [`evotune`][evotunefunc] function uses `optuna` under the hood
+to automatically find: 
+1. the optimal number of epochs to train for, and
+2.  the optimal learning rate, 
+given a set of sequences.
+The `study` object will contain all the information
+about the training process of each trial. 
 `evotuned_params` will contain the fine-tuned mLSTM and dense weights 
 from the trial with the lowest test set loss.
 
