@@ -45,11 +45,6 @@ aa_to_int = {
 proposal_valid_letters = "ACDEFGHIKLMNPQRSTVWY"
 
 
-# weights_1900_dir = Path(
-#     pkg_resources.resource_filename(
-#         "jax_unirep", "weights/1900_weights/uniref50"
-#     )
-# )
 def get_weights_dir(folderpath: Optional[str] = None):
     """
     Fetch the paper weights per default, or from a specified folderpath
@@ -263,11 +258,6 @@ def load_params(folderpath: Optional[str] = None):
         load_dense_1900(folderpath=folderpath),
         (),
     )
-
-
-# def load_embeddings(path: str = None):
-#     """Load embeddings of amino acids for the uniref50 model."""
-#     return np.load(weights_1900_dir / "embed_matrix:0.npy")
 
 
 def l2_normalize(arr, axis, epsilon=1e-12):
