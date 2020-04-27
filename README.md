@@ -91,36 +91,33 @@ Given a set of starter weights for the mLSTM (defaults to
 the weights from the paper) as well as a set of sequences,
 the weights get fine-tuned in such a way that test set loss
 in the 'next-aa prediction task' is minimized.
-In order to achieve this, `optuna` is used to
-find the optimal number of epochs to train for as well as the
-optimal learning rate.
-Example usage:
+There are two functions with differing levels of
+control available for the task.
+
+The [`evotune`][evotunefunc] function uses `optuna` under the hood, to automatically
+find the optimal number of epochs to train for given a set of sequences,
+as well as the optimal learning rate. 
+The `study` object will contain all the information about the
+training process of each trial. 
+`evotuned_params` will contain the fine-tuned mLSTM and dense weights 
+from the trial with the lowest test set loss.
+
+If you want to directly fine-tune the weights for a fixed number
+of epochs and with a fixed learning rate, then you should use
+the [`fit`][fitfunc] function.
+
+You can find an example usage of both functions [here][exampleevotune]
+
+If you want to pass a set of mLSTM and dense weights that were
+dumped in an earlier run, create params as follows:
 
 ```python
-from jax_unirep import evotune
+from jax_unirep.utils import load_params
 
-sequences = ["ASDF", "YJKAL", "QQLAMEHALQP", ...]
-
-# parameters for optuna need to be passed in form of a dictionary
-# the range of epochs and learning rates to try can be adapted this way
-n_epochs_config = {"low": 5, "high": 10}
-lr_config = {"low": 0.001, "high": 0.1}
-
-study, evotuned_params = evotune(
-    sequences=sequences,
-    n_trials=20, # how many trials optuna should do
-    params=None, # defaults to weights from the paper
-    n_epochs_config=n_epochs_config,
-    learning_rate_config=lr_config
-)
+params = load_params(folderpath="path/to/params/folder")
 ```
 
-The `study` object will contain all the information about the
-training process of each trial. `evotuned_params` will contain the
-fine-tuned weights from the trial with the lowest test set loss.
-
-In order to start from randomly initialized mLSTM weights instead,
-create `params` as follows:
+If you want to start from randomly initialized mLSTM and dense weights instead:
 
 ```python
 from jax_unirep.evotuning import init_fun
@@ -129,8 +126,10 @@ from jax.random import PRNGKey
 _, params = init_fun(PRNGKey(0), input_shape=(-1, 10))
 ```
 
-In principle, any set of weights which is compatible
-with the mLSTM `init_fun` in `jax_unirep.layers` can be passed.
+The weights used in the 10-dimensional embedding
+of the input sequences always default to the 
+weights from the paper, since they do not
+get updated during evotuning.
 
 ### UniRep stax
 
@@ -181,5 +180,8 @@ is licensed under the terms of [GPL v3][gpl3].
 [ericmjl]: https://github.com/ericmjl
 [fundl]: https://github.com/ericmjl/fundl
 [gpl3]: https://www.gnu.org/licenses/gpl-3.0.html
+[evotunefunc]: https://github.com/ElArkk/jax-unirep/blob/master/jax_unirep/evotuning.py#L417
+[fitfunc]: https://github.com/ElArkk/jax-unirep/blob/master/jax_unirep/evotuning.py#L164
+[exampleevotune]: https://github.com/ElArkk/jax-unirep/blob/master/examples/evotuning.py
 [stax]: https://jax.readthedocs.io/en/latest/jax.experimental.stax.html
 [staxex]: https://github.com/google/jax/tree/master/examples
