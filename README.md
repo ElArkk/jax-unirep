@@ -146,7 +146,7 @@ and a top-model at once:
 from jax.experimental import stax
 from jax.experimental.stax import Dense, Relu
 
-from jax_unirep.layers import mLSTM190, mLSTM1900_AvgHidden
+from jax_unirep.layers import mLSTM1900, mLSTM1900_AvgHidden
 
 init_fun, apply_fun = stax.serial(
     mLSTM1900(),
