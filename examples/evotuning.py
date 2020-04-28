@@ -1,7 +1,6 @@
 """Evotuning two ways."""
 from jax_unirep import evotune, fit
-from jax_unirep.params import add_dense_params
-from jax_unirep.utils import dump_params, load_params_1900
+from jax_unirep.utils import dump_params
 
 # Test sequences:
 sequences = ["HASTA", "VISTA", "ALAVA", "LIMED", "HAST", "HAS", "HASVASTA"] * 5

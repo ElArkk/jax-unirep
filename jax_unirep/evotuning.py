@@ -23,9 +23,8 @@ from .utils import (
     dump_params,
     get_batch_len,
     get_embeddings,
-    load_dense_1900,
-    load_embeddings,
-    load_params_1900,
+    load_embedding_1900,
+    load_params,
     one_hots,
     validate_mLSTM1900_params,
 )
@@ -97,7 +96,7 @@ def evotuning_pairs(s: str) -> Tuple[np.ndarray, np.ndarray]:
     """
     seq_int = aa_seq_to_int(s[:-1])
     next_letters_int = aa_seq_to_int(s[1:])
-    embeddings = load_embeddings()
+    embeddings = load_embedding_1900()
     x = np.stack([embeddings[i] for i in seq_int])
     y = np.stack([one_hots[i] for i in next_letters_int])
     return x, y
@@ -189,22 +188,27 @@ def fit(
     in the original list of sequences
     that are of a particular length.
 
-    You can optionally dump parameters and print weights every `steps_per_print` steps
-    to monitor training progress.
+    To learn more about the passing of ``params``,
+    have a look at the ``evotune`` function docstring.
 
-    :param params: mLSTM1900 parameters.
+    You can optionally dump parameters 
+    and print weights every `steps_per_print` steps
+    to monitor training progress.
+    Set this to ``None`` to avoid parameter dumping.
+
+    :param params: mLSTM1900 and Dense parameters.
     :param sequences: List of sequences to evotune on.
     :param n: The number of iterations to evotune on.
     :param step_size: The learning rate
     :param holdout_seqs: Holdout set, an optional input.
     :param proj_name: The directory path for weights to be output to.
-    :param steps_per_print: Number of steps per print and weights to
-        be dumped.
+    :param steps_per_print: Number of steps per printing and dumping
+        of weights.
     """
 
     # Load and check that params have correct keys and shapes
     if params is None:
-        params = (load_params_1900(), (), load_dense_1900(), ())
+        params = load_params()
 
     # Defensive programming checks
     if len(params) != len(model_layers):
@@ -260,21 +264,21 @@ def fit(
             # commenting this out as it causes memory issues at high epochs
             # logger.debug(f"Shape of y: {(len(y), len(y[0]), len(y[0][0]))}")
             # logger.debug(vmap(partial(predict, get_params(state)))(x))
+        if steps_per_print:
+            if (i + 1) % steps_per_print == 0:
 
-        if (i + 1) % steps_per_print == 0:
-
-            logger.info(
-                f"Epoch {i + 1}: "
-                + f"train-loss={avg_loss(sequences, get_params(state))}, "
-            )
-
-            if holdout_seqs is not None:
-
-                # calculate and print loss for out-domain holdout set
                 logger.info(
                     f"Epoch {i + 1}: "
-                    + f"holdout-loss={avg_loss(holdout_seqs, get_params(state))}, "
+                    + f"train-loss={avg_loss(sequences, get_params(state))}, "
                 )
+
+                if holdout_seqs is not None:
+
+                    # calculate and print loss for out-domain holdout set
+                    logger.info(
+                        f"Epoch {i + 1}: "
+                        + f"holdout-loss={avg_loss(holdout_seqs, get_params(state))}, "
+                    )
 
                 # dump current params in case run crashes or loss increases
                 # steps printed are 1-indexed i.e. starts at epoch 1 not 0.
@@ -441,12 +445,18 @@ def evotune(
     To save on computation time, the number of trials run
     defaults to 20, but can be configured.
 
-    By default, mLSTM1900 weights from the paper are used by passing in `params=None`,
-    but if you want to use randomly intialized weights,
+    By default, mLSTM1900 and Dense weights from the paper are used 
+    by passing in `params=None`,
+    but if you want to use randomly intialized weights:
 
         from jax_unirep.evotuning import init_fun
         from jax.random import PRNGKey
         _, params = init_fun(PRNGKey(0), input_shape=(-1, 10))
+
+    or dumped weights:
+
+        from jax_unirep.utils import load_params
+        params = load_params(folderpath="path/to/params/folder")
 
     This function is intended as an automagic way of identifying
     the best model and training routine hyperparameters.
@@ -456,8 +466,8 @@ def evotune(
     that shows how to use it.
 
     :param sequences: Sequences to evotune against.
-    :param params: Parameters to be passed into `mLSTM1900`.
-        Optional; if None, will default to mLSTM1900 from paper,
+    :param params: Parameters to be passed into `mLSTM1900` and `Dense`.
+        Optional; if None, will default to weights from paper,
         or you can pass in your own set of parameters,
         as long as they are stax-compatible.
     :param proj_name: Name of the project,
@@ -478,8 +488,9 @@ def evotune(
         See source code for default configuration,
         at the definition of ``learning_rate_kwargs``.
     :param n_splits: The number of folds of cross-validation to do.
-    :param steps_per_print: the number of steps between each print,
-        will print out current evotuned_params.
+    :param steps_per_print: The number of steps between each
+        printing and dumping of weights in the final
+        evotuning step using the optimized hyperparameters.
 
     :returns:
         - study - The optuna study object, containing information
