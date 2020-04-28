@@ -1,1 +1,2 @@
+paper/* linguist-vendored
 *.pkl filter=lfs diff=lfs merge=lfs -text
