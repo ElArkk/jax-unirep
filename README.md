@@ -183,8 +183,8 @@ is licensed under the terms of [GPL v3][gpl3].
 [ericmjl]: https://github.com/ericmjl
 [fundl]: https://github.com/ericmjl/fundl
 [gpl3]: https://www.gnu.org/licenses/gpl-3.0.html
-[evotunefunc]: https://github.com/ElArkk/jax-unirep/blob/master/jax_unirep/evotuning.py#L417
-[fitfunc]: https://github.com/ElArkk/jax-unirep/blob/master/jax_unirep/evotuning.py#L164
+[evotunefunc]: https://github.com/ElArkk/jax-unirep/blob/master/jax_unirep/evotuning.py#L421
+[fitfunc]: https://github.com/ElArkk/jax-unirep/blob/master/jax_unirep/evotuning.py#L163
 [exampleevotune]: https://github.com/ElArkk/jax-unirep/blob/master/examples/evotuning.py
 [stax]: https://jax.readthedocs.io/en/latest/jax.experimental.stax.html
 [staxex]: https://github.com/google/jax/tree/master/examples
