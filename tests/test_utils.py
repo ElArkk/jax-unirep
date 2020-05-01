@@ -1,7 +1,18 @@
 import numpy as np
 import pytest
 
-from jax_unirep.utils import batch_sequences, get_batch_len, l2_normalize
+from jax_unirep.utils import (
+    batch_sequences,
+    get_batch_len,
+    l2_normalize,
+    load_params,
+    dump_params,
+    load_embedding_1900,
+    load_dense_1900,
+    load_params_1900,
+    validate_mLSTM1900_params,
+)
+from shutil import rmtree
 
 
 def test_l2_normalize():
@@ -36,3 +47,40 @@ def test_get_batch_len():
     mean_batch_length, batch_lengths = get_batch_len(batched_seqs)
     assert mean_batch_length == 2
     assert np.all(batch_lengths == np.array([2, 2, 2]))
+
+
+def test_load_dense_1900():
+    dense = load_dense_1900()
+    assert dense[0].shape == (1900, 25)
+    assert dense[1].shape == (25,)
+
+
+def test_load_params_1900():
+    params = load_params_1900()
+    validate_mLSTM1900_params(params)
+
+
+def test_load_embedding_1900():
+    emb = load_embedding_1900()
+    assert emb.shape == (26, 10)
+
+
+def validate_params(params):
+    validate_mLSTM1900_params(params[0])
+    assert params[1] == ()
+    assert params[2][0].shape == (1900, 25)
+    assert params[2][1].shape == (25,)
+    assert params[3] == ()
+
+
+def test_load_params():
+    params = load_params()
+    validate_params(params)
+
+
+def test_dump_params():
+    params = load_params()
+    dump_params(params, "tmp")
+    dumped_params = load_params("tmp/iter_0")
+    rmtree("tmp")
+    validate_params(dumped_params)
