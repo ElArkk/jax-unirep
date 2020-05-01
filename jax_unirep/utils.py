@@ -115,8 +115,8 @@ def dump_params(
         )
     # iterate through and save dense params as npy files.
     dense_names = [
-        "fully_connected_biases:0.npy",
         "fully_connected_weights:0.npy",
+        "fully_connected_biases:0.npy",
     ]
     for i, val in enumerate(params[2]):
         # Construct directory for dumping.
