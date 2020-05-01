@@ -252,6 +252,7 @@ def validate_mLSTM1900_params(params: Dict):
 
 
 def load_params(folderpath: Optional[str] = None):
+    """load params for passing to evotuning stax model"""
     return (
         load_params_1900(folderpath=folderpath),
         (),
