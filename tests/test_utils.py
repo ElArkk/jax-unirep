@@ -1,18 +1,19 @@
+from shutil import rmtree
+
 import numpy as np
 import pytest
 
 from jax_unirep.utils import (
     batch_sequences,
+    dump_params,
     get_batch_len,
     l2_normalize,
-    load_params,
-    dump_params,
-    load_embedding_1900,
     load_dense_1900,
+    load_embedding_1900,
+    load_params,
     load_params_1900,
     validate_mLSTM1900_params,
 )
-from shutil import rmtree
 
 
 def test_l2_normalize():
