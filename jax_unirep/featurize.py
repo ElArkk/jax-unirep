@@ -90,10 +90,10 @@ def get_reps(
 
     Each element of the output 3-tuple is a `np.array`
     of shape (n_input_sequences, 1900):
+    - `h_avg`: Average hidden state of the mLSTM over the whole sequence.
     - `h_final`: Final hidden state of the mLSTM
     - `c_final`: Final cell state of the mLSTM
-    - `h_avg`: Average hidden state of the mLSTM over the whole sequence.
-
+    
     You should not use this function
     if you want to do further JAX-based computations
     on the output vectors!
