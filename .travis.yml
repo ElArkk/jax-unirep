@@ -24,7 +24,6 @@ install:
   - conda env create -f environment.yml
   - source activate jax-unirep
   - python setup.py install
-  - pip install codecov
   # Ensure that the kernel is installed into the compute environment.
   # - python -m ipykernel install --user --name jax-unirep
 
@@ -33,9 +32,6 @@ script:
   - make test
   # Check formatting with black
   - make style
-
-after_success:
-  - codecov
 
 before_deploy:
   # Build paper
