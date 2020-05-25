@@ -33,6 +33,9 @@ script:
   # Check formatting with black
   - make style
 
+after_success:
+  - codecov
+
 before_deploy:
   # Build paper
   - make paper
