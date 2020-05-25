@@ -15,7 +15,7 @@ that it addresses:
 ### Code checks
 1. [ ] If there are new features implemented, add suitable tests
    in the `tests` directory.
-2. [ ] If any new dependencies are introduced throught the new features,
+2. [ ] If any new dependencies are introduced through the new features,
    add the packages, pinned to a version, to `environment.yml`.
 3. [ ] Run `make test` in a console in the top level directory
    to make sure all the tests pass.
