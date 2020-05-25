@@ -2,7 +2,7 @@
 import os
 from collections import Counter
 from pathlib import Path
-from random import choice
+from random import choice, sample
 from typing import Dict, Iterable, List, Optional, Tuple
 
 import jax.numpy as np
@@ -12,6 +12,7 @@ import pkg_resources
 from .errors import SequenceLengthsError
 
 aa_to_int = {
+    "-": 0,
     "M": 1,
     "R": 2,
     "H": 3,
@@ -308,6 +309,32 @@ def batch_sequences(seqs: List[str]) -> List[List]:
     for l in set([len(s) for s in seqs]):
         order.append([i for i, s in enumerate(seqs) if len(s) == l])
     return order
+
+
+def right_pad(seqs: List[str], max_len: int):
+    """Pad all seqs in a list to longest length on the right with "-"."""
+    return [seq.ljust(max_len, "-") for seq in seqs]
+
+
+def get_random_batch(seqs: List[str], batch_size: int = 25):
+    """
+    Batch random sequences, pad all sequences to longest length seq in batch.
+
+    This function randomly samples `batch_size` sequences and
+    applies padding to make all sequences in the batch same-length.
+
+    :param seqs: List of sequences as strings.
+    :param batch_size: Batching size
+    :returns: One batch of sequences
+    """
+
+    if batch_size > len(seqs):
+        raise ValueError(
+            "Batch size cannot be bigger than total number of sequences."
+        )
+    subset = sample(seqs, batch_size)
+    max_len = max([len(seq) for seq in subset])
+    return right_pad(subset, max_len)
 
 
 def get_batch_len(batched_seqs: Iterable[str]) -> Tuple[np.ndarray, List]:

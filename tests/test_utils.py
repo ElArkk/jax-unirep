@@ -13,6 +13,8 @@ from jax_unirep.utils import (
     load_params,
     load_params_1900,
     validate_mLSTM1900_params,
+    get_random_batch,
+    right_pad,
 )
 
 
@@ -105,3 +107,30 @@ def test_dump_params():
     dumped_params = load_params("tmp/iter_0")
     rmtree("tmp")
     validate_params(dumped_params)
+
+
+@pytest.mark.parametrize(
+    "seqs, batch_size",
+    [
+        (pytest.param([], 4, marks=pytest.mark.xfail)),
+        (pytest.param(["A", "BC", "DEF"], 4, marks=pytest.mark.xfail)),
+        (["MT", "MTN", "MD"], 3),
+        (["MD", "T", "MDT", "MDT"], 3),
+    ],
+)
+def test_get_random_batch(seqs, batch_size):
+    batch = get_random_batch(seqs, batch_size)
+
+    assert set([len(seq) for seq in batch]) == {3}
+    assert len(batch) == batch_size
+
+
+@pytest.mark.parametrize(
+    "seqs, max_len, expected",
+    [
+        (["MT", "MTN", "M"], 4, ["MT--", "MTN-", "M---"]),
+        (["MD", "T", "MDT", "MDT"], 2, ["MD", "T-", "MDT", "MDT"]),
+    ],
+)
+def test_right_pad(seqs, max_len, expected):
+    assert right_pad(seqs, max_len) == expected
