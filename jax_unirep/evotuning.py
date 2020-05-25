@@ -27,6 +27,7 @@ from .utils import (
     load_params,
     one_hots,
     validate_mLSTM1900_params,
+    get_random_batch,
 )
 
 # setup logger
@@ -258,7 +259,124 @@ def fit(
         logger.info(f"Starting epoch {i + 1}")
 
         for x, y in zip(xs, ys):
+            # Question: should i in step() increase at every iteration?
             state = step(i, state)
+            # TODO: remove below in prod
+            pp = get_params(state)
+            print(evotune_loss(pp, x, y))
+            # change logger level and uncomment to display debug prints
+            # commenting this out as it causes memory issues at high epochs
+            # logger.debug(f"Shape of y: {(len(y), len(y[0]), len(y[0][0]))}")
+            # logger.debug(vmap(partial(predict, get_params(state)))(x))
+        if steps_per_print:
+            if (i + 1) % steps_per_print == 0:
+
+                logger.info(
+                    f"Epoch {i + 1}: "
+                    + f"train-loss={avg_loss(sequences, get_params(state))}, "
+                )
+
+                if holdout_seqs is not None:
+
+                    # calculate and print loss for out-domain holdout set
+                    logger.info(
+                        f"Epoch {i + 1}: "
+                        + f"holdout-loss={avg_loss(holdout_seqs, get_params(state))}, "
+                    )
+
+                # dump current params in case run crashes or loss increases
+                # steps printed are 1-indexed i.e. starts at epoch 1 not 0.
+                dump_params(get_params(state), proj_name, (i + 1))
+
+    return get_params(state)
+
+
+def fit_random_batches(
+    params: Dict,
+    sequences: List[str],
+    n: int,
+    batch_size: Optional[int] = 25,
+    step_size: float = 0.001,
+    holdout_seqs: Optional[List[str]] = None,
+    proj_name: Optional[str] = "temp",
+    steps_per_print: Optional[int] = 200,
+) -> Dict:
+    """
+    Return weights fitted to predict the next letter in each sequence.
+
+    The training loop is as follows.
+    Per step in the training loop,
+    we randomly sample `batch_size` sequences
+    and pass them through the model.
+    One epoch consists of
+    `round(len(sequences) / batch_size)` weight updates.
+
+    To learn more about the passing of ``params``,
+    have a look at the ``evotune`` function docstring.
+
+    You can optionally dump parameters 
+    and print weights every `steps_per_print` steps
+    to monitor training progress.
+    Set this to ``None`` to avoid parameter dumping.
+
+    :param params: mLSTM1900 and Dense parameters.
+    :param sequences: List of sequences to evotune on.
+    :param n: The number of iterations to evotune on.
+    :param step_size: The learning rate
+    :param holdout_seqs: Holdout set, an optional input.
+    :param proj_name: The directory path for weights to be output to.
+    :param steps_per_print: Number of steps per printing and dumping
+        of weights.
+    """
+
+    # Load and check that params have correct keys and shapes
+    if params is None:
+        params = load_params()
+
+    # Defensive programming checks
+    if len(params) != len(model_layers):
+        raise ValueError(
+            "The number of parameters specified must match the number of stax.serial layers"
+        )
+    validate_mLSTM1900_params(params[0])
+
+    init, update, get_params = adamW(step_size=step_size)
+
+    @jit
+    def step(i, state):
+        """
+        Perform one step of evolutionary updating.
+
+        This function is closed inside `fit` because we need access
+        to the variables in its scope,
+        particularly the update and get_params functions.
+
+        By structuring the function this way, we can JIT-compile it,
+        and thus gain a massive speed-up!
+
+        :param i: The current iteration of the training loop.
+        :param state: Current state of parameters from jax.
+        """
+        params = get_params(state)
+        g = grad(evotune_loss)(params, x, y)
+        state = update(i, g, state)
+
+        return state
+
+    state = init(params)
+
+    # calculate how many forward passes constitute one epoch approx
+    epoch_len = round(len(sequences) / batch_size)
+    for i in range(n):
+        logger.info(f"Starting epoch {i + 1}")
+
+        for s in range(epoch_len):
+            seq_batch = get_random_batch(sequences, batch_size)
+            x, y = input_output_pairs(seq_batch)
+            state = step(i, state)
+            # TODO: remove below in prod
+            pp = get_params(state)
+            print(evotune_loss(pp, x, y))
 
             # change logger level and uncomment to display debug prints
             # commenting this out as it causes memory issues at high epochs
