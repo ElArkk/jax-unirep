@@ -7,14 +7,14 @@ from jax_unirep.utils import (
     batch_sequences,
     dump_params,
     get_batch_len,
+    get_random_batch,
     l2_normalize,
     load_dense_1900,
     load_embedding_1900,
     load_params,
     load_params_1900,
-    validate_mLSTM1900_params,
-    get_random_batch,
     right_pad,
+    validate_mLSTM1900_params,
 )
 
 
