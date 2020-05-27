@@ -30,6 +30,8 @@ install:
 
 script:
   # Run tests
+  # make this file so that coverage on travis works
+  - touch tests/__init__.py
   - make test
   # Check formatting with black
   - make style
