@@ -52,13 +52,13 @@ arbitrary length sequences in a 1900-long feature vector
 that can be used as the input to a downstream model
 for unsupervised clustering or supervised prediction of protein properties.
 
-The original model (also referred here as \verb|tf-unirep|)
+The original model (also referred to here as \verb|tf-unirep|)
 was implemented in TensorFlow 1.13 (\cite{abadi2016tensorflow}).
 While test-driving \verb|tf-unirep|, we observed two issues
 that hindered us from using it productively.
-The first is that that the original implementation
+The first is that the original implementation
 took an abnormally long amount of time to process multiple sequences,
-requiring on the order of dozens of seconds to process single sequences.
+requiring on the order of dozens of seconds to process tens of sequences.
 The second was that its API was unwieldy,
 and could have been simplified for protein engineers
 who might not necessarily be programming-savvy.
@@ -80,11 +80,11 @@ who might not necessarily be programming-savvy.
 \end{figure*}
 
 To investigate the performance of \verb|tf-unirep|,
-we used Python's \verb|cProfile| facility to identify
-where speed bottlenecks.
+we used Python's \verb|cProfile| facility to identify speed bottlenecks.
 On the basis of this, we hypothesized that the cause of speed problems
 was graph compilation in TF1.x,
-and that we could obtain speedups by using a non-graph-compiled tensor library.
+and that we could obtain speedups by using 
+a non-graph-compiled tensor library.
 
 There were three options available: TF2.x, PyTorch (\cite{pytorch})
 and JAX (\cite{jax2018github}).
@@ -110,7 +110,7 @@ impeding reproducibility of model usage results,
 and making comparisons between users extremely difficult.
 
 With \verb|jax-unirep|,
-to obtain numeric representations of single and multiple proteins,
+to obtain numeric representations of single and multiple protein sequences,
 end-users use the high-level function \verb|get_reps()|,
 which we have designed to accept single sequences,
 multiple sequences of the same length, and
@@ -158,7 +158,7 @@ as it would not correspond to what we believe to be
 the most natural usage pattern of a first-time user of the original model:
 simply looping over sequences rather than perform custom preprocessing.
 Speed comparisons were performed on a single core of a 24-core
-CentOS7 workstation running Intel Xeon processors at XYZ GHz
+CentOS7 workstation running Intel Xeon processors at 3.6 GHz
 with at least 7 replicates.
 
 \section{Reimplementation Verification}
@@ -166,7 +166,7 @@ with at least 7 replicates.
 To check that \verb|jax-unirep| was implemented correctly,
 we computed numeric representations for single protein sequences
 using the original and the reimplementation.
-Figure 1B\vphantom{\ref{fig:01}} shows, for one example,
+Figure 1B\vphantom{\ref{fig:01}} shows, for one example sequence,
 that the representations are identical;
 the difference in the traces were injected after computation
 merely to visually separate them.
