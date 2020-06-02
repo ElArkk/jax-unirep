@@ -386,8 +386,6 @@ def fit(
         )
 
     elif batch_method == "random":
-        # calculate how many forward passes constitute one epoch approx
-        epoch_len = round(len(sequences) / batch_size)
         max_len = max([len(seq) for seq in sequences])
         padded_seqs = right_pad(sequences, max_len)
         
@@ -397,6 +395,7 @@ def fit(
     init, update, get_params = adamW(step_size=step_size)
     state = init(params)
 
+    # calculate how many iterations constitute one epoch approximately
     epoch_len = round(len(sequences) / batch_size)
 
     n = n_epochs * epoch_len

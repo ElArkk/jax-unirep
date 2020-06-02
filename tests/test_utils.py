@@ -6,7 +6,7 @@ import pytest
 from jax_unirep.utils import (
     batch_sequences,
     dump_params,
-    get_batch_len,
+    # get_batch_len,
     get_random_batch,
     l2_normalize,
     load_dense_1900,
@@ -45,11 +45,11 @@ def test_batch_sequences(seqs, expected):
     assert batch_sequences(seqs) == expected
 
 
-def test_get_batch_len():
-    batched_seqs = [["ABC", "ACD"], ["AABC", "EKQJ"], ["QWLRJK", "QJEFLK"]]
-    mean_batch_length, batch_lengths = get_batch_len(batched_seqs)
-    assert mean_batch_length == 2
-    assert np.all(batch_lengths == np.array([2, 2, 2]))
+# def test_get_batch_len():
+#     batched_seqs = [["ABC", "ACD"], ["AABC", "EKQJ"], ["QWLRJK", "QJEFLK"]]
+#     mean_batch_length, batch_lengths = get_batch_len(batched_seqs)
+#     assert mean_batch_length == 2
+#     assert np.all(batch_lengths == np.array([2, 2, 2]))
 
 
 def test_load_dense_1900():
