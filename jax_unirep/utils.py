@@ -3,7 +3,7 @@ import os
 from collections import Counter
 from pathlib import Path
 from random import choice, sample
-from typing import Dict, Iterable, List, Optional, Tuple, Callable
+from typing import Callable, Dict, Iterable, List, Optional, Tuple
 
 import jax.numpy as np
 import numpy as onp

@@ -20,6 +20,7 @@ from jax_unirep.evotuning import (
     predict,
 )
 from jax_unirep.utils import load_dense_1900, load_params_1900
+
 from .test_layers import validate_mLSTM1900_params
 
 

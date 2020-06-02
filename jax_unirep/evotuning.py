@@ -1,6 +1,7 @@
 """API for evolutionary tuning."""
 import logging
 from functools import partial
+from random import choice
 from typing import Callable, Dict, Iterable, List, Optional, Tuple
 
 import numpy as onp
@@ -11,7 +12,7 @@ from jax import random, vmap
 from jax.experimental.optimizers import adam
 from jax.experimental.stax import Dense, Softmax, serial
 from sklearn.model_selection import KFold, train_test_split
-from random import choice
+
 from jax_unirep.losses import _neg_cross_entropy_loss
 
 from .layers import mLSTM1900, mLSTM1900_AvgHidden, mLSTM1900_HiddenStates
@@ -21,13 +22,13 @@ from .utils import (
     aa_seq_to_int,
     batch_sequences,
     dump_params,
+    get_batching_func,
     get_embeddings,
     load_embedding_1900,
     load_params,
     one_hots,
-    validate_mLSTM1900_params,
     right_pad,
-    get_batching_func,
+    validate_mLSTM1900_params,
 )
 
 # setup logger
