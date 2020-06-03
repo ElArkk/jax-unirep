@@ -1,24 +1,25 @@
 ---
 title: Reimplementing Unirep in JAX
 author:
-  - name: Eric J. Ma
-    department: Scientific Data Analysis, NIBR Informatics
-    institution: Novartis Institutes for Biomedical Research
-  - name: Arkadij Kummer
-    department: Bioreactions Group, Global Discovery Chemistry
-    institution: Novartis Institutes for Biomedical Research
-abstract: UniRep is a recurrent neural network model
-  trained on 24 million protein sequences,
-  and has shown utility in protein engineering.
-  The original model, however, has rough spots in its implementation,
-  and a convenient API is not available for certain tasks.
-  To rectify this, we reimplemented the model in JAX/NumPy,
-  achieving near-100X speedups in forward pass performance,
-  and implemented a convenient API for specialized tasks.
-  In this article, we wish to document our model reimplementation process
-  with the goal of educating others interested in learning
-  how to dissect a deep learning model,
-  and engineer it for robustness and ease of use.
+- name: Eric J. Ma
+  department: Scientific Data Analysis, NIBR Informatics
+  institution: Novartis Institutes for Biomedical Research
+- name: Arkadij Kummer
+  department: Bioreactions Group, Global Discovery Chemistry
+  institution: Novartis Institutes for Biomedical Research
+abstract:
+    UniRep is a recurrent neural network model
+    trained on 24 million protein sequences,
+    and has shown utility in protein engineering.
+    The original model, however, has rough spots in its implementation,
+    and a convenient API is not available for certain tasks.
+    To rectify this, we reimplemented the model in JAX/NumPy,
+    achieving near-100X speedups in forward pass performance,
+    and implemented a convenient API for specialized tasks.
+    In this article, we wish to document our model reimplementation process
+    with the goal of educating others interested in learning
+    how to dissect a deep learning model,
+    and engineer it for robustness and ease of use.
 ---
 
 ## Introduction
@@ -70,8 +71,44 @@ In particular, our engineering goals were to provide:
 To investigate the performance of the original and our reimplementation,
 we used Python's `cProfile` facility to identify
 where the majority of time was spent in the respective codebases.
+The functions used for profiling were:
+
+```python
+# assume babbler is imported from tf-unirep
+def profile_tf_unirep(seqs):
+    with tf.variable_scope("embed_matrix", reuse=tf.AUTO_REUSE):
+        b = babbler(batch_size=batch_size, model_path=MODEL_WEIGHT_PATH)
+        for seq in seqs:
+            avg, final, cell = b.get_rep(seq)
+
+# assume get_reps is imported from jax-unirep
+def profile_jax_unirep(seqs):
+    get_reps(seqs)
+```
 
 We then used SnakeViz to visualize the code execution profile results.
+
+![
+    Flame graph of the original UniRep's implementation,
+    down to 10 levels deep from the profiling function that was called.
+](./figures/unirep-profile.png)
+
+![
+    Flame graph of the jax-unirep reimplementation,
+    down to 10 levels deep from the profiling function that was called.
+](./figures/jax-unirep-profile.png)
+
+As is visible from the code execution flamegraph,
+the unreasonably long time that it takes to process ten sequences
+was probably due to the time spent in TensorFlow's session.
+Because of TensorFlow's compiled nature,
+we thus deduced that the majority of the execution time
+was most likely in the graph compilation phase.
+Unfortunately, cProfile could not give us any further detail
+beyond the `_pywrap_tensorflow_internal.TF_SessionRun_wrapper`
+in the call graph,
+meaning we were unable to conveniently peer into the internals of TF execution
+without digging further.
 
 On the basis of this profiling,
 we hypothesized that the cause of speed problems was graph compilation in TF1.x,
@@ -81,21 +118,21 @@ and we chose the latter.
 Our choice was motivated by the following reasons:
 
 1. JAX uses the NumPy API,
-   which is idiomatic in the Python scientific computing community.
+which is idiomatic in the Python scientific computing community.
 1. JAX provides automatic differentiation,
-   which would enable us to reimplement weights fine-tuning.
+which would enable us to reimplement weights fine-tuning.
 1. JAX encourages functional programming,
-   which makes implementation of neural network layers
-   different from class-based implementations (e.g. PyTorch and Keras).
-   This was an intellectual curiosity point for us.
+which makes implementation of neural network layers
+different from class-based implementations (e.g. PyTorch and Keras).
+This was an intellectual curiosity point for us.
 1. JAX is "eagerly" executable like PyTorch and TF2,
-   which aids debugging.
+which aids debugging.
 
 Besides these _a priori_ motivating reasons,
 we also uncovered other reasons to use JAX midway:
 
 1. JAX's compiled and automatically differentiable primitives (e.g. `lax.scan`)
-   allowed us to write performant RNN code.
+allowed us to write performant RNN code.
 1. `jit` and `vmap` helped with writing performant training loops.
 
 We thus reimplemented the model in JAX/NumPy.
@@ -131,6 +168,15 @@ and compared the computed representations.
 Because it is 1900-long, a visual check for correctness
 is a trace of 1900-long embedding.
 
+![
+    Comparison of the average hidden state between the implementations
+    when transforming the same sequence.
+    Because the two traces of the hidden state dimensions overlapped
+    almost perfectly, a small constant was added to the UniRep values,
+    such that both traces become visible. The inset shows
+    50 out of the total 1900 dimensions.
+](./figures/rep_trace_lf.png)
+
 We also verified that the embeddings calculated using the pre-trained weights
 were informative for top models,
 and trained a model to predict the brightness
@@ -146,138 +192,6 @@ We binarized brightness values into a "dark" and a "bright" class,
 and used scikit-learn's implementation of logistic regression for classification.
 Average performance across 5-fold cross-validation is shown in Figure 3.
 (avGFP data came from [@sarkisyan2016local].)
-
-## Reimplementation Main Points
-
-### Utility Reimplementation
-
-For the `get_reps()` functionality,
-we copied quite a bit of source code from the original,
-including the original authors' implementation of
-embedding a sequence into an $l$-by-10 embedding matrix first.
-However, we added tests to guarantee that they were robust,
-as well as technical documentation to clarify how it works.
-
-We did this because one way that deep learning models can be fragile
-is that the input tensors can be generated incorrectly
-but still have the expected shapes.
-Thus, though the structure of input tensors might be correct,
-their semantic meaning would be completely wrong.
-(Adversarial examples can be generated this way.)
-Thus, the input to the model has to be carefully controlled.
-Moreover, input tensors are _not_ the raw-est form of data;
-for a protein engineer, the protein sequence is.
-Thus, having robustly tested functions that generate the input tensors
-with correct semantic meaning
-is crucial to having confidence
-that the model works correctly end-to-end.
-
-### APIs
-
-Because we expect the model to be used as a Python library,
-the model source and weights are packaged together.
-This makes it much more convenient for end-users,
-as the cognitive load of downloading starter weights is eliminated.
-
-The `get_reps()` function is designed
-such that it is flexible enough to accept a single sequence
-or an iterable of sequences.
-This also reduces cognitive load for end-users,
-some of whom might want to process only a single sequence,
-while others might be operating in batch mode.
-`get_reps()` also correctly handles sequences of multiple lengths,
-further simplifying usage for end-users.
-In particular, we spent time ensuring that
-`get_reps()` correctly batches sequences of the same size together
-before calculating their reps,
-while returning the reps in the same order as the sequences passed in.
-As usual, tests are provided,
-bringing the same degree of confidence as we would expect
-from tested software.
-
-## Future Work
-
-As we have, at this point, only implemented the 1900-cell model.
-Going forth, we aim to work on implementing the 256- and 64-cell model.
-
-Evotuning is an important task when using UniRep [@alley2019unified],
-and we aim to provide a convenient API through the `evotune()` function.
-Here, we plan to use Optuna
-to automatically find the right hyperparameters for finetuning weights,
-using the protocol that the original authors describe.
-This would enable end-users to "set and forget" the model fitting protocol
-rather than needing to babysit a deep learning optimization routine.
-Like `get_reps()`, `evotune()` and its associated utility functions
-will have at least an example-based test,
-if not also a property-based test associated with them.
-
-Community contributions and enhancements are welcome as well.
-
-## Software Repository
-
-`jax-unirep` is available on GitHub at https://github.com/ElArkk/jax-unirep.
-
-## Acknowledgments
-
-We thank the UniRep authors for open sourcing their model.
-It is our hope that our reimplementation helps with adoption of the model
-in a variety of settings, and increases its impact.
-
-## References
-
-# Supplementary information
-
-## Profiling
-
-The functions used for profiling were:
-
-```python
-# assume babbler is imported from tf-unirep
-def profile_tf_unirep(seqs):
-    with tf.variable_scope("embed_matrix", reuse=tf.AUTO_REUSE):
-        b = babbler(batch_size=batch_size, model_path=MODEL_WEIGHT_PATH)
-        for seq in seqs:
-            avg, final, cell = b.get_rep(seq)
-
-# assume get_reps is imported from jax-unirep
-def profile_jax_unirep(seqs):
-    get_reps(seqs)
-```
-
-![
-    Flame graph of the original UniRep's implementation,
-    down to 10 levels deep from the profiling function that was called.
-](./figures/unirep-profile.png)
-
-![
-    Flame graph of the jax-unirep reimplementation,
-    down to 10 levels deep from the profiling function that was called.
-](./figures/jax-unirep-profile.png)
-
-As is visible from the code execution flamegraph,
-the unreasonably long time that it takes to process ten sequences
-was probably due to the time spent in TensorFlow's session.
-Because of TensorFlow's compiled nature,
-we thus deduced that the majority of the execution time
-was most likely in the graph compilation phase.
-Unfortunately, cProfile could not give us any further detail
-beyond the `_pywrap_tensorflow_internal.TF_SessionRun_wrapper`
-in the call graph,
-meaning we were unable to conveniently peer into the internals of TF execution
-without digging further.
-
-## Comparison
-
-![
-    Comparison of the average hidden state between the implementations
-    when transforming the same sequence.
-    Because the two traces of the hidden state dimensions overlapped
-    almost perfectly, a small constant was added to the UniRep values,
-    such that both traces become visible. The inset shows
-    50 out of the total 1900 dimensions.
-](./figures/rep_trace_lf.png)
-
-## Top model
 
 ![
     GFP brightness classification using
@@ -416,6 +330,52 @@ our tests allowed us to rebuild the full model piece by piece,
 while always making sure that each new piece did not break
 the existing pieces.
 
+### Utility Reimplementation
+
+For the `get_reps()` functionality,
+we copied quite a bit of source code from the original,
+including the original authors' implementation of
+embedding a sequence into an $l$-by-10 embedding matrix first.
+However, we added tests to guarantee that they were robust,
+as well as technical documentation to clarify how it works.
+
+We did this because one way that deep learning models can be fragile
+is that the input tensors can be generated incorrectly
+but still have the expected shapes.
+Thus, though the structure of input tensors might be correct,
+their semantic meaning would be completely wrong.
+(Adversarial examples can be generated this way.)
+Thus, the input to the model has to be carefully controlled.
+Moreover, input tensors are _not_ the raw-est form of data;
+for a protein engineer, the protein sequence is.
+Thus, having robustly tested functions that generate the input tensors
+with correct semantic meaning
+is crucial to having confidence
+that the model works correctly end-to-end.
+
+### APIs
+
+Because we expect the model to be used as a Python library,
+the model source and weights are packaged together.
+This makes it much more convenient for end-users,
+as the cognitive load of downloading starter weights is eliminated.
+
+The `get_reps()` function is designed
+such that it is flexible enough to accept a single sequence
+or an iterable of sequences.
+This also reduces cognitive load for end-users,
+some of whom might want to process only a single sequence,
+while others might be operating in batch mode.
+`get_reps()` also correctly handles sequences of multiple lengths,
+further simplifying usage for end-users.
+In particular, we spent time ensuring that
+`get_reps()` correctly batches sequences of the same size together
+before calculating their reps,
+while returning the reps in the same order as the sequences passed in.
+As usual, tests are provided,
+bringing the same degree of confidence as we would expect
+from tested software.
+
 ## Lessons Learned
 
 We found the reimplementation exercise to be highly educational.
@@ -494,3 +454,33 @@ that are shipped to end-users,
 and take care to design sane APIs
 that enable other developers to use it in ways
 that minimize cognitive load.
+
+## Future Work
+
+As we have, at this point, only implemented the 1900-cell model.
+Going forth, we aim to work on implementing the 256- and 64-cell model.
+
+Evotuning is an important task when using UniRep [@alley2019unified],
+and we aim to provide a convenient API through the `evotune()` function.
+Here, we plan to use Optuna
+to automatically find the right hyperparameters for finetuning weights,
+using the protocol that the original authors describe.
+This would enable end-users to "set and forget" the model fitting protocol
+rather than needing to babysit a deep learning optimization routine.
+Like `get_reps()`, `evotune()` and its associated utility functions
+will have at least an example-based test,
+if not also a property-based test associated with them.
+
+Community contributions and enhancements are welcome as well.
+
+## Software Repository
+
+`jax-unirep` is available on GitHub at https://github.com/ElArkk/jax-unirep.
+
+## Acknowledgments
+
+We thank the UniRep authors for open sourcing their model.
+It is our hope that our reimplementation helps with adoption of the model
+in a variety of settings, and increases its impact.
+
+## References
