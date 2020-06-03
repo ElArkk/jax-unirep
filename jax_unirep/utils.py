@@ -327,12 +327,11 @@ def get_batching_func(
     """
 
     def batching_func():
-        nonlocal xs, ys
         pairs = list(zip(xs, ys))
         if len(pairs) > batch_size:
             pairs = sample(pairs, batch_size)
-        xs, ys = zip(*pairs)
-        return np.stack(xs), np.stack(ys)
+        x, y = zip(*pairs)
+        return np.stack(x), np.stack(y)
 
     return batching_func
 
