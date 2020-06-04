@@ -4,6 +4,7 @@ from collections import Counter
 from pathlib import Path
 from random import choice, sample
 from typing import Callable, Dict, Iterable, List, Optional, Tuple
+from tqdm.autonotebook import tqdm
 
 import jax.numpy as np
 import numpy as onp
@@ -129,7 +130,6 @@ def dump_params(
         onp.save(
             fpath, onp.array(val),
         )
-    print("Weights successfully dumped!")
 
 
 def aa_seq_to_int(s):
@@ -313,7 +313,7 @@ def batch_sequences(seqs: List[str]) -> List[List]:
 
 def right_pad(seqs: List[str], max_len: int):
     """Pad all seqs in a list to longest length on the right with "-"."""
-    return [seq.ljust(max_len, "-") for seq in seqs]
+    return [seq.ljust(max_len, "-") for seq in tqdm(seqs, desc="right-padding sequences")]
 
 
 def get_batching_func(
@@ -321,7 +321,7 @@ def get_batching_func(
 ) -> Callable:
     """
     Create a function which returns batches of sequences
-    
+
     :param xs: array of embedded same-length sequences
     :param ys: array of one-hot encoded groud truth next-AA labels
     """

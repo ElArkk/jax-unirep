@@ -3,6 +3,7 @@ import logging
 from functools import partial
 from random import choice
 from typing import Callable, Dict, Iterable, List, Optional, Tuple
+from tqdm.autonotebook import tqdm
 
 import numpy as onp
 import optuna
@@ -33,7 +34,7 @@ from .utils import (
 
 # setup logger
 logger = logging.getLogger("evotuning")
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 fh = logging.FileHandler("evotuning.log")
 fh.setLevel(logging.INFO)
 formatter = logging.Formatter("%(asctime)s :: %(levelname)s :: %(message)s")
@@ -47,26 +48,30 @@ init_fun, predict = serial(*model_layers)
 
 @jit
 def evotune_loss(params, inputs, targets):
+    logging.debug(f"Input shape: {inputs.shape}")
+    logging.debug(f"Output shape: {targets.shape}")
     predictions = vmap(partial(predict, params))(inputs)
 
     return _neg_cross_entropy_loss(targets, predictions)
 
 
-def avg_loss(sequences, params):
+def avg_loss(xs: List[np.ndarray], ys: List[np.ndarray], params) -> float:
     """
     Return average loss of a set of parameters,
     on a set of sequences.
 
     :param sequences: sequences (in standard AA format)
     :param params: parameters (i.e. from training)
+    :param batch_method: How to batch sequences.
     """
-    xs, ys, _ = length_batch_input_outputs(sequences)
-
+    logging.debug("Calculating average loss.")
     sum_loss = 0
+    num_seqs = 0
     for x, y in zip(xs, ys):
         sum_loss += evotune_loss(params, inputs=x, targets=y) * len(x)
+        num_seqs += len(x)
 
-    return sum_loss / len(sequences)
+    return sum_loss / num_seqs
 
 
 def evotuning_pairs(s: str) -> Tuple[np.ndarray, np.ndarray]:
@@ -121,6 +126,7 @@ def input_output_pairs(sequences: List[str]) -> Tuple[np.ndarray, np.ndarray]:
         Both will have an additional "sample" dimension as the first dim.
     """
     seqlengths = set(map(len, sequences))
+    logging.debug(seqlengths)
     if not len(seqlengths) == 1:
         raise ValueError(
             """
@@ -131,7 +137,7 @@ Please ensure that they are all of the same length before passing them in.
 
     xs = []
     ys = []
-    for s in sequences:
+    for s in tqdm(sequences, desc="evotuning pairs"):
         x, y = evotuning_pairs(s)
         xs.append(x)
         ys.append(y)
@@ -155,7 +161,7 @@ def length_batch_input_outputs(
     xs = []
     ys = []
     lens = []
-    for idxs in idxs_batched:
+    for idxs in tqdm(idxs_batched):
         seqs = [sequences[i] for i in idxs]
         x, y = input_output_pairs(seqs)
         xs.append(x)
@@ -207,9 +213,9 @@ def fit(
     Then, at each iteration,
     we randomly sample ``batch_size`` sequences
     and pass them through the model.
-    
+
     The training loop does not adhere
-    to the common notion of `epochs`, 
+    to the common notion of `epochs`,
     where all sequences would be seen by the model
     exactly once per epoch.
     Instead sequences always get sampled at random,
@@ -271,32 +277,47 @@ def fit(
         )
     validate_mLSTM1900_params(params[0])
 
+    # Defensive programming checks
     if batch_method not in ["length", "random"]:
         raise ValueError("batch_method must be one of 'length' or 'random'")
 
-    if batch_method == "length":
-        # batch sequences by length
-        xs, ys, seq_lens = length_batch_input_outputs(sequences)
-        len_batching_funcs = {
-            k: get_batching_func(x, y, batch_size)
-            for (k, x, y) in zip(seq_lens, xs, ys)
-        }
+    if batch_method == "random":
+        # First pad to the same length, effectively giving us one length batch.
+        max_len = max([len(seq) for seq in set(sequences).union(holdout_seqs)])
+        sequences = right_pad(sequences, max_len)
+        holdout_seqs = right_pad(holdout_seqs, max_len)
 
-        batch_lens = [len(batch) for batch in xs]
-        logger.info(
-            f"Length-batching done: "
-            f"{len(batch_lens)} unique lengths, "
-            f"with average length {onp.mean(batch_lens)}, "
-            f"max length {max(batch_lens)} and min length {min(batch_lens)}."
-        )
+    # batch sequences by length
+    xs, ys, seq_lens = length_batch_input_outputs(sequences)
+    holdout_xs, holdout_ys, _ = length_batch_input_outputs(holdout_seqs)
+    len_batching_funcs = {
+        sl: get_batching_func(x, y, batch_size)
+        for (sl, x, y)
+        in zip(seq_lens, xs, ys)
+    }
 
-    elif batch_method == "random":
-        max_len = max([len(seq) for seq in sequences])
-        padded_seqs = right_pad(sequences, max_len)
-        xs, ys = input_output_pairs(padded_seqs)
-        batching_func = get_batching_func(xs, ys, batch_size)
+    batch_lens = [len(batch) for batch in xs]
+    logger.info(
+        f"Length-batching done: "
+        f"{len(batch_lens)} unique lengths, "
+        f"with average length {onp.mean(batch_lens)}, "
+        f"max length {max(batch_lens)} and min length {min(batch_lens)}."
+    )
+
+    # elif batch_method == "random":
+    #     max_len = max([len(seq) for seq in set(sequences).union(holdout_seqs)])
+    #     sequences = right_pad(sequences, max_len)
+    #     holdout_seqs = right_pad(holdout_seqs, max_len)
+    #     logging.info("Getting input-output pairs.")
+    #     # For consistency in the interface, we use length_batch_input_outputs
+    #     # even though there is only one length.
+    #     xs, ys, _ = length_batch_input_outputs(sequences)
+    #     holdout_xs, holdout_ys, _ = length_batch_input_outputs(holdout_seqs)
+    #     logging.info("Computing batching function.")
+    #     batching_func = get_batching_func(xs, ys, batch_size)
 
     init, update, get_params = adamW(step_size=step_size)
+    get_params = jit(get_params)
     state = init(params)
 
     # calculate how many iterations constitute one epoch approximately
@@ -308,19 +329,20 @@ def fit(
         if i % epoch_len == 0:
             logger.info(f"Starting epoch {int(i / epoch_len) + 1}")
 
-        if batch_method == "length":
-            l = choice(seq_lens)
-            x, y = len_batching_funcs[l]()
+        logging.debug("Getting batches")
+        l = choice(seq_lens)
+        x, y = len_batching_funcs[l]()
 
-        elif batch_method == "random":
-            x, y = batching_func()
+        # elif batch_method == "random":
+        #     x, y = batching_func()
 
         # actual forward & backwrd pass happens here
+        logging.debug("Getting state")
         state = step(i, state)
+        params = get_params(state)
 
         if i % epoch_len == 0:
-            loss = avg_loss(sequences, get_params(state))
-            print(f"Average training-set loss: {loss}")
+            loss = avg_loss(xs, ys, params)
 
         if steps_per_print:
             if (i + 1) % (steps_per_print * epoch_len) == 0:
@@ -336,7 +358,7 @@ def fit(
                     # calculate and print loss for out-domain holdout set
                     logger.info(
                         f"Epoch {int(i / epoch_len) + 1}: "
-                        + f"Average holdout-set loss: {avg_loss(holdout_seqs, get_params(state))}"
+                        + f"Average holdout-set loss: {avg_loss(holdout_xs, holdout_ys, params)}"
                     )
 
                 # dump current params in case run crashes or loss increases
@@ -509,7 +531,7 @@ def evotune(
     To save on computation time, the number of trials run
     defaults to 20, but can be configured.
 
-    By default, mLSTM1900 and Dense weights from the paper are used 
+    By default, mLSTM1900 and Dense weights from the paper are used
     by passing in `params=None`,
     but if you want to use randomly intialized weights:
 
