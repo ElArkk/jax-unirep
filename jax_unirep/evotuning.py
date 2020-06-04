@@ -182,14 +182,14 @@ def fit(
 
     Length batching:
 
-    At each iteration,
+    - At each iteration,
     of all sequence lengths present in ``sequences``,
     one length gets chosen at random.
-    Next, ``batch_size`` number of sequences of the chosen length
+    - Next, ``batch_size`` number of sequences of the chosen length
     get selected at random.
-    If there are less sequences of a given length than `batch_size`,
+    - If there are less sequences of a given length than `batch_size`,
     all sequences of that length get chosen.
-    Those sequences then get passed through the model.
+    - Those sequences then get passed through the model.
     No padding of sequences occurs.
 
     To get batching of sequences by length done,
