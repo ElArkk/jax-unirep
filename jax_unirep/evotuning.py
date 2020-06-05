@@ -285,11 +285,13 @@ def fit(
         # First pad to the same length, effectively giving us one length batch.
         max_len = max([len(seq) for seq in set(sequences).union(holdout_seqs)])
         sequences = right_pad(sequences, max_len)
-        holdout_seqs = right_pad(holdout_seqs, max_len)
+        if holdout_seqs:
+            holdout_seqs = right_pad(holdout_seqs, max_len)
 
     # batch sequences by length
     xs, ys, seq_lens = length_batch_input_outputs(sequences)
-    holdout_xs, holdout_ys, _ = length_batch_input_outputs(holdout_seqs)
+    if holdout_seqs:
+        holdout_xs, holdout_ys, _ = length_batch_input_outputs(holdout_seqs)
     len_batching_funcs = {
         sl: get_batching_func(x, y, batch_size)
         for (sl, x, y)
