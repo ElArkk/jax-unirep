@@ -18,7 +18,7 @@ _, apply_fun = mLSTM1900()
 
 
 def rep_same_lengths(
-    seqs: List[str], params: Dict
+    seqs: Iterable[str], params: Dict
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     This function generates representations of protein sequences that have the same length,
@@ -39,7 +39,7 @@ def rep_same_lengths(
 
 
 def rep_arbitrary_lengths(
-    seqs: List[str], params: Dict
+    seqs: Iterable[str], params: Dict
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     This function generates representations of protein sequences of arbitrary length,
@@ -81,7 +81,7 @@ def rep_arbitrary_lengths(
 
 
 def get_reps(
-    seqs: Union[str, List[str]], params: Optional[Dict] = None
+    seqs: Union[str, Iterable[str]], params: Optional[Dict] = None
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     This function generates representations of protein sequences using the
@@ -93,7 +93,7 @@ def get_reps(
     - `h_avg`: Average hidden state of the mLSTM over the whole sequence.
     - `h_final`: Final hidden state of the mLSTM
     - `c_final`: Final cell state of the mLSTM
-    
+
     You should not use this function
     if you want to do further JAX-based computations
     on the output vectors!

@@ -145,7 +145,7 @@ Please ensure that they are all of the same length before passing them in.
 
 
 def length_batch_input_outputs(
-    sequences: List[str],
+    sequences: Iterable[str],
 ) -> Tuple[List[np.ndarray], List[np.ndarray]]:
     """
     Return lists of x and y tensors for evotuning, batched by their length.
@@ -172,12 +172,12 @@ def length_batch_input_outputs(
 
 def fit(
     params: Dict,
-    sequences: List[str],
+    sequences: Set[str],
     n_epochs: int,
     batch_method: Optional[str] = "length",
     batch_size: Optional[int] = 25,
     step_size: float = 0.0001,
-    holdout_seqs: Optional[List[str]] = None,
+    holdout_seqs: Optional[Set[str]] = set(),
     proj_name: Optional[str] = "temp",
     steps_per_print: Optional[int] = 200,
 ) -> Dict:
@@ -207,10 +207,10 @@ def fit(
 
     Random batching:
 
-    Before training, all sequences get padded
+    - Before training, all sequences get padded
     to be the same length as the longest sequence
     in ``sequences``.
-    Then, at each iteration,
+    - Then, at each iteration,
     we randomly sample ``batch_size`` sequences
     and pass them through the model.
 
@@ -283,7 +283,8 @@ def fit(
 
     if batch_method == "random":
         # First pad to the same length, effectively giving us one length batch.
-        max_len = max([len(seq) for seq in set(sequences).union(holdout_seqs)])
+        all_sequences = sequences.union(holdout_seqs)
+        max_len = max([len(seq) for seq in all_sequences])
         sequences = right_pad(sequences, max_len)
         if holdout_seqs:
             holdout_seqs = right_pad(holdout_seqs, max_len)
@@ -424,7 +425,7 @@ def fit(
 
 def objective(
     trial,
-    sequences: List[str],
+    sequences: Iterable[str],
     params: Optional[Dict] = None,
     n_epochs_config: Dict = None,
     learning_rate_config: Dict = None,
@@ -508,10 +509,10 @@ def objective(
 
 
 def evotune(
-    sequences: List[str],
+    sequences: Iterable[str],
     params: Optional[Dict] = None,
     proj_name: Optional[str] = "temp",
-    out_dom_seqs: Optional[List[str]] = None,
+    out_dom_seqs: Optional[Iterable[str]] = None,
     n_trials: Optional[int] = 20,
     n_epochs_config: Dict = None,
     learning_rate_config: Dict = None,

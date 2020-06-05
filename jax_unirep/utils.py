@@ -159,7 +159,7 @@ def get_embedding(sequence: str, embeddings: np.ndarray) -> np.ndarray:
     return x
 
 
-def get_embeddings(sequences: List[str]) -> np.ndarray:
+def get_embeddings(sequences: Iterable[str]) -> np.ndarray:
     """
     Return embedding of a list of sequences.
 
@@ -285,7 +285,7 @@ def l2_normalize(arr, axis, epsilon=1e-12):
     return np.divide(arr, np.sqrt(max_weights))
 
 
-def batch_sequences(seqs: List[str]) -> List[List]:
+def batch_sequences(seqs: Iterable[str]) -> List[List]:
     """
     Batch up sequences according to size.
 
@@ -311,7 +311,7 @@ def batch_sequences(seqs: List[str]) -> List[List]:
     return order
 
 
-def right_pad(seqs: List[str], max_len: int):
+def right_pad(seqs: Iterable[str], max_len: int):
     """Pad all seqs in a list to longest length on the right with "-"."""
     return [seq.ljust(max_len, "-") for seq in tqdm(seqs, desc="right-padding sequences")]
 
