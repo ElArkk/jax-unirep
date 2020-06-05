@@ -10,7 +10,7 @@ from jax_unirep.utils import dump_params
 
 
 seqs = []
-with open(here() / "examples/ired.fa", "r+") as f:
+with open(here() / "examples/enzymes.fa", "r+") as f:
     for record in SeqIO.parse(f, "fasta"):
         seqs.append(str(record.seq))
 
