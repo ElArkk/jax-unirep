@@ -294,8 +294,7 @@ def fit(
         holdout_xs, holdout_ys, _ = length_batch_input_outputs(holdout_seqs)
     len_batching_funcs = {
         sl: get_batching_func(x, y, batch_size)
-        for (sl, x, y)
-        in zip(seq_lens, xs, ys)
+        for (sl, x, y) in zip(seq_lens, xs, ys)
     }
 
     batch_lens = [len(batch) for batch in xs]
@@ -501,7 +500,9 @@ def objective(
             step_size=learning_rate,
         )
 
-        avg_test_losses.append(avg_loss(test_sequences, evotuned_params))
+        xs, ys, _ = length_batch_input_outputs(sequences)
+
+        avg_test_losses.append(avg_loss(xs, ys, evotuned_params))
 
     return sum(avg_test_losses) / len(avg_test_losses)
 
