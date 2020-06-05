@@ -2,7 +2,7 @@
 import logging
 from functools import partial
 from random import choice
-from typing import Callable, Dict, Iterable, List, Optional, Tuple
+from typing import Callable, Dict, Iterable, List, Optional, Tuple, Set
 from tqdm.autonotebook import tqdm
 
 import numpy as onp
@@ -283,7 +283,7 @@ def fit(
 
     if batch_method == "random":
         # First pad to the same length, effectively giving us one length batch.
-        all_sequences = sequences.union(holdout_seqs)
+        all_sequences = set(sequences).union(set(holdout_seqs))
         max_len = max([len(seq) for seq in all_sequences])
         sequences = right_pad(sequences, max_len)
         if holdout_seqs:

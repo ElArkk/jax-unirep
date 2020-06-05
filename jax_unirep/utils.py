@@ -3,7 +3,7 @@ import os
 from collections import Counter
 from pathlib import Path
 from random import choice, sample
-from typing import Callable, Dict, Iterable, List, Optional, Tuple
+from typing import Callable, Dict, Iterable, List, Optional, Tuple, Set
 from tqdm.autonotebook import tqdm
 
 import jax.numpy as np
@@ -313,7 +313,10 @@ def batch_sequences(seqs: Iterable[str]) -> List[List]:
 
 def right_pad(seqs: Iterable[str], max_len: int):
     """Pad all seqs in a list to longest length on the right with "-"."""
-    return [seq.ljust(max_len, "-") for seq in tqdm(seqs, desc="right-padding sequences")]
+    return [
+        seq.ljust(max_len, "-")
+        for seq in tqdm(seqs, desc="right-padding sequences")
+    ]
 
 
 def get_batching_func(
