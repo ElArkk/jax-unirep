@@ -306,18 +306,6 @@ def fit(
         f"max length {max(batch_lens)} and min length {min(batch_lens)}."
     )
 
-    # elif batch_method == "random":
-    #     max_len = max([len(seq) for seq in set(sequences).union(holdout_seqs)])
-    #     sequences = right_pad(sequences, max_len)
-    #     holdout_seqs = right_pad(holdout_seqs, max_len)
-    #     logging.info("Getting input-output pairs.")
-    #     # For consistency in the interface, we use length_batch_input_outputs
-    #     # even though there is only one length.
-    #     xs, ys, _ = length_batch_input_outputs(sequences)
-    #     holdout_xs, holdout_ys, _ = length_batch_input_outputs(holdout_seqs)
-    #     logging.info("Computing batching function.")
-    #     batching_func = get_batching_func(xs, ys, batch_size)
-
     init, update, get_params = adamW(step_size=step_size)
     get_params = jit(get_params)
     state = init(params)
@@ -334,9 +322,6 @@ def fit(
         logging.debug("Getting batches")
         l = choice(seq_lens)
         x, y = len_batching_funcs[l]()
-
-        # elif batch_method == "random":
-        #     x, y = batching_func()
 
         # actual forward & backwrd pass happens here
         logging.debug("Getting state")
@@ -356,7 +341,6 @@ def fit(
                 )
 
                 if holdout_seqs is not None:
-
                     # calculate and print loss for out-domain holdout set
                     logger.info(
                         f"Epoch {int(i / epoch_len) + 1}: "
@@ -370,57 +354,6 @@ def fit(
                 )
 
     return get_params(state)
-
-
-# def evotune_step(
-#     i: int,
-#     state,
-#     optimizer_funcs: Tuple[Callable, Callable],
-#     loss_func: Callable,
-#     x: np.ndarray,
-#     y: np.ndarray,
-# ):
-#     """
-#     Perform one step of evolutionary updating.
-
-#     ;param i: The current iteration of the training loop.
-#     :param state: Current state of parameters from jax.
-#     :param optimizer_funcs: The (update, get_params) functions
-#         from jax's optimizers.
-#     :param loss_func: The loss function.
-#     :return state: Updated state of parameters from jax.
-#     """
-#     # Unpack optimizer funcs
-#     update, get_params = optimizer_funcs
-#     params = get_params(state)
-
-#     # Unpack loss funcs
-#     dloss = grad(loss_func)
-
-#     l = loss_func(params, x, y)
-
-#     # Conditional check
-# #     pred = np.isnan(l)
-# #     def true_fun(x):
-# #         return optuna.exceptions.TrialPruned()
-# #     true_operand = None
-# #     def false_fun(x):
-# #         pass
-# #     false_operand = None
-
-# #     lax.cond(pred, true_operand, true_fun, false_operand, false_fun)
-
-# #     Rewrite the following using lax.cond
-# #     if np.isnan(l):
-# #         l = np.inf
-# #         print("NaN occured in optimization. Skipping trial.")
-# #         raise optuna.exceptions.TrialPruned()
-# #     print(f"Iteration: {i}, Loss: {l:.4f}")
-
-#     g = dloss(params, x, y)
-
-#     state = update(i, g, state)
-#     return state
 
 
 def objective(
