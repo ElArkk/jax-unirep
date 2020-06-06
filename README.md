@@ -108,8 +108,11 @@ If you want to directly fine-tune the weights
 for a fixed number of epochs
 while using a fixed learning rate,
 you should use the [`fit`][fitfunc] function instead.
+The `fit` function has further customization options,
+such as different batching strategies.
+Please see the function docstring for more information.
 
-You can find an example usage of both functions [here][exampleevotune].
+You can find an example usages of both `evotune` and `fit` [here][examples].
 
 If you want to pass a set of mLSTM and dense weights
 that were dumped in an earlier run,
@@ -185,6 +188,6 @@ is licensed under the terms of [GPL v3][gpl3].
 [gpl3]: https://www.gnu.org/licenses/gpl-3.0.html
 [evotunefunc]: https://github.com/ElArkk/jax-unirep/blob/master/jax_unirep/evotuning.py#L421
 [fitfunc]: https://github.com/ElArkk/jax-unirep/blob/master/jax_unirep/evotuning.py#L163
-[exampleevotune]: https://github.com/ElArkk/jax-unirep/blob/master/examples/evotuning.py
+[examples]: https://github.com/ElArkk/jax-unirep/blob/master/examples
 [stax]: https://jax.readthedocs.io/en/latest/jax.experimental.stax.html
 [staxex]: https://github.com/google/jax/tree/master/examples
