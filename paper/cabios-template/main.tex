@@ -31,7 +31,7 @@
     API enhancements,
     and reliability upgrades.
     \textbf{Availability and Implementation:} jax-unirep is implemented
-    in JAX/NumPy, and is available at
+    in JAX/NumPy, and is actively developed at
     https://github.com/ElArkk/jax-unirep.
     Releases are archived on Zenodo.\\
     \textbf{Contact:} \href{eric.ma@novartis.com}{eric.ma@novartis.com}\\
@@ -83,7 +83,7 @@ To investigate the performance of \verb|tf-unirep|,
 we used Python's \verb|cProfile| facility to identify speed bottlenecks.
 On the basis of this, we hypothesized that the cause of speed problems
 was graph compilation in TF1.x,
-and that we could obtain speedups by using 
+and that we could obtain speedups by using
 a non-graph-compiled tensor library.
 
 There were three options available: TF2.x, PyTorch (\cite{pytorch})
@@ -177,11 +177,10 @@ Through our reimplementation of UniRep,
 we have effectively provided it with non-trivial upgrades over the original.
 Having verified its correctness in reimplementation,
 we have improved the API, added software tests,
-and sped up model speed up to 100X,
+and sped up model forward pass speed by nearly 100X,
 all of which are significant upgrades over the original implementation.
 
-Significant effort was invested in
-accelerating, refactoring, documenting,
+Significant effort was invested in accelerating, refactoring, documenting,
 and testing the \verb|babbler1900| model.
 This was the model with the largest "capacity" by number of parameters),
 and likely is the most powerful of the three described in the original paper.
@@ -192,8 +191,10 @@ the \verb|babbler256| and \verb|babbler64| models.
 
 We would like to acknowledge the original UniRep authors
 for open sourcing their implementation,
-and our colleagues in the Protein Engineering Platform at NIBR
-for providing a use case for the model.
+our colleagues in the Protein Engineering Platform at NIBR
+for providing a use case for the model,
+and our beta tester colleagues
+in the Chemical Biology and Therapeutics platform at NIBR.
 
 \bibliography{references}
 \bibliographystyle{natbib}
