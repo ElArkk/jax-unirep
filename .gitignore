@@ -134,3 +134,4 @@ dmypy.json
 # Custom
 *.DS_Store
 paper/cabios-template/fig01.eps
+default.profraw
