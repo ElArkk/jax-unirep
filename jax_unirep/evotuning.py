@@ -326,9 +326,9 @@ def fit(
         # actual forward & backwrd pass happens here
         logging.debug("Getting state")
         state = step(i, state)
-        params = get_params(state)
 
         if i % epoch_len == 0:
+            params = get_params(state)
             loss = avg_loss(xs, ys, params)
 
         if steps_per_print:
