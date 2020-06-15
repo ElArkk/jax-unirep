@@ -3,12 +3,12 @@ import os
 from collections import Counter
 from pathlib import Path
 from random import choice, sample
-from typing import Callable, Dict, Iterable, List, Optional, Tuple, Set
-from tqdm.autonotebook import tqdm
+from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple
 
 import jax.numpy as np
 import numpy as onp
 import pkg_resources
+from tqdm.autonotebook import tqdm
 
 from .errors import SequenceLengthsError
 
