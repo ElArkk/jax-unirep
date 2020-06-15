@@ -2,8 +2,7 @@
 import logging
 from functools import partial
 from random import choice
-from typing import Callable, Dict, Iterable, List, Optional, Tuple, Set
-from tqdm.autonotebook import tqdm
+from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple
 
 import numpy as onp
 import optuna
@@ -13,6 +12,7 @@ from jax import random, vmap
 from jax.experimental.optimizers import adam
 from jax.experimental.stax import Dense, Softmax, serial
 from sklearn.model_selection import KFold, train_test_split
+from tqdm.autonotebook import tqdm
 
 from jax_unirep.losses import _neg_cross_entropy_loss
 
@@ -326,9 +326,9 @@ def fit(
         # actual forward & backwrd pass happens here
         logging.debug("Getting state")
         state = step(i, state)
-        params = get_params(state)
 
         if i % epoch_len == 0:
+            params = get_params(state)
             loss = avg_loss(xs, ys, params)
 
         if steps_per_print:
