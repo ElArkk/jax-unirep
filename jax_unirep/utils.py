@@ -2,16 +2,18 @@
 import os
 from collections import Counter
 from pathlib import Path
-from random import choice
-from typing import Dict, Iterable, List, Optional, Tuple
+from random import choice, sample
+from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple
 
 import jax.numpy as np
 import numpy as onp
 import pkg_resources
+from tqdm.autonotebook import tqdm
 
 from .errors import SequenceLengthsError
 
 aa_to_int = {
+    "-": 0,
     "M": 1,
     "R": 2,
     "H": 3,
@@ -128,7 +130,6 @@ def dump_params(
         onp.save(
             fpath, onp.array(val),
         )
-    print("Weights successfully dumped!")
 
 
 def aa_seq_to_int(s):
@@ -158,7 +159,7 @@ def get_embedding(sequence: str, embeddings: np.ndarray) -> np.ndarray:
     return x
 
 
-def get_embeddings(sequences: List[str]) -> np.ndarray:
+def get_embeddings(sequences: Iterable[str]) -> np.ndarray:
     """
     Return embedding of a list of sequences.
 
@@ -284,7 +285,7 @@ def l2_normalize(arr, axis, epsilon=1e-12):
     return np.divide(arr, np.sqrt(max_weights))
 
 
-def batch_sequences(seqs: List[str]) -> List[List]:
+def batch_sequences(seqs: Iterable[str]) -> List[List]:
     """
     Batch up sequences according to size.
 
@@ -310,14 +311,32 @@ def batch_sequences(seqs: List[str]) -> List[List]:
     return order
 
 
-def get_batch_len(batched_seqs: Iterable[str]) -> Tuple[np.ndarray, List]:
-    """
-    Returns the average length of each batch as well as a full array of batch distribution.
+def right_pad(seqs: Iterable[str], max_len: int):
+    """Pad all seqs in a list to longest length on the right with "-"."""
+    return [
+        seq.ljust(max_len, "-")
+        for seq in tqdm(seqs, desc="right-padding sequences")
+    ]
 
-    :param batched_seqs: list of lists of sequences, grouped by length.
+
+def get_batching_func(
+    xs: np.ndarray, ys: np.ndarray, batch_size: int = 25
+) -> Callable:
     """
-    batch_lens = np.array([len(batch) for batch in batched_seqs])
-    return np.mean(batch_lens), batch_lens
+    Create a function which returns batches of sequences
+
+    :param xs: array of embedded same-length sequences
+    :param ys: array of one-hot encoded groud truth next-AA labels
+    """
+
+    def batching_func():
+        pairs = list(zip(xs, ys))
+        if len(pairs) > batch_size:
+            pairs = sample(pairs, batch_size)
+        x, y = zip(*pairs)
+        return np.stack(x), np.stack(y)
+
+    return batching_func
 
 
 # This block of code generates one-hot-encoded arrays.

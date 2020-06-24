@@ -27,6 +27,8 @@ dependencies:
   - isort=4.3.21
   - pylint
   - pydocstyle
+# Other things
+  - psutil
   - pip:
     - pandoc-fignos
     - pandoc-eqnos

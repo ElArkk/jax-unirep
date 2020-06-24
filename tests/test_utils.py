@@ -6,12 +6,12 @@ import pytest
 from jax_unirep.utils import (
     batch_sequences,
     dump_params,
-    get_batch_len,
     l2_normalize,
     load_dense_1900,
     load_embedding_1900,
     load_params,
     load_params_1900,
+    right_pad,
     validate_mLSTM1900_params,
 )
 
@@ -43,11 +43,11 @@ def test_batch_sequences(seqs, expected):
     assert batch_sequences(seqs) == expected
 
 
-def test_get_batch_len():
-    batched_seqs = [["ABC", "ACD"], ["AABC", "EKQJ"], ["QWLRJK", "QJEFLK"]]
-    mean_batch_length, batch_lengths = get_batch_len(batched_seqs)
-    assert mean_batch_length == 2
-    assert np.all(batch_lengths == np.array([2, 2, 2]))
+# def test_get_batch_len():
+#     batched_seqs = [["ABC", "ACD"], ["AABC", "EKQJ"], ["QWLRJK", "QJEFLK"]]
+#     mean_batch_length, batch_lengths = get_batch_len(batched_seqs)
+#     assert mean_batch_length == 2
+#     assert np.all(batch_lengths == np.array([2, 2, 2]))
 
 
 def test_load_dense_1900():
@@ -105,3 +105,14 @@ def test_dump_params():
     dumped_params = load_params("tmp/iter_0")
     rmtree("tmp")
     validate_params(dumped_params)
+
+
+@pytest.mark.parametrize(
+    "seqs, max_len, expected",
+    [
+        (["MT", "MTN", "M"], 4, ["MT--", "MTN-", "M---"]),
+        (["MD", "T", "MDT", "MDT"], 2, ["MD", "T-", "MDT", "MDT"]),
+    ],
+)
+def test_right_pad(seqs, max_len, expected):
+    assert right_pad(seqs, max_len) == expected
