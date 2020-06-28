@@ -262,7 +262,9 @@ def fit(
     :param n: The number of iterations to evotune on.
     :param batch_method: One of "length" or "random".
     :param batch_size: If random batching is used,
-        number of sequences per batch. As a rule of thumb, batch size of 50 consumes about 5GB of RAM.
+        number of sequences per batch.
+        As a rule of thumb, batch size of 50 consumes
+        about 5GB of GPU RAM.
     :param step_size: The learning rate.
     :param holdout_seqs: Holdout set, an optional input.
     :param proj_name: The directory path for weights to be output to.
