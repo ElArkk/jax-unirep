@@ -7,8 +7,8 @@ def test_add_dense_params():
     params = add_dense_params(
         params, name="param1", input_dim=40, output_dim=20
     )
-    assert params["w"].shape == (40, 20)
-    assert params["b"].shape == (20,)
+    assert params["param1"]["w"].shape == (40, 20)
+    assert params["param1"]["b"].shape == (20,)
 
 
 def test_add_mLSTM1900_params():
