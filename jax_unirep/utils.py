@@ -4,6 +4,7 @@ from collections import Counter
 from pathlib import Path
 from random import choice, sample
 from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple
+from functools import lru_cache
 
 import jax.numpy as np
 import numpy as onp
@@ -12,37 +13,36 @@ from tqdm.autonotebook import tqdm
 
 from .errors import SequenceLengthsError
 
-aa_to_int = {
-    "-": 0,
-    "M": 1,
-    "R": 2,
-    "H": 3,
-    "K": 4,
-    "D": 5,
-    "E": 6,
-    "S": 7,
-    "T": 8,
-    "N": 9,
-    "Q": 10,
-    "C": 11,
-    "U": 12,
-    "G": 13,
-    "P": 14,
-    "A": 15,
-    "V": 16,
-    "I": 17,
-    "F": 18,
-    "Y": 19,
-    "W": 20,
-    "L": 21,
-    "O": 22,  # Pyrrolysine
-    "X": 23,  # Unknown
-    "Z": 23,  # Glutamic acid or GLutamine
-    "B": 23,  # Asparagine or aspartic acid
-    "J": 23,  # Leucine or isoleucine
-    "start": 24,
-    "stop": 25,
-}
+aa_to_int = dict()
+aa_to_int["-"] = 0
+aa_to_int["M"] = 1
+aa_to_int["R"] = 2
+aa_to_int["H"] = 3
+aa_to_int["K"] = 4
+aa_to_int["D"] = 5
+aa_to_int["E"] = 6
+aa_to_int["S"] = 7
+aa_to_int["T"] = 8
+aa_to_int["N"] = 9
+aa_to_int["Q"] = 10
+aa_to_int["C"] = 11
+aa_to_int["U"] = 12
+aa_to_int["G"] = 13
+aa_to_int["P"] = 14
+aa_to_int["A"] = 15
+aa_to_int["V"] = 16
+aa_to_int["I"] = 17
+aa_to_int["F"] = 18
+aa_to_int["Y"] = 19
+aa_to_int["W"] = 20
+aa_to_int["L"] = 21
+aa_to_int["O"] = 22  # Pyrrolysine
+aa_to_int["X"] = 23  # Unknown
+aa_to_int["Z"] = 23  # Glutamic acid or GLutamine
+aa_to_int["B"] = 23  # Asparagine or aspartic acid
+aa_to_int["J"] = 23  # Leucine or isoleucine
+aa_to_int["start"] = 24
+aa_to_int["stop"] = 25
 
 proposal_valid_letters = "ACDEFGHIKLMNPQRSTVWY"
 
@@ -132,7 +132,7 @@ def dump_params(
         )
 
 
-def aa_seq_to_int(s):
+def aa_seq_to_int(s: str) -> List[int]:
     """Return the int sequence as a list for a given string of amino acids."""
     # Make sure only valid aa's are passed
     if not set(s).issubset(set(aa_to_int.keys())):
@@ -143,6 +143,7 @@ def aa_seq_to_int(s):
     return [24] + [aa_to_int[a] for a in s] + [25]
 
 
+@lru_cache(maxsize=128)
 def load_embedding_1900(folderpath: Optional[str] = None):
     """Load pre-trained embedding weights for uniref50 model."""
     weights_1900_dir = get_weights_dir(folderpath=folderpath)
@@ -314,14 +315,11 @@ def batch_sequences(seqs: Iterable[str]) -> List[List]:
 def right_pad(seqs: Iterable[str], max_len: int):
     """Pad all seqs in a list to longest length on the right with "-"."""
     return [
-        seq.ljust(max_len, "-")
-        for seq in tqdm(seqs, desc="right-padding sequences")
+        seq.ljust(max_len, "-") for seq in tqdm(seqs, desc="right-padding sequences")
     ]
 
 
-def get_batching_func(
-    xs: np.ndarray, ys: np.ndarray, batch_size: int = 25
-) -> Callable:
+def get_batching_func(xs: np.ndarray, ys: np.ndarray, batch_size: int = 25) -> Callable:
     """
     Create a function which returns batches of sequences
 
@@ -334,7 +332,7 @@ def get_batching_func(
         if len(pairs) > batch_size:
             pairs = sample(pairs, batch_size)
         x, y = zip(*pairs)
-        return np.stack(x), np.stack(y)
+        return onp.stack(x), onp.stack(y)
 
     return batching_func
 
