@@ -324,7 +324,8 @@ def fit(
         )
 
     len_batching_funcs = {
-        sl: get_batching_func(x, y, batch_size) for (sl, x, y) in zip(seq_lens, xs, ys)
+        sl: get_batching_func(x, y, batch_size)
+        for (sl, x, y) in zip(seq_lens, xs, ys)
     }
     if holdout_seqs:
         holdout_len_batching_funcs = {
@@ -387,7 +388,9 @@ def fit(
 
                 # dump current params in case run crashes or loss increases
                 # steps printed are 1-indexed i.e. starts at epoch 1 not 0.
-                dump_params(get_params(state), proj_name, (int(i / epoch_len) + 1))
+                dump_params(
+                    get_params(state), proj_name, (int(i / epoch_len) + 1)
+                )
 
     return get_params(state)
 
@@ -448,7 +451,9 @@ def objective(
 
     n_epochs = trial.suggest_discrete_uniform(**n_epochs_kwargs)
     learning_rate = trial.suggest_loguniform(**learning_rate_kwargs)
-    logger.info(f"Trying out {n_epochs} epochs with learning rate {learning_rate}.")
+    logger.info(
+        f"Trying out {n_epochs} epochs with learning rate {learning_rate}."
+    )
 
     kf = KFold(n_splits=n_splits, shuffle=True)
     sequences = onp.array(sequences)
@@ -462,7 +467,10 @@ def objective(
         )
 
         evotuned_params = fit(
-            params, train_sequences, n_epochs=int(n_epochs), step_size=learning_rate,
+            params,
+            train_sequences,
+            n_epochs=int(n_epochs),
+            step_size=learning_rate,
         )
 
         xs, ys, _ = length_batch_input_outputs(sequences)
@@ -566,7 +574,9 @@ def evotune(
     num_epochs = int(study.best_params["n_epochs"])
     learning_rate = float(study.best_params["learning_rate"])
 
-    logger.info(f"Optuna done, starting tuning with learning rate={learning_rate}, ")
+    logger.info(
+        f"Optuna done, starting tuning with learning rate={learning_rate}, "
+    )
 
     evotuned_params = fit(
         params=params,

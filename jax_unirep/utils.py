@@ -315,11 +315,14 @@ def batch_sequences(seqs: Iterable[str]) -> List[List]:
 def right_pad(seqs: Iterable[str], max_len: int):
     """Pad all seqs in a list to longest length on the right with "-"."""
     return [
-        seq.ljust(max_len, "-") for seq in tqdm(seqs, desc="right-padding sequences")
+        seq.ljust(max_len, "-")
+        for seq in tqdm(seqs, desc="right-padding sequences")
     ]
 
 
-def get_batching_func(xs: np.ndarray, ys: np.ndarray, batch_size: int = 25) -> Callable:
+def get_batching_func(
+    xs: np.ndarray, ys: np.ndarray, batch_size: int = 25
+) -> Callable:
     """
     Create a function which returns batches of sequences
 
