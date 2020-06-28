@@ -2,29 +2,26 @@
 import logging
 from functools import partial
 from random import choice
-from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple
+from typing import Dict, Iterable, List, Optional, Set, Tuple
 
 import numpy as onp
 import optuna
-from jax import grad, jit, lax
+from jax import grad, jit
 from jax import numpy as np
-from jax import random, vmap
-from jax.experimental.optimizers import adam
+from jax import vmap
 from jax.experimental.stax import Dense, Softmax, serial
-from sklearn.model_selection import KFold, train_test_split
+from sklearn.model_selection import KFold
 from tqdm.autonotebook import tqdm
 
 from jax_unirep.losses import _neg_cross_entropy_loss
 
-from .layers import mLSTM1900, mLSTM1900_AvgHidden, mLSTM1900_HiddenStates
+from .layers import mLSTM1900, mLSTM1900_HiddenStates
 from .optimizers import adamW
-from .params import add_dense_params
 from .utils import (
     aa_seq_to_int,
     batch_sequences,
     dump_params,
     get_batching_func,
-    get_embeddings,
     load_embedding_1900,
     load_params,
     one_hots,
@@ -65,8 +62,14 @@ def avg_loss(
     :param xs: List of NumPy arrays
     :param ys: List of NumPy arrays
     :param params: parameters (i.e. from training)
-    :param backend: Whether to use GPU ('gpu') or CPU ('cpu') to perform calculation. Defaults to 'cpu'.
-    :param batch_size: Size of batch when calculating average loss over train or holdout set. Controlling this parameter helps with memory allocation issues - reduce this parameter's size to reduce the amount of RAM allocation needed to calculate loss.
+    :param backend: Whether to use GPU ('gpu') or CPU ('cpu')
+        to perform calculation.
+        Defaults to 'cpu'.
+    :param batch_size: Size of batch when calculating average loss
+        over train or holdout set.
+        Controlling this parameter helps with memory allocation issues -
+        reduce this parameter's size to reduce the amount of RAM allocation
+        needed to calculate loss.
     """
     logging.debug("Calculating average loss.")
     sum_loss = 0
@@ -199,7 +202,7 @@ def fit(
     holdout_seqs: Optional[Set[str]] = set(),
     proj_name: Optional[str] = "temp",
     steps_per_print: Optional[int] = 200,
-    backend="gpu",
+    backend="cpu",
 ) -> Dict:
     """
     Return mLSTM weights fitted to predict the next letter in each AA sequence.
