@@ -202,6 +202,7 @@ def fit(
     holdout_seqs: Optional[Set[str]] = set(),
     proj_name: Optional[str] = "temp",
     steps_per_print: Optional[int] = 200,
+    backend="gpu",
 ) -> Dict:
     """
     Return mLSTM weights fitted to predict the next letter in each AA sequence.
@@ -270,6 +271,8 @@ def fit(
     :param proj_name: The directory path for weights to be output to.
     :param steps_per_print: Number of steps per printing and dumping
         of weights.
+    :param backend: Whether or not to use the GPU. Defaults to "cpu",
+        but can be set to "gpu" if desired.
     """
 
     @jit
@@ -364,7 +367,7 @@ def fit(
         if i % epoch_len == 0:
             params = get_params(state)
             x, y = len_batching_funcs[l]()
-            loss = avg_loss([x], [y], params, backend="gpu")
+            loss = avg_loss([x], [y], params, backend=backend)
 
         if steps_per_print:
             if (i + 1) % (steps_per_print * epoch_len) == 0:
@@ -379,7 +382,7 @@ def fit(
                     # calculate and print loss for out-domain holdout set
                     l = choice(holdout_seq_lens)
                     x, y = holdout_len_batching_funcs[l]()
-                    loss = avg_loss([x], [y], params, backend="gpu")
+                    loss = avg_loss([x], [y], params, backend=backend)
                     logger.info(
                         f"Epoch {int(i / epoch_len) + 1}: "
                         + f"Estimaged average holdout-set loss: {loss}"
