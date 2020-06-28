@@ -128,9 +128,7 @@ def evotuning_pairs(s: str) -> Tuple[np.ndarray, np.ndarray]:
     return x, y
 
 
-def input_output_pairs(
-    sequences: List[str], parallel: bool = False
-) -> Tuple[np.ndarray, np.ndarray]:
+def input_output_pairs(sequences: List[str],) -> Tuple[np.ndarray, np.ndarray]:
     """
     Generate input-output tensor pairs for evo-tuning.
 
@@ -139,7 +137,6 @@ def input_output_pairs(
 
     :param sequences: A list of sequences
         to generate input-output tensor pairs.
-    :param parallel: Whether to use all cores on a system
     :returns: Two NumPy arrays,
         the first corresponding to the input to evotuning
         with shape (n_sequences, n_letters+1, 10),
