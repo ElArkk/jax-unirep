@@ -207,7 +207,7 @@ def fit(
     step_size: float = 0.0001,
     holdout_seqs: Optional[Set[str]] = set(),
     proj_name: Optional[str] = "temp",
-    steps_per_print: Optional[int] = 200,
+    epochs_per_print: Optional[int] = 200,
     backend="cpu",
 ) -> Dict:
     """
@@ -257,12 +257,12 @@ def fit(
     have a look at the ``evotune`` function docstring.
 
     You can optionally dump parameters
-    and print weights every ``steps_per_print`` steps
+    and print weights every ``epochs_per_print`` epochs
     to monitor training progress.
     For ergonomics, training/holdout set losses are estimated
     on a batch size the same as ``batch_size``,
     rather than calculated exactly on the entire set.
-    Set ``steps_per_print`` to ``None`` to avoid parameter dumping.
+    Set ``epochs_per_print`` to ``None`` to avoid parameter dumping.
 
     :param params: mLSTM1900 and Dense parameters.
     :param sequences: List of sequences to evotune on.
@@ -275,8 +275,9 @@ def fit(
     :param step_size: The learning rate.
     :param holdout_seqs: Holdout set, an optional input.
     :param proj_name: The directory path for weights to be output to.
-    :param steps_per_print: Number of steps per printing and dumping
-        of weights.
+    :param epochs_per_print: Number of epochs to progress before printing
+        and dumping of weights.
+        Must be greater than or equal to 1.
     :param backend: Whether or not to use the GPU. Defaults to "cpu",
         but can be set to "gpu" if desired.
     """
@@ -309,34 +310,42 @@ def fit(
     # Defensive programming checks
     if len(params) != len(model_layers):
         raise ValueError(
-            "The number of parameters specified must match the number of stax.serial layers"
+            "The number of parameters specified must "
+            "match the number of stax.serial layers"
         )
     validate_mLSTM1900_params(params[0])
 
     # Defensive programming checks
     if batch_method not in ["length", "random"]:
         raise ValueError("batch_method must be one of 'length' or 'random'")
+    if not isinstance(epochs_per_print, int):
+        raise TypeError("epochs_per_print must be an integer.")
+    if epochs_per_print < 1:
+        raise ValueError(
+            "epochs_per_print must be greater than or equal to 1."
+        )
 
     if batch_method == "random":
         # First pad to the same length, effectively giving us one length batch.
-        all_sequences = set(sequences).union(set(holdout_seqs))
+        all_sequences = set(sequences)
+        if holdout_seqs is not None:
+            all_sequences = all_sequences.union(set(holdout_seqs))
         max_len = max([len(seq) for seq in all_sequences])
         sequences = right_pad(sequences, max_len)
-        if holdout_seqs:
+        if holdout_seqs is not None:
             holdout_seqs = right_pad(holdout_seqs, max_len)
 
     # batch sequences by length
     xs, ys, seq_lens = length_batch_input_outputs(sequences)
-    if holdout_seqs:
-        holdout_xs, holdout_ys, holdout_seq_lens = length_batch_input_outputs(
-            holdout_seqs
-        )
-
     len_batching_funcs = {
         sl: get_batching_func(x, y, batch_size)
         for (sl, x, y) in zip(seq_lens, xs, ys)
     }
-    if holdout_seqs:
+
+    if holdout_seqs is not None:
+        holdout_xs, holdout_ys, holdout_seq_lens = length_batch_input_outputs(
+            holdout_seqs
+        )
         holdout_len_batching_funcs = {
             sl: get_batching_func(x, y, batch_size)
             for (sl, x, y) in zip(holdout_seq_lens, holdout_xs, holdout_ys)
@@ -359,9 +368,11 @@ def fit(
 
     n = n_epochs * epoch_len
     for i in tqdm(range(n), desc="Iteration"):
+        current_epoch = (i // epoch_len) + 1
+        is_starting_new_printing_epoch = (
+            i % (epochs_per_print * epoch_len) == 0
+        )
 
-        if i % epoch_len == 0:
-            logger.info(f"Starting epoch {int(i / epoch_len) + 1}")
         logger.debug(f"Iteration {i}")
         logger.debug("Getting batches")
         l = choice(seq_lens)
@@ -371,35 +382,30 @@ def fit(
         logger.debug("Getting state")
         state = step(i, x, y, state)
 
-        if i % epoch_len == 0:
+        if is_starting_new_printing_epoch:
+            logger.info(f"Starting epoch {current_epoch}")
             params = get_params(state)
             x, y = len_batching_funcs[l]()
             loss = avg_loss([x], [y], params, backend=backend)
+            logger.info(
+                f"Epoch {current_epoch}: "
+                f"Estimated average training-set loss: {loss}. "
+                "Weights dumped."
+            )
 
-        if steps_per_print:
-            if (i + 1) % (steps_per_print * epoch_len) == 0:
-
+            if holdout_seqs is not None:
+                # calculate and print loss for out-domain holdout set
+                l = choice(holdout_seq_lens)
+                x, y = holdout_len_batching_funcs[l]()
+                loss = avg_loss([x], [y], params, backend=backend)
                 logger.info(
-                    f"Epoch {int(i / epoch_len) + 1}: "
-                    f"Estimated average training-set loss: {loss}. "
-                    f"Weights dumped."
+                    f"Epoch {current_epoch}: "
+                    + f"Estimaged average holdout-set loss: {loss}"
                 )
 
-                if holdout_seqs:
-                    # calculate and print loss for out-domain holdout set
-                    l = choice(holdout_seq_lens)
-                    x, y = holdout_len_batching_funcs[l]()
-                    loss = avg_loss([x], [y], params, backend=backend)
-                    logger.info(
-                        f"Epoch {int(i / epoch_len) + 1}: "
-                        + f"Estimaged average holdout-set loss: {loss}"
-                    )
-
-                # dump current params in case run crashes or loss increases
-                # steps printed are 1-indexed i.e. starts at epoch 1 not 0.
-                dump_params(
-                    get_params(state), proj_name, (int(i / epoch_len) + 1)
-                )
+            # dump current params in case run crashes or loss increases
+            # steps printed are 1-indexed i.e. starts at epoch 1 not 0.
+            dump_params(get_params(state), proj_name, current_epoch)
 
     return get_params(state)
 
@@ -498,7 +504,7 @@ def evotune(
     n_epochs_config: Dict = None,
     learning_rate_config: Dict = None,
     n_splits: Optional[int] = 5,
-    steps_per_print: Optional[int] = 200,
+    epochs_per_print: Optional[int] = 200,
 ) -> Dict:
     """
     Evolutionarily tune the model to a set of sequences.
@@ -559,7 +565,7 @@ def evotune(
         See source code for default configuration,
         at the definition of ``learning_rate_kwargs``.
     :param n_splits: The number of folds of cross-validation to do.
-    :param steps_per_print: The number of steps between each
+    :param epochs_per_print: The number of steps between each
         printing and dumping of weights in the final
         evotuning step using the optimized hyperparameters.
 
@@ -594,7 +600,7 @@ def evotune(
         step_size=learning_rate,
         holdout_seqs=out_dom_seqs,
         proj_name=proj_name,
-        steps_per_print=steps_per_print,
+        epochs_per_print=epochs_per_print,
     )
 
     return study, evotuned_params

@@ -37,7 +37,7 @@ evotuned_params = fit(
     holdout_seqs=holdout_sequences,
     batch_method="random",
     proj_name=PROJECT_NAME,
-    steps_per_print=None,
+    epochs_per_print=None,
 )
 
 dump_params(evotuned_params, PROJECT_NAME)
