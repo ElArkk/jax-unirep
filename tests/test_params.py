@@ -21,3 +21,4 @@ def test_add_mLSTM1900_params():
     params = add_mLSTM1900_params(
         params, name="mLSTM1900", input_dim=1900, output_dim=40
     )
+    validate_mLSTM1900_params(params)
