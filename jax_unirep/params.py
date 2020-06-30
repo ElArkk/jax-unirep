@@ -16,7 +16,7 @@ def add_dense_params(
 
 
 def add_mLSTM1900_params(
-    params: Dict, name: str, input_dim: int, output_dim: int
+    params: Dict, name: str, input_dim: int = 10, output_dim: int = 1900
 ) -> Dict:
     params[name] = dict()
     params[name]["wmx"] = normal(split(key)[0], (input_dim, output_dim))
