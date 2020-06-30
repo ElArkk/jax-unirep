@@ -1,10 +1,10 @@
 """jax-unirep utils."""
 import os
 from collections import Counter
+from functools import lru_cache
 from pathlib import Path
 from random import choice, sample
 from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple
-from functools import lru_cache
 
 import jax.numpy as np
 import numpy as onp

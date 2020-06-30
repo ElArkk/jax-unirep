@@ -2,9 +2,9 @@
 import logging
 from random import shuffle
 
+from Bio import SeqIO
 from pyprojroot import here
 
-from Bio import SeqIO
 from jax_unirep import fit
 from jax_unirep.utils import dump_params
 

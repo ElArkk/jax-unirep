@@ -29,7 +29,6 @@ from .utils import (
     validate_mLSTM1900_params,
 )
 
-
 # setup logger
 logger = logging.getLogger("evotuning")
 logger.setLevel(logging.INFO)
