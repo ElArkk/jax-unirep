@@ -53,7 +53,11 @@ def evotune_loss(params, inputs, targets):
 
 
 def avg_loss(
-    xs: List[np.ndarray], ys: List[np.ndarray], params, backend: str = "cpu"
+    xs: List[np.ndarray],
+    ys: List[np.ndarray],
+    params,
+    backend: str = "cpu",
+    batch_size: int = 50,
 ) -> float:
     """
     Return average loss of a set of parameters,
@@ -70,6 +74,7 @@ def avg_loss(
         Controlling this parameter helps with memory allocation issues -
         reduce this parameter's size to reduce the amount of RAM allocation
         needed to calculate loss.
+        As a rule of thumb, batch size of 50 consumes about 5GB of GPU RAM.
     """
     logging.debug("Calculating average loss.")
     sum_loss = 0
@@ -77,19 +82,20 @@ def avg_loss(
     global evotune_loss  # this is necessary for JIT to reference evotune_loss
     evotune_loss_jit = jit(evotune_loss, backend=backend)
 
-    def batch_iter(xs: np.ndarray, ys: np.ndarray, batch_size: int = 25):
+    def batch_iter(
+        xs: np.ndarray, ys: np.ndarray, batch_size: int = batch_size
+    ):
         i = 0
         for i in tqdm(
-            range(0, (len(xs)), batch_size),
+            range(0, len(xs), batch_size),
             desc=f"Avg loss on dataset length {len(xs)}",
         ):
-            # while len(xs) > i:
             yield xs[i : i + batch_size], ys[i : i + batch_size]
             i += batch_size
 
     for xmat, ymat in zip(xs, ys):
         # Send x and y in small batches of 100 to control memory usage.
-        for x, y in batch_iter(xmat, ymat, batch_size=100):
+        for x, y in batch_iter(xmat, ymat, batch_size=batch_size):
             sum_loss += evotune_loss_jit(params, inputs=x, targets=y) * len(x)
             num_seqs += len(x)
 
