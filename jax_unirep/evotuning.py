@@ -204,7 +204,7 @@ def fit(
     batch_method: Optional[str] = "length",
     batch_size: Optional[int] = 25,
     step_size: float = 0.0001,
-    holdout_seqs: Optional[Set[str]] = set(),
+    holdout_seqs: Optional[Set[str]] = None,
     proj_name: Optional[str] = "temp",
     epochs_per_print: Optional[int] = 200,
     backend="cpu",
