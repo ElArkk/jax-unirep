@@ -206,7 +206,7 @@ def fit(
     step_size: float = 0.0001,
     holdout_seqs: Optional[Set[str]] = None,
     proj_name: Optional[str] = "temp",
-    epochs_per_print: Optional[int] = 200,
+    epochs_per_print: Optional[int] = 1,
     backend="cpu",
 ) -> Dict:
     """
