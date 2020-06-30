@@ -1,5 +1,5 @@
 from jax_unirep.params import add_dense_params, add_mLSTM1900_params
-
+from jax_unirep.utils import validate_mLSTM1900_params
 
 def test_add_dense_params():
     """Unit test for add_dense_params."""
