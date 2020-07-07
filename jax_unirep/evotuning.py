@@ -388,8 +388,8 @@ def fit(
 
             if holdout_seqs is not None:
                 # calculate and print loss for out-domain holdout set
-                l = choice(holdout_seq_lens)
-                x, y = holdout_len_batching_funcs[l]()
+                hl = choice(holdout_seq_lens)
+                x, y = holdout_len_batching_funcs[hl]()
                 loss = avg_loss([x], [y], params, backend=backend)
                 logger.info(
                     f"Epoch {current_epoch - 1}: "
