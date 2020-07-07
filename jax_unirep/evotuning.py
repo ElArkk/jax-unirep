@@ -201,7 +201,7 @@ def fit(
     params: Dict,
     sequences: Set[str],
     n_epochs: int,
-    batch_method: Optional[str] = "length",
+    batch_method: Optional[str] = "random",
     batch_size: Optional[int] = 25,
     step_size: float = 0.0001,
     holdout_seqs: Optional[Set[str]] = None,
