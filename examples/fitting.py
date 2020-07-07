@@ -38,6 +38,7 @@ evotuned_params = fit(
     batch_method="random",
     proj_name=PROJECT_NAME,
     epochs_per_print=None,
+    backend="gpu",  # default is "cpu"
 )
 
 dump_params(evotuned_params, PROJECT_NAME)
