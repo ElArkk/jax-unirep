@@ -367,19 +367,13 @@ def fit(
 
     n = n_epochs * epoch_len
     for i in tqdm(range(n), desc="Iteration"):
+        logger.debug(f"Iteration {i}")
         current_epoch = (i // epoch_len) + 1
         is_starting_new_printing_epoch = (
             i % (epochs_per_print * epoch_len) == 0
         )
-
-        logger.debug(f"Iteration {i}")
-        logger.debug("Getting batches")
+        # Choose a sequence length at random for this iteration
         l = choice(seq_lens)
-        x, y = len_batching_funcs[l]()
-
-        # actual forward & backwrd pass happens here
-        logger.debug("Getting state")
-        state = step(i, x, y, state)
 
         if is_starting_new_printing_epoch:
             logger.info(f"Starting epoch {current_epoch}")
@@ -387,7 +381,7 @@ def fit(
             x, y = len_batching_funcs[l]()
             loss = avg_loss([x], [y], params, backend=backend)
             logger.info(
-                f"Epoch {current_epoch}: "
+                f"Epoch {current_epoch - 1}: "
                 f"Estimated average training-set loss: {loss}. "
                 "Weights dumped."
             )
@@ -398,13 +392,19 @@ def fit(
                 x, y = holdout_len_batching_funcs[l]()
                 loss = avg_loss([x], [y], params, backend=backend)
                 logger.info(
-                    f"Epoch {current_epoch}: "
+                    f"Epoch {current_epoch - 1}: "
                     + f"Estimaged average holdout-set loss: {loss}"
                 )
 
             # dump current params in case run crashes or loss increases
-            # steps printed are 1-indexed i.e. starts at epoch 1 not 0.
-            dump_params(get_params(state), proj_name, current_epoch)
+            dump_params(get_params(state), proj_name, current_epoch - 1)
+
+        logger.debug("Getting batches")
+        x, y = len_batching_funcs[l]()
+
+        # actual forward & backwrd pass happens here
+        logger.debug("Getting state")
+        state = step(i, x, y, state)
 
     return get_params(state)
 
