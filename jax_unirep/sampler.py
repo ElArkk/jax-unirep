@@ -7,6 +7,7 @@ import numpy.random as npr
 from multipledispatch import dispatch
 
 from jax_unirep.utils import proposal_valid_letters
+from tqdm.autonotebook import tqdm
 
 letters_sorted = sorted(proposal_valid_letters)
 
@@ -262,7 +263,7 @@ def sample_one_chain(
     chain_data["scores"].append(current_score)
     chain_data["accept"].append(True)
 
-    for i in range(n_steps):
+    for i in tqdm(range(n_steps)):
         new_sequence = propose(current_sequence, **propose_kwargs)
         new_score = scoring_func(sequence=new_sequence)
 
