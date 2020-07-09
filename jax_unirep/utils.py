@@ -1,16 +1,19 @@
 """jax-unirep utils."""
+import os
 from collections import Counter
 from pathlib import Path
-from random import choice
-from typing import Dict, List, Tuple
+from random import choice, sample
+from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple
 
 import jax.numpy as np
 import numpy as onp
 import pkg_resources
+from tqdm.autonotebook import tqdm
 
 from .errors import SequenceLengthsError
 
 aa_to_int = {
+    "-": 0,
     "M": 1,
     "R": 2,
     "H": 3,
@@ -44,9 +47,89 @@ aa_to_int = {
 proposal_valid_letters = "ACDEFGHIKLMNPQRSTVWY"
 
 
-weights_1900_dir = Path(
-    pkg_resources.resource_filename("jax_unirep", "weights/1900_weights")
-)
+def get_weights_dir(folderpath: Optional[str] = None):
+    """
+    Fetch the paper weights per default, or from a specified folderpath
+    """
+    if folderpath:
+        return Path(folderpath)
+    else:
+        return Path(
+            pkg_resources.resource_filename(
+                "jax_unirep", "weights/1900_weights/uniref50"
+            )
+        )
+
+
+def dump_params(
+    params: Dict, dir_path: Optional[str] = "temp", step: Optional[int] = 0,
+):
+    """
+    Dumps the current params of model being trained to a .npy file.
+
+    The directory is specified by dir_path,
+    and will be created, if it does not exist yet.
+
+    The weights that will be dumped are the mLSTM weights as well
+    as the dense layer weights. The embedding matrix weights are
+    not dumped, as they never get modified.
+    The weights will have the same naming convention as the original:
+        dir_path/iter_x/fully_connected_biases:0.npy
+        dir_path/iter_x/fully_connected_weights:0.npy
+        dir_path/iter_x/rnn_mlstm_mlstm_b:0.npy
+        dir_path/iter_x/rnn_mlstm_mlstm_gh:0.npy
+        dir_path/iter_x/rnn_mlstm_mlstm_gmh:0.npy
+        dir_path/iter_x/rnn_mlstm_mlstm_gmx:0.npy
+        dir_path/iter_x/rnn_mlstm_mlstm_gx:0.npy
+        dir_path/iter_x/rnn_mlstm_mlstm_wh:0.npy
+        dir_path/iter_x/rnn_mlstm_mlstm_wmh:0.npy
+        dir_path/iter_x/rnn_mlstm_mlstm_wmx:0.npy
+        dir_path/iter_x/rnn_mlstm_mlstm_wx:0.npy
+
+    `dir_path`, by convention, should be relative to
+    the current working directory
+    in which you executed your Python script or Jupyter notebook.
+
+    :param params: the parameters at the current state of training,
+        input as a tuple of dicts.
+    :param step: the number of training steps to get to this state.
+    :param dir_name: path of directory params will save to.
+    """
+
+    # create directory if it doesn't already exist:
+    if not os.path.exists(dir_path):
+        os.makedirs(dir_path)
+        print(f"created directory at {dir_path}")
+
+    # iterate through and save mlstm params as npy files.
+    for name, val in params[0].items():
+        # Construct filename
+        fname = f"rnn_mlstm_mlstm_{name}:0.npy"
+
+        # Construct directory for dumping.
+        iteration_path = Path(dir_path) / f"iter_{step}"
+        iteration_path.mkdir(exist_ok=True)
+
+        # Save file
+        fpath = iteration_path / fname
+        onp.save(
+            fpath, onp.array(val),
+        )
+    # iterate through and save dense params as npy files.
+    dense_names = [
+        "fully_connected_weights:0.npy",
+        "fully_connected_biases:0.npy",
+    ]
+    for i, val in enumerate(params[2]):
+        # Construct directory for dumping.
+        iteration_path = Path(dir_path) / f"iter_{step}"
+        iteration_path.mkdir(exist_ok=True)
+
+        # Save file
+        fpath = iteration_path / dense_names[i]
+        onp.save(
+            fpath, onp.array(val),
+        )
 
 
 def aa_seq_to_int(s):
@@ -60,9 +143,11 @@ def aa_seq_to_int(s):
     return [24] + [aa_to_int[a] for a in s] + [25]
 
 
-def load_embedding_1900(name: str = "uniref50"):
-    """Load pre-trained weights for uniref50 model."""
-    return np.load(weights_1900_dir / name / "embed_matrix:0.npy")
+def load_embedding_1900(folderpath: Optional[str] = None):
+    """Load pre-trained embedding weights for uniref50 model."""
+    weights_1900_dir = get_weights_dir(folderpath=folderpath)
+
+    return np.load(weights_1900_dir / "embed_matrix:0.npy")
 
 
 def get_embedding(sequence: str, embeddings: np.ndarray) -> np.ndarray:
@@ -74,7 +159,7 @@ def get_embedding(sequence: str, embeddings: np.ndarray) -> np.ndarray:
     return x
 
 
-def get_embeddings(sequences: List[str]) -> np.ndarray:
+def get_embeddings(sequences: Iterable[str]) -> np.ndarray:
     """
     Return embedding of a list of sequences.
 
@@ -105,49 +190,36 @@ Sequence length: number of sequences information in the dictionary below.
     return onp.stack(seq_embeddings, axis=0)
 
 
-def load_dense_1900(name: str = "uniref50") -> Dict:
+def load_dense_1900(folderpath: Optional[str] = None) -> Tuple:
     """
     Load pre-trained dense layer weights from the UniRep paper.
 
     The dense layer weights are used to predict next character
     from the output of the mLSTM1900.
     """
-    # params = dict()
-    w = np.load(weights_1900_dir / name / "fully_connected_weights:0.npy")
-    b = np.load(weights_1900_dir / name / "fully_connected_biases:0.npy")
+    weights_1900_dir = get_weights_dir(folderpath=folderpath)
+
+    w = np.load(weights_1900_dir / "fully_connected_weights:0.npy")
+    b = np.load(weights_1900_dir / "fully_connected_biases:0.npy")
     return w, b
 
 
-def load_params_1900(name: str = "uniref50") -> Dict:
+def load_params_1900(folderpath: Optional[str] = None) -> Dict:
     """Load pre-trained mLSTM1900 weights from the UniRep paper."""
+    weights_1900_dir = get_weights_dir(folderpath=folderpath)
+
     params = dict()
-    params["gh"] = np.load(
-        weights_1900_dir / name / "rnn_mlstm_mlstm_gh:0.npy"
-    )
-    params["gmh"] = np.load(
-        weights_1900_dir / name / "rnn_mlstm_mlstm_gmh:0.npy"
-    )
-    params["gmx"] = np.load(
-        weights_1900_dir / name / "rnn_mlstm_mlstm_gmx:0.npy"
-    )
-    params["gx"] = np.load(
-        weights_1900_dir / name / "rnn_mlstm_mlstm_gx:0.npy"
-    )
+    params["gh"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_gh:0.npy")
+    params["gmh"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_gmh:0.npy")
+    params["gmx"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_gmx:0.npy")
+    params["gx"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_gx:0.npy")
 
-    params["wh"] = np.load(
-        weights_1900_dir / name / "rnn_mlstm_mlstm_wh:0.npy"
-    )
-    params["wmh"] = np.load(
-        weights_1900_dir / name / "rnn_mlstm_mlstm_wmh:0.npy"
-    )
-    params["wmx"] = np.load(
-        weights_1900_dir / name / "rnn_mlstm_mlstm_wmx:0.npy"
-    )
-    params["wx"] = np.load(
-        weights_1900_dir / name / "rnn_mlstm_mlstm_wx:0.npy"
-    )
+    params["wh"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_wh:0.npy")
+    params["wmh"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_wmh:0.npy")
+    params["wmx"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_wmx:0.npy")
+    params["wx"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_wx:0.npy")
 
-    params["b"] = np.load(weights_1900_dir / name / "rnn_mlstm_mlstm_b:0.npy")
+    params["b"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_b:0.npy")
 
     return params
 
@@ -180,9 +252,14 @@ def validate_mLSTM1900_params(params: Dict):
             )
 
 
-def load_embeddings(name: str = "uniref50"):
-    """Load embeddings of amino acids for the uniref50 model."""
-    return np.load(weights_1900_dir / name / "embed_matrix:0.npy")
+def load_params(folderpath: Optional[str] = None):
+    """load params for passing to evotuning stax model"""
+    return (
+        load_params_1900(folderpath=folderpath),
+        (),
+        load_dense_1900(folderpath=folderpath),
+        (),
+    )
 
 
 def l2_normalize(arr, axis, epsilon=1e-12):
@@ -208,7 +285,7 @@ def l2_normalize(arr, axis, epsilon=1e-12):
     return np.divide(arr, np.sqrt(max_weights))
 
 
-def batch_sequences(seqs: List[str]) -> List[List]:
+def batch_sequences(seqs: Iterable[str]) -> List[List]:
     """
     Batch up sequences according to size.
 
@@ -232,6 +309,34 @@ def batch_sequences(seqs: List[str]) -> List[List]:
     for l in set([len(s) for s in seqs]):
         order.append([i for i, s in enumerate(seqs) if len(s) == l])
     return order
+
+
+def right_pad(seqs: Iterable[str], max_len: int):
+    """Pad all seqs in a list to longest length on the right with "-"."""
+    return [
+        seq.ljust(max_len, "-")
+        for seq in tqdm(seqs, desc="right-padding sequences")
+    ]
+
+
+def get_batching_func(
+    xs: np.ndarray, ys: np.ndarray, batch_size: int = 25
+) -> Callable:
+    """
+    Create a function which returns batches of sequences
+
+    :param xs: array of embedded same-length sequences
+    :param ys: array of one-hot encoded groud truth next-AA labels
+    """
+
+    def batching_func():
+        pairs = list(zip(xs, ys))
+        if len(pairs) > batch_size:
+            pairs = sample(pairs, batch_size)
+        x, y = zip(*pairs)
+        return np.stack(x), np.stack(y)
+
+    return batching_func
 
 
 # This block of code generates one-hot-encoded arrays.

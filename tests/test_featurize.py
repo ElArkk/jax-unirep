@@ -63,3 +63,9 @@ def test_get_reps():
     assert np.array_equal(a, d)
     assert np.array_equal(b, e)
     assert np.array_equal(c, f)
+
+    h_final, c_final, h_avg = get_reps(["ABC", "DEFGH", "DEF"])
+
+    assert h_final.shape == (3, 1900)
+    assert c_final.shape == (3, 1900)
+    assert h_avg.shape == (3, 1900)

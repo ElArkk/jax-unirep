@@ -1,5 +1,5 @@
 from functools import partial
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, Iterable, List, Optional, Tuple, Union
 
 import numpy as np
 from jax import vmap
@@ -18,7 +18,7 @@ _, apply_fun = mLSTM1900()
 
 
 def rep_same_lengths(
-    seqs: List[str], params: Dict
+    seqs: Iterable[str], params: Dict
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     This function generates representations of protein sequences that have the same length,
@@ -39,7 +39,7 @@ def rep_same_lengths(
 
 
 def rep_arbitrary_lengths(
-    seqs: List[str], params: Dict
+    seqs: Iterable[str], params: Dict
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     This function generates representations of protein sequences of arbitrary length,
@@ -81,7 +81,7 @@ def rep_arbitrary_lengths(
 
 
 def get_reps(
-    seqs: Union[str, List[str]], params: Optional[Dict] = None
+    seqs: Union[str, Iterable[str]], params: Optional[Dict] = None
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     This function generates representations of protein sequences using the
@@ -90,9 +90,9 @@ def get_reps(
 
     Each element of the output 3-tuple is a `np.array`
     of shape (n_input_sequences, 1900):
+    - `h_avg`: Average hidden state of the mLSTM over the whole sequence.
     - `h_final`: Final hidden state of the mLSTM
     - `c_final`: Final cell state of the mLSTM
-    - `h_avg`: Average hidden state of the mLSTM over the whole sequence.
 
     You should not use this function
     if you want to do further JAX-based computations
@@ -133,7 +133,5 @@ def get_reps(
         h_avg, h_final, c_final = rep_same_lengths(seqs, params)
         return h_avg, h_final, c_final
     else:
-        h_avg, h_final, c_final = rep_arbitrary_lengths(
-            seqs, params, apply_fun
-        )
+        h_avg, h_final, c_final = rep_arbitrary_lengths(seqs, params)
         return h_avg, h_final, c_final

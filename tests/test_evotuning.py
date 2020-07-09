@@ -21,6 +21,8 @@ from jax_unirep.evotuning import (
 )
 from jax_unirep.utils import load_dense_1900, load_params_1900
 
+from .test_layers import validate_mLSTM1900_params
+
 
 @pytest.fixture
 def params():
@@ -64,9 +66,10 @@ def test_evotune():
 def test_length_batch_input_outputs():
     """Example test for ``length_batch_input_outputs``."""
     sequences = ["ASDF", "GHJKL", "PILKN"]
-    xs, ys = length_batch_input_outputs(sequences)
+    xs, ys, seq_lens = length_batch_input_outputs(sequences)
     assert len(xs) == len(set([len(x) for x in sequences]))
     assert len(ys) == len(set([len(x) for x in sequences]))
+    assert len(xs) == len(seq_lens)
 
 
 def test_evotuning_pairs():
@@ -83,6 +86,9 @@ def test_predict(params):
 
     We test that the shape of the output of ``predict``
     is identical to the shape of the ys to predict.
+
+    We also test that the evotune `predict` function gives us bounded values
+    that are between 0 and 1.
     """
 
     sequences = ["ASDFGHJKL", "ASDYGHTKW"]
@@ -90,15 +96,25 @@ def test_predict(params):
     res = vmap(partial(predict, params))(xs)
 
     assert res.shape == ys.shape
+    assert res.min() >= 0
+    assert res.max() <= 1
 
 
 def test_fit(params):
     """
     Execution test for ``jax_unirep.evotuning.fit``.
     """
-    sequences = ["ASDFGHJKL", "ASDYGHTKW"]
+    sequences = ["ASDFGHJKL", "ASDYGHTKW", "HSKS", "HSGL", "ER"]
 
-    fitted_params = fit(params, sequences, n=1)
+    length_fitted_params = fit(
+        params, sequences, n_epochs=1, batch_method="length", batch_size=2
+    )
+    random_fitted_params = fit(
+        params, sequences, n_epochs=1, batch_method="random", batch_size=2
+    )
+
+    validate_mLSTM1900_params(length_fitted_params[0])
+    validate_mLSTM1900_params(random_fitted_params[0])
 
 
 @pytest.mark.skip(reason="Execution test already done in ``test_evotune``.")

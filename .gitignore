@@ -133,3 +133,7 @@ dmypy.json
 
 # Custom
 *.DS_Store
+paper/cabios-template/fig01.eps
+default.profraw
+paper/cabios-template/speed-comparison.png
+paper/cabios-template/Untitled.ipynb

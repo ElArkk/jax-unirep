@@ -1,0 +1,49 @@
+This is BibTeX, Version 0.99d (TeX Live 2018)
+Capacity: max_strings=100000, hash_size=100000, hash_prime=85009
+The top-level auxiliary file: main.aux
+The style file: natbib.bst
+Database file #1: references.bib
+Warning--entry type for "jax2018github" isn't style-file defined
+--line 21 of file references.bib
+You've used 5 entries,
+            2378 wiz_defined-function locations,
+            556 strings with 5590 characters,
+and the built_in function-call counts, 3545 in all, are:
+= -- 267
+> -- 335
+< -- 4
++ -- 107
+- -- 105
+* -- 361
+:= -- 642
+add.period$ -- 25
+call.type$ -- 5
+change.case$ -- 29
+chr.to.int$ -- 5
+cite$ -- 5
+duplicate$ -- 121
+empty$ -- 178
+format.name$ -- 110
+if$ -- 686
+int.to.chr$ -- 1
+int.to.str$ -- 0
+missing$ -- 5
+newline$ -- 27
+num.names$ -- 22
+pop$ -- 44
+preamble$ -- 1
+purify$ -- 30
+quote$ -- 0
+skip$ -- 84
+stack$ -- 0
+substring$ -- 175
+swap$ -- 37
+text.length$ -- 3
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 42
+warning$ -- 0
+while$ -- 24
+width$ -- 0
+write$ -- 65
+(There was 1 warning)
