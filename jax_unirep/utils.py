@@ -1,6 +1,7 @@
 """jax-unirep utils."""
 import os
 from collections import Counter
+from functools import lru_cache
 from pathlib import Path
 from random import choice, sample
 from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple
@@ -43,7 +44,6 @@ aa_to_int = {
     "start": 24,
     "stop": 25,
 }
-
 proposal_valid_letters = "ACDEFGHIKLMNPQRSTVWY"
 
 
@@ -132,7 +132,7 @@ def dump_params(
         )
 
 
-def aa_seq_to_int(s):
+def aa_seq_to_int(s: str) -> List[int]:
     """Return the int sequence as a list for a given string of amino acids."""
     # Make sure only valid aa's are passed
     if not set(s).issubset(set(aa_to_int.keys())):
@@ -143,6 +143,7 @@ def aa_seq_to_int(s):
     return [24] + [aa_to_int[a] for a in s] + [25]
 
 
+@lru_cache(maxsize=128)
 def load_embedding_1900(folderpath: Optional[str] = None):
     """Load pre-trained embedding weights for uniref50 model."""
     weights_1900_dir = get_weights_dir(folderpath=folderpath)
@@ -334,7 +335,7 @@ def get_batching_func(
         if len(pairs) > batch_size:
             pairs = sample(pairs, batch_size)
         x, y = zip(*pairs)
-        return np.stack(x), np.stack(y)
+        return onp.stack(x), onp.stack(y)
 
     return batching_func
 

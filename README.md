@@ -112,6 +112,13 @@ The `fit` function has further customization options,
 such as different batching strategies.
 Please see the function docstring for more information.
 
+NOTE: The `fit` function will always default to using a
+GPU `backend` if available for the forward and backward passes
+during training of the LSTM.
+However, for the calulation of the average loss
+on the dataset after every epoch, you can decide
+if the CPU or GPU `backend` should be used (default is CPU).
+
 You can find an example usages of both `evotune` and `fit` [here][examples].
 
 If you want to pass a set of mLSTM and dense weights

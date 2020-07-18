@@ -100,17 +100,28 @@ def test_predict(params):
     assert res.max() <= 1
 
 
-def test_fit(params):
+@pytest.mark.parametrize("holdout_seqs", (["ASDV", None]))
+def test_fit(params, holdout_seqs):
     """
     Execution test for ``jax_unirep.evotuning.fit``.
     """
     sequences = ["ASDFGHJKL", "ASDYGHTKW", "HSKS", "HSGL", "ER"]
 
     length_fitted_params = fit(
-        params, sequences, n_epochs=1, batch_method="length", batch_size=2
+        params,
+        sequences,
+        n_epochs=1,
+        batch_method="length",
+        batch_size=2,
+        holdout_seqs=holdout_seqs,
     )
     random_fitted_params = fit(
-        params, sequences, n_epochs=1, batch_method="random", batch_size=2
+        params,
+        sequences,
+        n_epochs=1,
+        batch_method="random",
+        batch_size=2,
+        holdout_seqs=holdout_seqs,
     )
 
     validate_mLSTM1900_params(length_fitted_params[0])
