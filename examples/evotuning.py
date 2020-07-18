@@ -26,7 +26,7 @@ study, evotuned_params = evotune(
     n_splits=2,
     n_epochs_config=n_epochs_config,
     learning_rate_config=lr_config,
-    steps_per_print=1,
+    epochs_per_print=1,
 )
 
 dump_params(evotuned_params, PROJECT_NAME)
@@ -47,7 +47,7 @@ evotuned_params = fit(
     step_size=LEARN_RATE,
     holdout_seqs=holdout_sequences,
     proj_name=PROJECT_NAME,
-    steps_per_print=1,
+    epochs_per_print=1,
 )
 
 dump_params(evotuned_params, PROJECT_NAME)

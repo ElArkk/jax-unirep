@@ -2,9 +2,9 @@
 import logging
 from random import shuffle
 
+from Bio import SeqIO
 from pyprojroot import here
 
-from Bio import SeqIO
 from jax_unirep import fit
 from jax_unirep.utils import dump_params
 
@@ -37,7 +37,8 @@ evotuned_params = fit(
     holdout_seqs=holdout_sequences,
     batch_method="random",
     proj_name=PROJECT_NAME,
-    steps_per_print=None,
+    epochs_per_print=None,
+    backend="gpu",  # default is "cpu"
 )
 
 dump_params(evotuned_params, PROJECT_NAME)

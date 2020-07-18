@@ -2,29 +2,26 @@
 import logging
 from functools import partial
 from random import choice
-from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple
+from typing import Dict, Iterable, List, Optional, Set, Tuple
 
 import numpy as onp
 import optuna
-from jax import grad, jit, lax
+from jax import grad, jit
 from jax import numpy as np
-from jax import random, vmap
-from jax.experimental.optimizers import adam
+from jax import vmap
 from jax.experimental.stax import Dense, Softmax, serial
-from sklearn.model_selection import KFold, train_test_split
+from sklearn.model_selection import KFold
 from tqdm.autonotebook import tqdm
 
 from jax_unirep.losses import _neg_cross_entropy_loss
 
-from .layers import mLSTM1900, mLSTM1900_AvgHidden, mLSTM1900_HiddenStates
+from .layers import mLSTM1900, mLSTM1900_HiddenStates
 from .optimizers import adamW
-from .params import add_dense_params
 from .utils import (
     aa_seq_to_int,
     batch_sequences,
     dump_params,
     get_batching_func,
-    get_embeddings,
     load_embedding_1900,
     load_params,
     one_hots,
@@ -34,7 +31,7 @@ from .utils import (
 
 # setup logger
 logger = logging.getLogger("evotuning")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 fh = logging.FileHandler("evotuning.log")
 fh.setLevel(logging.INFO)
 formatter = logging.Formatter("%(asctime)s :: %(levelname)s :: %(message)s")
@@ -46,7 +43,6 @@ model_layers = (mLSTM1900(), mLSTM1900_HiddenStates(), Dense(25), Softmax)
 init_fun, predict = serial(*model_layers)
 
 
-@jit
 def evotune_loss(params, inputs, targets):
     logging.debug(f"Input shape: {inputs.shape}")
     logging.debug(f"Output shape: {targets.shape}")
@@ -55,21 +51,52 @@ def evotune_loss(params, inputs, targets):
     return _neg_cross_entropy_loss(targets, predictions)
 
 
-def avg_loss(xs: List[np.ndarray], ys: List[np.ndarray], params) -> float:
+def avg_loss(
+    xs: List[np.ndarray],
+    ys: List[np.ndarray],
+    params,
+    backend: str = "cpu",
+    batch_size: int = 50,
+) -> float:
     """
     Return average loss of a set of parameters,
     on a set of sequences.
 
-    :param sequences: sequences (in standard AA format)
+    :param xs: List of NumPy arrays
+    :param ys: List of NumPy arrays
     :param params: parameters (i.e. from training)
-    :param batch_method: How to batch sequences.
+    :param backend: Whether to use GPU ('gpu') or CPU ('cpu')
+        to perform calculation.
+        Defaults to 'cpu'.
+    :param batch_size: Size of batch when calculating average loss
+        over train or holdout set.
+        Controlling this parameter helps with memory allocation issues -
+        reduce this parameter's size to reduce the amount of RAM allocation
+        needed to calculate loss.
+        As a rule of thumb, batch size of 50 consumes about 5GB of GPU RAM.
     """
     logging.debug("Calculating average loss.")
     sum_loss = 0
     num_seqs = 0
-    for x, y in zip(xs, ys):
-        sum_loss += evotune_loss(params, inputs=x, targets=y) * len(x)
-        num_seqs += len(x)
+    global evotune_loss  # this is necessary for JIT to reference evotune_loss
+    evotune_loss_jit = jit(evotune_loss, backend=backend)
+
+    def batch_iter(
+        xs: np.ndarray, ys: np.ndarray, batch_size: int = batch_size
+    ):
+        i = 0
+        for i in tqdm(
+            range(0, len(xs), batch_size),
+            desc=f"Avg loss on dataset length {len(xs)}",
+        ):
+            yield xs[i : i + batch_size], ys[i : i + batch_size]
+            i += batch_size
+
+    for xmat, ymat in zip(xs, ys):
+        # Send x and y in small batches of 100 to control memory usage.
+        for x, y in batch_iter(xmat, ymat, batch_size=batch_size):
+            sum_loss += evotune_loss_jit(params, inputs=x, targets=y) * len(x)
+            num_seqs += len(x)
 
     return sum_loss / num_seqs
 
@@ -104,12 +131,12 @@ def evotuning_pairs(s: str) -> Tuple[np.ndarray, np.ndarray]:
     seq_int = aa_seq_to_int(s[:-1])
     next_letters_int = aa_seq_to_int(s[1:])
     embeddings = load_embedding_1900()
-    x = np.stack([embeddings[i] for i in seq_int])
-    y = np.stack([one_hots[i] for i in next_letters_int])
+    x = onp.stack([embeddings[i] for i in seq_int])
+    y = onp.stack([one_hots[i] for i in next_letters_int])
     return x, y
 
 
-def input_output_pairs(sequences: List[str]) -> Tuple[np.ndarray, np.ndarray]:
+def input_output_pairs(sequences: List[str],) -> Tuple[np.ndarray, np.ndarray]:
     """
     Generate input-output tensor pairs for evo-tuning.
 
@@ -141,7 +168,7 @@ Please ensure that they are all of the same length before passing them in.
         x, y = evotuning_pairs(s)
         xs.append(x)
         ys.append(y)
-    return np.stack(xs), np.stack(ys)
+    return onp.stack(xs), onp.stack(ys)
 
 
 def length_batch_input_outputs(
@@ -174,12 +201,13 @@ def fit(
     params: Dict,
     sequences: Set[str],
     n_epochs: int,
-    batch_method: Optional[str] = "length",
+    batch_method: Optional[str] = "random",
     batch_size: Optional[int] = 25,
     step_size: float = 0.0001,
-    holdout_seqs: Optional[Set[str]] = set(),
+    holdout_seqs: Optional[Set[str]] = None,
     proj_name: Optional[str] = "temp",
-    steps_per_print: Optional[int] = 200,
+    epochs_per_print: Optional[int] = 1,
+    backend="cpu",
 ) -> Dict:
     """
     Return mLSTM weights fitted to predict the next letter in each AA sequence.
@@ -228,9 +256,12 @@ def fit(
     have a look at the ``evotune`` function docstring.
 
     You can optionally dump parameters
-    and print weights every ``steps_per_print`` steps
+    and print weights every ``epochs_per_print`` epochs
     to monitor training progress.
-    Set this to ``None`` to avoid parameter dumping.
+    For ergonomics, training/holdout set losses are estimated
+    on a batch size the same as ``batch_size``,
+    rather than calculated exactly on the entire set.
+    Set ``epochs_per_print`` to ``None`` to avoid parameter dumping.
 
     :param params: mLSTM1900 and Dense parameters.
     :param sequences: List of sequences to evotune on.
@@ -238,15 +269,20 @@ def fit(
     :param batch_method: One of "length" or "random".
     :param batch_size: If random batching is used,
         number of sequences per batch.
+        As a rule of thumb, batch size of 50 consumes
+        about 5GB of GPU RAM.
     :param step_size: The learning rate.
     :param holdout_seqs: Holdout set, an optional input.
     :param proj_name: The directory path for weights to be output to.
-    :param steps_per_print: Number of steps per printing and dumping
-        of weights.
+    :param epochs_per_print: Number of epochs to progress before printing
+        and dumping of weights.
+        Must be greater than or equal to 1.
+    :param backend: Whether or not to use the GPU. Defaults to "cpu",
+        but can be set to "gpu" if desired.
     """
 
     @jit
-    def step(i, state):
+    def step(i, x, y, state):
         """
         Perform one step of evolutionary updating.
 
@@ -273,30 +309,46 @@ def fit(
     # Defensive programming checks
     if len(params) != len(model_layers):
         raise ValueError(
-            "The number of parameters specified must match the number of stax.serial layers"
+            "The number of parameters specified must "
+            "match the number of stax.serial layers"
         )
     validate_mLSTM1900_params(params[0])
 
     # Defensive programming checks
     if batch_method not in ["length", "random"]:
         raise ValueError("batch_method must be one of 'length' or 'random'")
+    if not isinstance(epochs_per_print, int):
+        raise TypeError("epochs_per_print must be an integer.")
+    if epochs_per_print < 1:
+        raise ValueError(
+            "epochs_per_print must be greater than or equal to 1."
+        )
 
     if batch_method == "random":
         # First pad to the same length, effectively giving us one length batch.
-        all_sequences = set(sequences).union(set(holdout_seqs))
+        all_sequences = set(sequences)
+        if holdout_seqs is not None:
+            all_sequences = all_sequences.union(set(holdout_seqs))
         max_len = max([len(seq) for seq in all_sequences])
         sequences = right_pad(sequences, max_len)
-        if holdout_seqs:
+        if holdout_seqs is not None:
             holdout_seqs = right_pad(holdout_seqs, max_len)
 
     # batch sequences by length
     xs, ys, seq_lens = length_batch_input_outputs(sequences)
-    if holdout_seqs:
-        holdout_xs, holdout_ys, _ = length_batch_input_outputs(holdout_seqs)
     len_batching_funcs = {
         sl: get_batching_func(x, y, batch_size)
         for (sl, x, y) in zip(seq_lens, xs, ys)
     }
+
+    if holdout_seqs is not None:
+        holdout_xs, holdout_ys, holdout_seq_lens = length_batch_input_outputs(
+            holdout_seqs
+        )
+        holdout_len_batching_funcs = {
+            sl: get_batching_func(x, y, batch_size)
+            for (sl, x, y) in zip(holdout_seq_lens, holdout_xs, holdout_ys)
+        }
 
     batch_lens = [len(batch) for batch in xs]
     logger.info(
@@ -314,44 +366,45 @@ def fit(
     epoch_len = round(len(sequences) / batch_size)
 
     n = n_epochs * epoch_len
-    for i in range(n):
-
-        if i % epoch_len == 0:
-            logger.info(f"Starting epoch {int(i / epoch_len) + 1}")
-
-        logging.debug("Getting batches")
+    for i in tqdm(range(n), desc="Iteration"):
+        logger.debug(f"Iteration {i}")
+        current_epoch = (i // epoch_len) + 1
+        is_starting_new_printing_epoch = (
+            i % (epochs_per_print * epoch_len) == 0
+        )
+        # Choose a sequence length at random for this iteration
         l = choice(seq_lens)
+
+        if is_starting_new_printing_epoch:
+            logger.info(f"Starting epoch {current_epoch}")
+            params = get_params(state)
+            x, y = len_batching_funcs[l]()
+            loss = avg_loss([x], [y], params, backend=backend)
+            logger.info(
+                f"Epoch {current_epoch - 1}: "
+                f"Estimated average training-set loss: {loss}. "
+                "Weights dumped."
+            )
+
+            if holdout_seqs is not None:
+                # calculate and print loss for out-domain holdout set
+                hl = choice(holdout_seq_lens)
+                x, y = holdout_len_batching_funcs[hl]()
+                loss = avg_loss([x], [y], params, backend=backend)
+                logger.info(
+                    f"Epoch {current_epoch - 1}: "
+                    + f"Estimaged average holdout-set loss: {loss}"
+                )
+
+            # dump current params in case run crashes or loss increases
+            dump_params(get_params(state), proj_name, current_epoch - 1)
+
+        logger.debug("Getting batches")
         x, y = len_batching_funcs[l]()
 
         # actual forward & backwrd pass happens here
-        logging.debug("Getting state")
-        state = step(i, state)
-
-        if i % epoch_len == 0:
-            params = get_params(state)
-            loss = avg_loss(xs, ys, params)
-
-        if steps_per_print:
-            if (i + 1) % (steps_per_print * epoch_len) == 0:
-
-                logger.info(
-                    f"Epoch {int(i / epoch_len) + 1}: "
-                    f"Average training-set loss: {loss}. "
-                    f"Weights dumped."
-                )
-
-                if holdout_seqs is not None:
-                    # calculate and print loss for out-domain holdout set
-                    logger.info(
-                        f"Epoch {int(i / epoch_len) + 1}: "
-                        + f"Average holdout-set loss: {avg_loss(holdout_xs, holdout_ys, params)}"
-                    )
-
-                # dump current params in case run crashes or loss increases
-                # steps printed are 1-indexed i.e. starts at epoch 1 not 0.
-                dump_params(
-                    get_params(state), proj_name, (int(i / epoch_len) + 1)
-                )
+        logger.debug("Getting state")
+        state = step(i, x, y, state)
 
     return get_params(state)
 
@@ -450,7 +503,7 @@ def evotune(
     n_epochs_config: Dict = None,
     learning_rate_config: Dict = None,
     n_splits: Optional[int] = 5,
-    steps_per_print: Optional[int] = 200,
+    epochs_per_print: Optional[int] = 200,
 ) -> Dict:
     """
     Evolutionarily tune the model to a set of sequences.
@@ -511,7 +564,7 @@ def evotune(
         See source code for default configuration,
         at the definition of ``learning_rate_kwargs``.
     :param n_splits: The number of folds of cross-validation to do.
-    :param steps_per_print: The number of steps between each
+    :param epochs_per_print: The number of steps between each
         printing and dumping of weights in the final
         evotuning step using the optimized hyperparameters.
 
@@ -546,7 +599,7 @@ def evotune(
         step_size=learning_rate,
         holdout_seqs=out_dom_seqs,
         proj_name=proj_name,
-        steps_per_print=steps_per_print,
+        epochs_per_print=epochs_per_print,
     )
 
     return study, evotuned_params

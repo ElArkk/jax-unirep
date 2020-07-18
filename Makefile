@@ -13,7 +13,7 @@ style:
 	@printf "\033[1;34mPylint passes!\033[0m\n\n"
 
 test:  # Test code using pytest.
-	pytest -v . --cov=./jax_unirep
+	pytest -v . --cov=./jax_unirep --cov-report term-missing
 
 paper:
 	cd paper && bash build.sh
