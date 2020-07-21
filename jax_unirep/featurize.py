@@ -5,16 +5,18 @@ import numpy as np
 from jax import vmap
 
 from .errors import SequenceLengthsError
-from .layers import mLSTM1900
+from .layers import mLSTM1900, mLSTM1900_batch
 from .utils import (
     batch_sequences,
     get_embeddings,
     load_params_1900,
     validate_mLSTM1900_params,
+    right_pad,
 )
+import logging
 
-# instantiate the mLSTM
-_, apply_fun = mLSTM1900()
+logger = logging.getLogger("featurize.py")
+logger.setLevel(logging.DEBUG)
 
 
 def rep_same_lengths(
@@ -29,55 +31,59 @@ def rep_same_lengths(
     :returns: A tuple of np.arrays containing the reps.
         Each `np.array` has shape (n_sequences, 1900).
     """
-
+    _, apply_fun = mLSTM1900()
     embedded_seqs = get_embeddings(seqs)
-
-    h_final, c_final, h = vmap(partial(apply_fun, params))(embedded_seqs)
+    logger.debug(f"rep_same_lengths:ID of params: {id(params)}")
+    logger.debug(f"rep_same_lengths:sum of embedded_seqs: {np.sum(embedded_seqs)}")
+    apply_fun = partial(apply_fun, params)
+    h_final, c_final, h = vmap(apply_fun)(embedded_seqs)
+    logger.debug(f"rep_same_lengths:sum of h_final: {np.sum(h_final)}")
     h_avg = h.mean(axis=1)
+    logger.debug(f"rep_same_lengths:sum of h_avg: {np.sum(h_avg)}")
 
     return np.array(h_avg), np.array(h_final), np.array(c_final)
 
 
-def rep_arbitrary_lengths(
-    seqs: Iterable[str], params: Dict
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """
-    This function generates representations of protein sequences of arbitrary length,
-    by batching together all sequences of the same length and passing them through
-    the mLSTM. Original order of sequences is restored in the final output.
+# def rep_arbitrary_lengths(
+#     seqs: Iterable[str], params: Dict
+# ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+#     """
+#     This function generates representations of protein sequences of arbitrary length,
+#     by batching together all sequences of the same length and passing them through
+#     the mLSTM. Original order of sequences is restored in the final output.
 
-    :param seqs: A list of sequences as strings.
-        If passing only a single sequence, it also needs to be passed inside a list.
-    :returns: A 3-tuple of `np.array`s containing the reps.
-        Each `np.array` has shape (n_sequences, 1900).
-        Return order: (h_avg, h_final, c_final).
-    """
-    order = batch_sequences(seqs)
-    # TODO: Find a better way to do this, without code triplication
-    ha_list, hf_list, cf_list = [], [], []
-    # Each list in `order` contains the indexes of all sequences of a
-    # given length from the original list of sequences.
-    for idxs in order:
-        subset = [seqs[i] for i in idxs]
+#     :param seqs: A list of sequences as strings.
+#         If passing only a single sequence, it also needs to be passed inside a list.
+#     :returns: A 3-tuple of `np.array`s containing the reps.
+#         Each `np.array` has shape (n_sequences, 1900).
+#         Return order: (h_avg, h_final, c_final).
+#     """
+#     order = batch_sequences(seqs)
+#     # TODO: Find a better way to do this, without code triplication
+#     ha_list, hf_list, cf_list = [], [], []
+#     # Each list in `order` contains the indexes of all sequences of a
+#     # given length from the original list of sequences.
+#     for idxs in order:
+#         subset = [seqs[i] for i in idxs]
 
-        h_avg, h_final, c_final = rep_same_lengths(subset, params)
-        ha_list.append(h_avg)
-        hf_list.append(h_final)
-        cf_list.append(c_final)
+#         h_avg, h_final, c_final = rep_same_lengths(subset, params)
+#         ha_list.append(h_avg)
+#         hf_list.append(h_final)
+#         cf_list.append(c_final)
 
-    h_avg, h_final, c_final = (
-        np.zeros((len(seqs), 1900)),
-        np.zeros((len(seqs), 1900)),
-        np.zeros((len(seqs), 1900)),
-    )
-    # Re-order generated reps to match sequence order in the original list.
-    for i, subset in enumerate(order):
-        for j, rep in enumerate(subset):
-            h_avg[rep] = ha_list[i][j]
-            h_final[rep] = hf_list[i][j]
-            c_final[rep] = cf_list[i][j]
+#     h_avg, h_final, c_final = (
+#         np.zeros((len(seqs), 1900)),
+#         np.zeros((len(seqs), 1900)),
+#         np.zeros((len(seqs), 1900)),
+#     )
+#     # Re-order generated reps to match sequence order in the original list.
+#     for i, subset in enumerate(order):
+#         for j, rep in enumerate(subset):
+#             h_avg[rep] = ha_list[i][j]
+#             h_final[rep] = hf_list[i][j]
+#             c_final[rep] = cf_list[i][j]
 
-    return h_avg, h_final, c_final
+#     return h_avg, h_final, c_final
 
 
 def get_reps(
@@ -114,9 +120,14 @@ def get_reps(
     :returns: A 3-tuple of `np.array`s containing the reps.
         Each `np.array` has shape (n_sequences, 1900).
     """
-
+    logger.debug(f"ID of params passed into get_reps: {id(params)}")
     if params is None:
+        logger.debug("params is None, loading default params.")
         params = load_params_1900()
+    else:
+        logger.debug("params were loaded from user.")
+    logger.debug(f"ID of params after checking None: {id(params)}")
+
     # Check that params have correct keys and shapes
     validate_mLSTM1900_params(params)
     # If single string sequence is passed, package it into a list
@@ -128,10 +139,19 @@ def get_reps(
 
     # Differentiate between two cases:
     # 1. All sequences in the list have the same length
-    # 2. There are sequences of different lengths in the list
-    if len(set([len(s) for s in seqs])) == 1:
-        h_avg, h_final, c_final = rep_same_lengths(seqs, params)
-        return h_avg, h_final, c_final
-    else:
-        h_avg, h_final, c_final = rep_arbitrary_lengths(seqs, params)
-        return h_avg, h_final, c_final
+    # 2. There are sequences of different lengths in the list: we right-pad before calculating reps
+    seq_lengths = [len(s) for s in seqs]
+    if len(set(seq_lengths)) > 1:
+        seqs = right_pad(seqs, max(seq_lengths))
+    h_avg, h_final, c_final = rep_same_lengths(seqs, params)
+    return h_avg, h_final, c_final
+
+    
+    
+#     if len(set([len(s) for s in seqs])) == 1:
+#         logger.debug("All sequences are of the same length. Calling on rep_same_lengths")
+#         h_avg, h_final, c_final = rep_same_lengths(seqs, params)
+#         return h_avg, h_final, c_final
+#     logger.debug("Sequences are of different length. Calling on rep_arbitrary_lengths")
+#     h_avg, h_final, c_final = rep_arbitrary_lengths(seqs, params)
+#     return h_avg, h_final, c_final

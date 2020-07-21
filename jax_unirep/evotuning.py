@@ -363,7 +363,7 @@ def fit(
     state = init(params)
 
     # calculate how many iterations constitute one epoch approximately
-    epoch_len = round(len(sequences) / batch_size)
+    epoch_len = int(onp.ceil(len(sequences) / batch_size))
 
     n = n_epochs * epoch_len
     for i in tqdm(range(n), desc="Iteration"):
