@@ -1,0 +1,23 @@
+name: jax-unirep-gfp
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.7
+  - ipykernel=5.1.4
+  - jax=0.1.57
+  - jaxlib=0.1.37
+  - jupyter=1.0.0
+  - jupyterlab=2.2.0
+  - matplotlib=3.1.0
+  - numpy=1.17.5
+  - optuna=1.1.0
+  - pandas=1.0.5
+  - scikit-learn=0.22.1
+  - seaborn=0.10.1
+  - pip
+
+  - pip:
+    - pyjanitor
+    - git+https://github.com/ElArkk/jax-unirep.git
+    
