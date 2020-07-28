@@ -187,6 +187,10 @@ and work with you to get what you need into the library,
 but any requests for us to implement features will be prioritized
 according to what we encounter in our day jobs.
 
+If you make in a pull request that gets accepted,
+we are more than happy to publicly acknowledge your contributions in the README
+and by sending tons of positive vibes throughout the Twitterverse and our LinkedIn connections!
+
 ## License
 
 All the model weights are licensed under the terms of
