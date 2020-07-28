@@ -169,14 +169,29 @@ init_fun, apply_fun = stax.serial(
 Have a look at the [documentation][stax] and [examples][staxex]
 for more information about how to implement a model in `jax`.
 
-# More Details
+## More Details
 
 To read more about how we reimplemented the model in JAX, we wrote it up.
 Both the [HTML](https://elarkk.github.io/jax-unirep/)
 and [PDF](https://elarkk.github.io/jax-unirep/paper.pdf)
 are available.
 
-# License
+## Feature Requests
+
+Feature requests are always welcome to be posted on the [issue tracker]!
+That said, please temper your expectations,
+as `jax-unirep` development happens as and when the lead maintainers
+(Arkadij Kummer and Eric Ma) encounter needs in their day jobs.
+We welcome your pull requests, and are happy to guide you through the development process
+and work with you to get what you need into the library,
+but any requests for us to implement features will be prioritized
+according to what we encounter in our day jobs.
+
+If you make in a pull request that gets accepted,
+we are more than happy to publicly acknowledge your contributions in the README
+and by sending tons of positive vibes throughout the Twitterverse and our LinkedIn connections!
+
+## License
 
 All the model weights are licensed under the terms of
 Creative Commons Attribution-NonCommercial 4.0 International License.
