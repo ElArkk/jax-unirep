@@ -49,20 +49,24 @@ proposal_valid_letters = "ACDEFGHIKLMNPQRSTVWY"
 
 def get_weights_dir(folderpath: Optional[str] = None):
     """
-    Fetch the paper weights per default, or from a specified folderpath
+    Return Pathlib object of weights directory.
+
+    If passed in, should be a POSIX-compatible string.
+
+    :param folderpath: The directory in which the weights' .npy files
+        are located.
     """
-    if folderpath:
-        return Path(folderpath)
-    else:
+    if folderpath is None:
         return Path(
             pkg_resources.resource_filename(
                 "jax_unirep", "weights/1900_weights/uniref50"
             )
         )
+    return Path(folderpath)
 
 
 def dump_params(
-    params: Dict, dir_path: Optional[str] = "temp", step: Optional[int] = 0,
+    params: Dict, dir_path: Optional[str] = "temp", step: Optional[int] = 0
 ):
     """
     Dumps the current params of model being trained to a .npy file.
@@ -112,9 +116,7 @@ def dump_params(
 
         # Save file
         fpath = iteration_path / fname
-        onp.save(
-            fpath, onp.array(val),
-        )
+        onp.save(fpath, onp.array(val))
     # iterate through and save dense params as npy files.
     dense_names = [
         "fully_connected_weights:0.npy",
@@ -127,9 +129,7 @@ def dump_params(
 
         # Save file
         fpath = iteration_path / dense_names[i]
-        onp.save(
-            fpath, onp.array(val),
-        )
+        onp.save(fpath, onp.array(val))
 
 
 def aa_seq_to_int(s: str) -> List[int]:
@@ -143,7 +143,7 @@ def aa_seq_to_int(s: str) -> List[int]:
     return [24] + [aa_to_int[a] for a in s] + [25]
 
 
-@lru_cache(maxsize=128)
+# @lru_cache(maxsize=128)
 def load_embedding_1900(folderpath: Optional[str] = None):
     """Load pre-trained embedding weights for uniref50 model."""
     weights_1900_dir = get_weights_dir(folderpath=folderpath)

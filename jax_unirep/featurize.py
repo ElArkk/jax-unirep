@@ -33,13 +33,9 @@ def rep_same_lengths(
     """
     _, apply_fun = mLSTM1900()
     embedded_seqs = get_embeddings(seqs)
-    logger.debug(f"rep_same_lengths:ID of params: {id(params)}")
-    logger.debug(f"rep_same_lengths:sum of embedded_seqs: {np.sum(embedded_seqs)}")
     apply_fun = partial(apply_fun, params)
     h_final, c_final, h = vmap(apply_fun)(embedded_seqs)
-    logger.debug(f"rep_same_lengths:sum of h_final: {np.sum(h_final)}")
     h_avg = h.mean(axis=1)
-    logger.debug(f"rep_same_lengths:sum of h_avg: {np.sum(h_avg)}")
 
     return np.array(h_avg), np.array(h_final), np.array(c_final)
 
@@ -120,13 +116,8 @@ def get_reps(
     :returns: A 3-tuple of `np.array`s containing the reps.
         Each `np.array` has shape (n_sequences, 1900).
     """
-    logger.debug(f"ID of params passed into get_reps: {id(params)}")
     if params is None:
-        logger.debug("params is None, loading default params.")
         params = load_params_1900()
-    else:
-        logger.debug("params were loaded from user.")
-    logger.debug(f"ID of params after checking None: {id(params)}")
 
     # Check that params have correct keys and shapes
     validate_mLSTM1900_params(params)
@@ -146,8 +137,6 @@ def get_reps(
     h_avg, h_final, c_final = rep_same_lengths(seqs, params)
     return h_avg, h_final, c_final
 
-    
-    
 #     if len(set([len(s) for s in seqs])) == 1:
 #         logger.debug("All sequences are of the same length. Calling on rep_same_lengths")
 #         h_avg, h_final, c_final = rep_same_lengths(seqs, params)

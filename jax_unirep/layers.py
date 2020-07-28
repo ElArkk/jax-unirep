@@ -79,8 +79,6 @@ def mLSTM1900(output_dim=1900, W_init=glorot_normal(), b_init=normal()):
         return output_shape, params
 
     def apply_fun(params, inputs, **kwargs):
-        logger.debug(f"apply_fun:id of params: {id(params)}")
-        logger.debug(f"apply_fun:sum of inputs: {np.sum(inputs)}")
         return mLSTM1900_batch(params=params, batch=inputs)
 
     return init_fun, apply_fun
@@ -165,14 +163,11 @@ def mLSTM1900_batch(
     """
     h_t = np.zeros(params["wmh"].shape[0])
     c_t = np.zeros(params["wmh"].shape[0])
-    logger.debug(f"mlstm1900_batch ID of params: {id(params)}")
 
     step_func = partial(mLSTM1900_step, params)
-    logger.debug(f"mlstm1900_batch sum of batch: {np.sum(batch)}")
     (h_final, c_final), outputs = lax.scan(
         step_func, init=(h_t, c_t), xs=batch
     )
-    logger.debug(f"mlstm1900_batch sum of h_final: {np.sum(h_final)}")
     return h_final, c_final, outputs
 
 
