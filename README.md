@@ -178,7 +178,7 @@ are available.
 
 ## Feature Requests
 
-Feature requests are always welcome to be posted on the [issue tracker]!
+Feature requests are always welcome to be posted on the [issue tracker][it]!
 That said, please temper your expectations,
 as `jax-unirep` development happens as and when the lead maintainers
 (Arkadij Kummer and Eric Ma) encounter needs in their day jobs.
@@ -213,3 +213,4 @@ is licensed under the terms of [GPL v3][gpl3].
 [examples]: https://github.com/ElArkk/jax-unirep/blob/master/examples
 [stax]: https://jax.readthedocs.io/en/latest/jax.experimental.stax.html
 [staxex]: https://github.com/google/jax/tree/master/examples
+[it]: https://github.com/ElArkk/jax-unirep/issues
