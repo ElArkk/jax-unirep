@@ -4,28 +4,28 @@ channels:
   - defaults
 dependencies:
   - python=3.7
-  - pandoc=2.9.1.1
-  - conda=4.8.2
-  - coverage=5.0.3
-  - hypothesis=5.2.0
-  - jax=0.1.57
-  - jaxlib=0.1.37
+  - pandoc>=2.9.1.1
+  - conda>=4.8.2
+  - coverage>=5.0.3
+  - hypothesis>=5.2.0
+  - jax>=0.1.57
+  - jaxlib>=0.1.37
   - jupyter
   - jupyterlab
-  - multipledispatch=0.6.0
-  - numpy=1.17.5
-  - pyprojroot=0.2.0
-  - pytest=5.3.4
-  - pandoc=2.9.1.1
-  - pytest-cov=2.8.1
+  - multipledispatch>=0.6.0
+  - numpy>=1.17.5
+  - pyprojroot>=0.2.0
+  - pytest>=5.3.4
+  - pandoc>=2.9.1.1
+  - pytest-cov>=2.8.1
   - pre-commit
-  - ipykernel=5.1.4
-  - optuna=1.1.0
-  - scikit-learn=0.22.1
+  - ipykernel>=5.1.4
+  - optuna>=1.1.0
+  - scikit-learn>=0.22.1
   - pip
 # Code style
-  - black=19.10b0
-  - isort=4.3.21
+  - black>=19.10b0
+  - isort>=4.3.21
   - pylint
   - pydocstyle
 # Other things
