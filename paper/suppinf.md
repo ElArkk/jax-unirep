@@ -178,7 +178,7 @@ to embed the protein sequences that we then passed to the
 classification model.
 The model performance shown below
 is based on 5-fold crossvalidation of the whole GFP dataset.
-The full analysis is available as a jupyter notebook in the 
+The full analysis is available as a jupyter notebook in the
 `jax-unirep` repository.
 
 ![
