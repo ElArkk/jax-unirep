@@ -58,7 +58,7 @@ deploy:
   keep_history: false
   # We read the master branch
   on:
-    branch: docs
+    branch: master
   # Take the docs/ directory
   local_dir: site
   # Publish to the gh-pages branch
