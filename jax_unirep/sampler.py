@@ -198,8 +198,8 @@ def hamming_distance(s1: str, s2: str):
 
 
 def sample_one_chain(
-    starter_sequence,
-    n_steps,
+    starter_sequence: str,
+    n_steps: int,
     scoring_func: Callable,
     is_accepted_kwargs: Dict = {},
     trust_radius: int = 7,
@@ -226,8 +226,7 @@ def sample_one_chain(
     Secondly, we check the Hamming distance
     between the newly proposed sequences and the original.
     This corresponds to the "trust radius"
-    specified in the jax-unirep paper:
-    https://doi.org/10.1101/2020.01.23.917682.
+    specified in the [jax-unirep paper](https://doi.org/10.1101/2020.01.23.917682).
     If the hamming distance > trust radius,
     we reject the sequence outright.
 
@@ -240,20 +239,26 @@ def sample_one_chain(
 
     This can be turned into a pandas DataFrame.
 
-    :param starter_sequence: The starting sequence.
-    :param n_steps: Number of steps for the MC chain to walk.
-    :param scoring_func: Scoring function for a new sequence.
-        It should only accept a string sequence.
-    :param is_accepted_kwargs: Dictionary of kwargs to pass into
+    ### Parameters
+
+    - starter_sequence: The starting sequence.
+    - n_steps: Number of steps for the MC chain to walk.
+    - scoring_func: Scoring function for a new sequence.
+        It should only accept a string ``sequence``.
+    - is_accepted_kwargs: Dictionary of kwargs to pass into
         ``is_accepted`` function.
         See ``is_accepted`` docstring for more details.
-    :param trust_radius: Maximum allowed number of mutations away from
+    - trust_radius: Maximum allowed number of mutations away from
         starter sequence.
-    :param propose_kwargs: Dictionary of kwargs to pass into
+    - propose_kwargs: Dictionary of kwargs to pass into
         ``propose`` function.
         See ``propose`` docstring for more details.
-    :param verbose: Whether or not to print iteration number
+    - verbose: Whether or not to print iteration number
         and associated sequence + score. Defaults to False
+
+    ### Returns
+
+    A dictionary with `sequences`, `accept` and `score` as keys.
     """
     current_sequence = starter_sequence
     current_score = scoring_func(sequence=starter_sequence)

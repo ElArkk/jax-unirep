@@ -59,8 +59,7 @@ def avg_loss(
     batch_size: int = 50,
 ) -> float:
     """
-    Return average loss of a set of parameters,
-    on a set of sequences.
+    Return average loss of a set of parameters, on a set of sequences.
 
     :param xs: List of NumPy arrays
     :param ys: List of NumPy arrays
@@ -263,22 +262,28 @@ def fit(
     rather than calculated exactly on the entire set.
     Set ``epochs_per_print`` to ``None`` to avoid parameter dumping.
 
-    :param params: mLSTM1900 and Dense parameters.
-    :param sequences: List of sequences to evotune on.
-    :param n: The number of iterations to evotune on.
-    :param batch_method: One of "length" or "random".
-    :param batch_size: If random batching is used,
+    ### Parameters
+
+    - params: mLSTM1900 and Dense parameters.
+    - sequences: List of sequences to evotune on.
+    - n: The number of iterations to evotune on.
+    - batch_method: One of "length" or "random".
+    - batch_size: If random batching is used,
         number of sequences per batch.
         As a rule of thumb, batch size of 50 consumes
         about 5GB of GPU RAM.
-    :param step_size: The learning rate.
-    :param holdout_seqs: Holdout set, an optional input.
-    :param proj_name: The directory path for weights to be output to.
-    :param epochs_per_print: Number of epochs to progress before printing
+    - step_size: The learning rate.
+    - holdout_seqs: Holdout set, an optional input.
+    - proj_name: The directory path for weights to be output to.
+    - epochs_per_print: Number of epochs to progress before printing
         and dumping of weights.
         Must be greater than or equal to 1.
-    :param backend: Whether or not to use the GPU. Defaults to "cpu",
+    - backend: Whether or not to use the GPU. Defaults to "cpu",
         but can be set to "gpu" if desired.
+
+    ### Returns
+
+    Final optimized parameters.
     """
 
     @jit
@@ -573,7 +578,6 @@ def evotune(
         about all evotuning trials.
         - evotuned_params - A dictionary of optimized weights
     """
-
     study = optuna.create_study()
 
     objective_func = lambda x: objective(
