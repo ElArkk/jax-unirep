@@ -1,0 +1,649 @@
+
+
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      <link rel="shortcut icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.1.2, mkdocs-material-5.5.5">
+    
+    
+      
+        <title>API Docs - jax-unirep: A performant reimplementation of UniRep in JAX</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.63b94e9e.min.css">
+      
+        <link rel="stylesheet" href="../assets/stylesheets/palette.7f672a1f.min.css">
+      
+      
+        
+        
+        <meta name="theme-color" content="#009688">
+      
+    
+    
+    
+      
+        <link href="https://fonts.gstatic.com" rel="preconnect" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700%7CRoboto+Mono&display=fallback">
+        <style>body,input{font-family:"Roboto",-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif}code,kbd,pre{font-family:"Roboto Mono",SFMono-Regular,Consolas,Menlo,monospace}</style>
+      
+    
+    
+    
+      <link rel="stylesheet" href="https://unpkg.com/mermaid@7.1.2/dist/mermaid.css">
+    
+      <link rel="stylesheet" href="../css/custom.css">
+    
+    
+      
+        
+<script>window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)},ga.l=+new Date,ga("create","UA-12498603-3","auto"),ga("set","anonymizeIp",!0),ga("send","pageview"),document.addEventListener("DOMContentLoaded",function(){document.forms.search&&document.forms.search.query.addEventListener("blur",function(){if(this.value){var e=document.location.pathname;ga("send","pageview",e+"?q="+this.value)}})}),document.addEventListener("DOMContentSwitch",function(){ga("send","pageview",document.location.pathname)})</script>
+<script async src="https://www.google-analytics.com/analytics.js"></script>
+      
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="" data-md-color-primary="teal" data-md-color-accent="teal">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#api-documentation" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <header class="md-header" data-md-component="header">
+  <nav class="md-header-nav md-grid" aria-label="Header">
+    <a href=".." title="jax-unirep: A performant reimplementation of UniRep in JAX" class="md-header-nav__button md-logo" aria-label="jax-unirep: A performant reimplementation of UniRep in JAX">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 003-3 3 3 0 00-3-3 3 3 0 00-3 3 3 3 0 003 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54z"/></svg>
+
+    </a>
+    <label class="md-header-nav__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header-nav__title" data-md-component="header-title">
+      
+        <div class="md-header-nav__ellipsis">
+          <span class="md-header-nav__topic md-ellipsis">
+            jax-unirep: A performant reimplementation of UniRep in JAX
+          </span>
+          <span class="md-header-nav__topic md-ellipsis">
+            
+              API Docs
+            
+          </span>
+        </div>
+      
+    </div>
+    
+      <label class="md-header-nav__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0116 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 019.5 16 6.5 6.5 0 013 9.5 6.5 6.5 0 019.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      
+<div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" data-md-state="active">
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0116 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 019.5 16 6.5 6.5 0 013 9.5 6.5 6.5 0 019.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <button type="reset" class="md-search__icon md-icon" aria-label="Clear" data-md-component="search-reset" tabindex="-1">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+      </button>
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header-nav__source">
+        
+<a href="https://github.com/ElArkk/jax-unirep/" title="Go to repository" class="md-source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05L244 40.45a28.87 28.87 0 00-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 01-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 000 40.81l195.61 195.6a28.86 28.86 0 0040.8 0l194.69-194.69a28.86 28.86 0 000-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ElArkk/jax-unirep
+  </div>
+</a>
+      </div>
+    
+  </nav>
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+        
+      
+      
+        
+          
+
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-tabs__inner md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  <li class="md-tabs__item">
+    
+      <a href=".." class="md-tabs__link md-tabs__link--active">
+        Home
+      </a>
+    
+  </li>
+
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </ul>
+  </div>
+</nav>
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              <div class="md-sidebar md-sidebar--primary" data-md-component="navigation">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="jax-unirep: A performant reimplementation of UniRep in JAX" class="md-nav__button md-logo" aria-label="jax-unirep: A performant reimplementation of UniRep in JAX">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 003-3 3 3 0 00-3-3 3 3 0 00-3 3 3 3 0 003 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54z"/></svg>
+
+    </a>
+    jax-unirep: A performant reimplementation of UniRep in JAX
+  </label>
+  
+    <div class="md-nav__source">
+      
+<a href="https://github.com/ElArkk/jax-unirep/" title="Go to repository" class="md-source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M439.55 236.05L244 40.45a28.87 28.87 0 00-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 01-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 000 40.81l195.61 195.6a28.86 28.86 0 0040.8 0l194.69-194.69a28.86 28.86 0 000-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ElArkk/jax-unirep
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href=".." title="Home" class="md-nav__link">
+      Home
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../getting-started/" title="Getting Started" class="md-nav__link">
+      Getting Started
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../advanced/" title="Advanced Usage" class="md-nav__link">
+      Advanced Usage
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../contributing/" title="Contributing" class="md-nav__link">
+      Contributing
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+
+  <li class="md-nav__item">
+    <a href="../development/" title="Development" class="md-nav__link">
+      Development
+    </a>
+  </li>
+
+    
+      
+      
+      
+
+  
+
+
+  <li class="md-nav__item md-nav__item--active">
+    
+    <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+    
+      
+    
+    
+      <label class="md-nav__link md-nav__link--active" for="__toc">
+        API Docs
+        <span class="md-nav__icon md-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 9h14V7H3v2m0 4h14v-2H3v2m0 4h14v-2H3v2m16 0h2v-2h-2v2m0-10v2h2V7h-2m0 6h2v-2h-2v2z"/></svg>
+        </span>
+      </label>
+    
+    <a href="./" title="API Docs" class="md-nav__link md-nav__link--active">
+      API Docs
+    </a>
+    
+      
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#calculating-representations" class="md-nav__link">
+    Calculating Representations
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#evotuning" class="md-nav__link">
+    Evotuning
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sampling" class="md-nav__link">
+    Sampling
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+    
+  </li>
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#calculating-representations" class="md-nav__link">
+    Calculating Representations
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#evotuning" class="md-nav__link">
+    Evotuning
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sampling" class="md-nav__link">
+    Sampling
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content">
+            <article class="md-content__inner md-typeset">
+              
+                
+                  <a href="https://github.com/ElArkk/jax-unirep/edit/master/docs/api.md" title="Edit this page" class="md-content__button md-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
+                  </a>
+                
+                
+                  
+                
+                
+                <h1 id="api-documentation">API Documentation</h1>
+<p>Here lies the official top-level API for interacting with <code>jax-unirep</code>.</p>
+<h2 id="calculating-representations">Calculating Representations</h2>
+<div class="autodoc">
+<div class="autodoc-signature"><code>jax_unirep.<strong>get_reps</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">seqs</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">params=None</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Get reps of proteins.</p>
+<p>This function generates representations of protein sequences
+using the 1900 hidden-unit mLSTM model with pre-trained weights
+from the <a href="https://github.com/churchlab/UniRep">UniRep paper</a>.</p>
+<p>Each element of the output 3-tuple is a <code>np.array</code>
+of shape (n_input_sequences, 1900):</p>
+<ul>
+<li><code>h_avg</code>: Average hidden state of the mLSTM over the whole sequence.</li>
+<li><code>h_final</code>: Final hidden state of the mLSTM</li>
+<li><code>c_final</code>: Final cell state of the mLSTM</li>
+</ul>
+<p>You should not use this function
+if you want to do further JAX-based computations
+on the output vectors!
+In that case, the <code>DeviceArray</code> futures returned by <code>mLSTM1900</code>
+should be passed directly into the next step
+instead of converting them to <code>np.array</code>s.
+The conversion to <code>np.array</code>s is done
+in the dispatched <code>rep_x_lengths</code> functions
+to force python to wait with returning the values
+until the computation is completed.</p>
+<p>The keys of the <code>params</code> dictionary must be:</p>
+<div class="codehilite"><pre><span></span><code><span class="err">b, gh, gmh, gmx, gx, wh, wmh, wmx, wx</span>
+</code></pre></div>
+
+
+<h3 id="parameters">Parameters</h3>
+<ul>
+<li>seqs: A list of sequences as strings or a single string.</li>
+<li>params: A dictionary of mLSTM1900 weights.</li>
+</ul>
+<h3 id="returns">Returns</h3>
+<p>A 3-tuple of <code>np.array</code>s containing the reps,
+in the order <code>h_avg</code>, <code>h_final</code>, and <code>c_final</code>.
+Each <code>np.array</code> has shape (n_sequences, 1900).</p></div>
+</div>
+<h2 id="evotuning">Evotuning</h2>
+<div class="autodoc">
+<div class="autodoc-signature"><code>jax_unirep.<strong>fit</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">params</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">sequences</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">n_epochs</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">batch_method='random'</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">batch_size=25</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">step_size=0.0001</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">holdout_seqs=None</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">proj_name='temp'</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">epochs_per_print=1</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">backend='cpu'</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Return mLSTM weights fitted to predict the next letter in each AA sequence.</p>
+<p>The training loop is as follows, depending on the batching strategy:</p>
+<p>Length batching:</p>
+<ul>
+<li>At each iteration,
+of all sequence lengths present in <code>sequences</code>,
+one length gets chosen at random.</li>
+<li>Next, <code>batch_size</code> number of sequences of the chosen length
+get selected at random.</li>
+<li>If there are less sequences of a given length than <code>batch_size</code>,
+all sequences of that length get chosen.</li>
+<li>Those sequences then get passed through the model.
+No padding of sequences occurs.</li>
+</ul>
+<p>To get batching of sequences by length done,
+we call on <code>batch_sequences</code> from our <code>utils.py</code> module,
+which returns a list of sub-lists,
+in which each sub-list contains the indices
+in the original list of sequences
+that are of a particular length.</p>
+<p>Random batching:</p>
+<ul>
+<li>Before training, all sequences get padded
+to be the same length as the longest sequence
+in <code>sequences</code>.</li>
+<li>Then, at each iteration,
+we randomly sample <code>batch_size</code> sequences
+and pass them through the model.</li>
+</ul>
+<p>The training loop does not adhere
+to the common notion of <code>epochs</code>,
+where all sequences would be seen by the model
+exactly once per epoch.
+Instead sequences always get sampled at random,
+and one epoch approximately consists of
+<code>round(len(sequences) / batch_size)</code> weight updates.
+Asymptotically, this should be approximately equiavlent
+to doing epoch passes over the dataset.</p>
+<p>To learn more about the passing of <code>params</code>,
+have a look at the <code>evotune</code> function docstring.</p>
+<p>You can optionally dump parameters
+and print weights every <code>epochs_per_print</code> epochs
+to monitor training progress.
+For ergonomics, training/holdout set losses are estimated
+on a batch size the same as <code>batch_size</code>,
+rather than calculated exactly on the entire set.
+Set <code>epochs_per_print</code> to <code>None</code> to avoid parameter dumping.</p>
+<h3 id="parameters">Parameters</h3>
+<ul>
+<li>params: mLSTM1900 and Dense parameters.</li>
+<li>sequences: List of sequences to evotune on.</li>
+<li>n: The number of iterations to evotune on.</li>
+<li>batch_method: One of "length" or "random".</li>
+<li>batch_size: If random batching is used,
+    number of sequences per batch.
+    As a rule of thumb, batch size of 50 consumes
+    about 5GB of GPU RAM.</li>
+<li>step_size: The learning rate.</li>
+<li>holdout_seqs: Holdout set, an optional input.</li>
+<li>proj_name: The directory path for weights to be output to.</li>
+<li>epochs_per_print: Number of epochs to progress before printing
+    and dumping of weights.
+    Must be greater than or equal to 1.</li>
+<li>backend: Whether or not to use the GPU. Defaults to "cpu",
+    but can be set to "gpu" if desired.</li>
+</ul>
+<h3 id="returns">Returns</h3>
+<p>Final optimized parameters.</p></div>
+</div>
+<h2 id="sampling">Sampling</h2>
+<div class="autodoc">
+<div class="autodoc-signature"><code>jax_unirep.<strong>sample_one_chain</strong></code><span class="autodoc-punctuation">(</span><em class="autodoc-param">starter_sequence</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">n_steps</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">scoring_func</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">is_accepted_kwargs={}</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">trust_radius=7</em><span class="autodoc-punctuation">, </span><em class="autodoc-param">propose_kwargs={}</em><span class="autodoc-punctuation">)</span></div>
+<div class="autodoc-docstring"><p>Return one chain of MCMC samples of new sequences.</p>
+<p>Given a <code>starter_sequence</code>,
+this function will sample one chain of protein sequences,
+scored using a user-provided <code>scoring_func</code>.</p>
+<p>Design choices made here include the following.</p>
+<p>Firstly, we record all sequences that were sampled,
+and not just the accepted ones.
+This behaviour differs from other MCMC samplers
+that record only the accepted values.
+We do this just in case sequences that are still "good"
+(but not better than current) are rejected.
+The effect here is that we get a cluster of sequences
+that are one-apart from newly accepted sequences.</p>
+<p>Secondly, we check the Hamming distance
+between the newly proposed sequences and the original.
+This corresponds to the "trust radius"
+specified in the <a href="https://doi.org/10.1101/2020.01.23.917682">jax-unirep paper</a>.
+If the hamming distance &gt; trust radius,
+we reject the sequence outright.</p>
+<p>A dictionary containing the following key-value pairs are returned:</p>
+<ul>
+<li>"sequences": All proposed sequences.</li>
+<li>"scores": All scores from the scoring function.</li>
+<li>"accept": Whether the sequence was accepted as the new 'current sequence'
+    on which new sequences are proposed.</li>
+</ul>
+<p>This can be turned into a pandas DataFrame.</p>
+<h3 id="parameters">Parameters</h3>
+<ul>
+<li>starter_sequence: The starting sequence.</li>
+<li>n_steps: Number of steps for the MC chain to walk.</li>
+<li>scoring_func: Scoring function for a new sequence.
+    It should only accept a string <code>sequence</code>.</li>
+<li>is_accepted_kwargs: Dictionary of kwargs to pass into
+    <code>is_accepted</code> function.
+    See <code>is_accepted</code> docstring for more details.</li>
+<li>trust_radius: Maximum allowed number of mutations away from
+    starter sequence.</li>
+<li>propose_kwargs: Dictionary of kwargs to pass into
+    <code>propose</code> function.
+    See <code>propose</code> docstring for more details.</li>
+<li>verbose: Whether or not to print iteration number
+    and associated sequence + score. Defaults to False</li>
+</ul>
+<h3 id="returns">Returns</h3>
+<p>A dictionary with <code>sequences</code>, <code>accept</code> and <code>score</code> as keys.</p></div>
+</div>
+                
+              
+              
+                
+
+
+              
+            </article>
+          </div>
+        </div>
+      </main>
+      
+        
+<footer class="md-footer">
+  
+    <div class="md-footer-nav">
+      <nav class="md-footer-nav__inner md-grid" aria-label="Footer">
+        
+          <a href="../development/" title="Development" class="md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+            <div class="md-footer-nav__button md-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+            </div>
+            <div class="md-footer-nav__title">
+              <div class="md-ellipsis">
+                <span class="md-footer-nav__direction">
+                  Previous
+                </span>
+                Development
+              </div>
+            </div>
+          </a>
+        
+        
+      </nav>
+    </div>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-footer-copyright">
+        
+        Made with
+        <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+          Material for MkDocs
+        </a>
+      </div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    
+      <script src="../assets/javascripts/vendor.d1f5a259.min.js"></script>
+      <script src="../assets/javascripts/bundle.f9edbbd5.min.js"></script><script id="__lang" type="application/json">{"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents"}</script>
+      
+      <script>
+        app = initialize({
+          base: "..",
+          features: ["tabs"],
+          search: Object.assign({
+            worker: "../assets/javascripts/worker/search.fae956e7.min.js"
+          }, typeof search !== "undefined" && search)
+        })
+      </script>
+      
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      
+        <script src="https://unpkg.com/mermaid@7.1.2/dist/mermaid.min.js"></script>
+      
+    
+  </body>
+</html>

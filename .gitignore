@@ -118,7 +118,8 @@ venv.bak/
 .ropeproject
 
 # mkdocs documentation
-/site
+# Temporarily released on 11 August 2020 to test docs build
+# /site
 
 # mypy
 .mypy_cache/
