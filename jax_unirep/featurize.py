@@ -108,14 +108,14 @@ def get_reps(
     to force python to wait with returning the values
     until the computation is completed.
 
-    The keys of the ``params`` dictionary must be:
+    The keys of the `params` dictionary must be:
 
         b, gh, gmh, gmx, gx, wh, wmh, wmx, wx
 
     ### Parameters
 
-    - seqs: A list of sequences as strings or a single string.
-    - params: A dictionary of mLSTM1900 weights.
+    - `seqs`: A list of sequences as strings or a single string.
+    - `params`: A dictionary of mLSTM1900 weights.
 
     ### Returns
 

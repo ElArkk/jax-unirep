@@ -208,9 +208,9 @@ def sample_one_chain(
     """
     Return one chain of MCMC samples of new sequences.
 
-    Given a ``starter_sequence``,
+    Given a `starter_sequence`,
     this function will sample one chain of protein sequences,
-    scored using a user-provided ``scoring_func``.
+    scored using a user-provided `scoring_func`.
 
     Design choices made here include the following.
 
@@ -241,19 +241,19 @@ def sample_one_chain(
 
     ### Parameters
 
-    - starter_sequence: The starting sequence.
-    - n_steps: Number of steps for the MC chain to walk.
-    - scoring_func: Scoring function for a new sequence.
-        It should only accept a string ``sequence``.
-    - is_accepted_kwargs: Dictionary of kwargs to pass into
-        ``is_accepted`` function.
-        See ``is_accepted`` docstring for more details.
-    - trust_radius: Maximum allowed number of mutations away from
+    - `starter_sequence`: The starting sequence.
+    - `n_steps`: Number of steps for the MC chain to walk.
+    - `scoring_func`: Scoring function for a new sequence.
+        It should only accept a string `sequence`.
+    - `is_accepted_kwargs`: Dictionary of kwargs to pass into
+        `is_accepted` function.
+        See `is_accepted` docstring for more details.
+    - `trust_radius`: Maximum allowed number of mutations away from
         starter sequence.
-    - propose_kwargs: Dictionary of kwargs to pass into
-        ``propose`` function.
-        See ``propose`` docstring for more details.
-    - verbose: Whether or not to print iteration number
+    - `propose_kwargs`: Dictionary of kwargs to pass into
+        `propose` function.
+        See `propose` docstring for more details.
+    - `verbose`: Whether or not to print iteration number
         and associated sequence + score. Defaults to False
 
     ### Returns
