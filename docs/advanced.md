@@ -37,7 +37,7 @@ while using a fixed learning rate,
 you should use the `fit` function instead.
 The `fit` function has further customization options,
 such as different batching strategies.
-Please see the function docstring for more information.
+Please see the function docstring [here][fitdoc] for more information.
 
 ??? note "GPU usage"
 
@@ -72,6 +72,9 @@ _, params = init_fun(PRNGKey(0), input_shape=(-1, 10))
 The weights used in the 10-dimensional embedding of the input sequences
 always default to the weights from the paper,
 since they do not get updated during evotuning.
+
+[fitdoc]: https://elarkk.github.io/jax-unirep/api/#evotuning
+[examples]: https://github.com/ElArkk/jax-unirep/blob/master/examples
 
 ## End-to-end differentiable models
 
@@ -193,4 +196,3 @@ chain_data = pd.concat([pd.DataFrame(r) for r in chain_results])
 Is there an "advanced" protocol that you've developed surrounding `jax-unirep`?
 If so, please consider contributing it here!
 
-[examples]: https://github.com/ElArkk/jax-unirep/blob/master/examples
