@@ -55,7 +55,7 @@ def is_accepted(best: float, candidate: float, temperature: float) -> bool:
 
     c = np.exp((candidate - best) / temperature)
 
-    if c >= 1:
+    if c > 1:
         return True
     else:
         p = np.random.uniform(0, 1)
@@ -159,7 +159,7 @@ def propose(sequence: np.ndarray) -> np.ndarray:
 
     TODO when we have some bandwidth.
     """
-    pass
+    # pass
     # pos = choice(list(range(len(sequence))))
     # existing_vector = sequence[pos, :]
 
