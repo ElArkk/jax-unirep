@@ -3,20 +3,16 @@
 
 # jax-unirep
 
-Reimplementation of the UniRep protein featurization model in JAX.
+A performant reimplementation of the UniRep protein featurization model in JAX.
 
 The UniRep model was developed in George Church's lab,
 see the original publication
 [here][arxiv] (bioRxiv) or [here][nature] (Nature Methods),
 as well as the [repository][repo] containing the original model.
 
-The idea to reimplement the TF-based model in the much lighter JAX framework
-was coined by [Eric Ma][ericmjl], who also developed a first version of it
-inside his functional deep-learning library [fundl][fundl].
-
 This repo is a self-contained version of the UniRep model
 (so far only the 1900 hidden-unit mLSTM),
-adapted and extended from fundl.
+with additional utility APIs that support protein engineering workflows.
 
 ## Installation
 
@@ -31,172 +27,24 @@ Installation from GitHub:
 pip install git+https://github.com/ElArkk/jax-unirep.git
 ```
 
-## Usage
-
-### Getting UniReps
-
-To generate representations of protein sequences,
-pass a list of sequences as strings
-or a single sequence to `jax_unirep.get_reps`.
-It will return a tuple consisting of the
-following representations for each sequence:
-
-- `h_avg`: Average hidden state of the mLSTM over the whole sequence.
-- `h_final`: Final hidden state of the mLSTM
-- `c_final`: Final cell state of the mLSTM
-
-From the original paper,
-`h_avg` is considered the "representation" (or "rep") of the protein sequence.
-
-Only valid amino acid sequence letters belonging to the set:
-
-    MRHKDESTNQCUGPAVIFYWLOXZBJ
-
-are allowed as inputs to `get_reps`.
-They may be passed in as a single string or an iterable of strings,
-and need _not_ necessarily be of the same length.
-
-In Python code, for a single sequence:
-
-```python
-from jax_unirep import get_reps
-
-sequence = "ASDFGHJKL"
-
-# h_avg is the canonical "reps"
-h_avg, h_final, c_final = get_reps(sequence)
-```
-
-And for multiple sequences:
-
-```python
-from jax_unirep import get_reps
-
-sequences = ["ASDF", "YJKAL", "QQLAMEHALQP"]
-
-# h_avg is the canonical "reps"
-h_avg, h_final, c_final= get_reps(sequences)
-
-# each of the arrays will be of shape (len(sequences), 1900),
-# with the correct order of sequences preserved
-```
-
-### Evotuning
-
-In the original paper the concept of 'evolutionary finetuning' is introduced,
-where the pre-trained mLSTM weights get fine-tuned through weight-updates
-using homolog protein sequences of a given protein of interest as input.
-This feature is available as well in `jax-unirep`.
-Given a set of starter weights for the mLSTM (defaults to
-the weights from the paper) as well as a set of sequences,
-the weights get fine-tuned in such a way that test set loss
-in the 'next-aa prediction task' is minimized.
-There are two functions with differing levels of control available.
-
-The [`evotune`][evotunefunc] function uses `optuna` under the hood
-to automatically find: 
-1. the optimal number of epochs to train for, and
-2. the optimal learning rate, 
-
-given a set of sequences.
-The `study` object will contain all the information
-about the training process of each trial. 
-`evotuned_params` will contain the fine-tuned mLSTM and dense weights 
-from the trial with the lowest test set loss.
-
-If you want to directly fine-tune the weights
-for a fixed number of epochs
-while using a fixed learning rate,
-you should use the [`fit`][fitfunc] function instead.
-The `fit` function has further customization options,
-such as different batching strategies.
-Please see the function docstring for more information.
-
-NOTE: The `fit` function will always default to using a
-GPU `backend` if available for the forward and backward passes
-during training of the LSTM.
-However, for the calulation of the average loss
-on the dataset after every epoch, you can decide
-if the CPU or GPU `backend` should be used (default is CPU).
-
-You can find an example usages of both `evotune` and `fit` [here][examples].
-
-If you want to pass a set of mLSTM and dense weights
-that were dumped in an earlier run,
-create params as follows:
-
-```python
-from jax_unirep.utils import load_params
-
-params = load_params(folderpath="path/to/params/folder")
-```
-
-If you want to start from randomly initialized mLSTM and dense weights instead:
-
-```python
-from jax_unirep.evotuning import init_fun
-from jax.random import PRNGKey
-
-_, params = init_fun(PRNGKey(0), input_shape=(-1, 10))
-```
-
-The weights used in the 10-dimensional embedding of the input sequences
-always default to the weights from the paper,
-since they do not get updated during evotuning.
-
-### UniRep stax
-
-We implemented the mLSTM layers in such a way that
-they are compatible with `jax.experimental.stax`.
-This means that they can easily be plugged into
-a `stax.serial` model, e.g. to train both the mLSTM
-and a top-model at once:
-
-```python
-from jax.experimental import stax
-from jax.experimental.stax import Dense, Relu
-
-from jax_unirep.layers import mLSTM1900, mLSTM1900_AvgHidden
-
-init_fun, apply_fun = stax.serial(
-    mLSTM1900(),
-    mLSTM1900_AvgHidden(),
-    Dense(512), Relu(),
-    Dense(1)
-)
-```
-
-Have a look at the [documentation][stax] and [examples][staxex]
-for more information about how to implement a model in `jax`.
-
 ## More Details
 
-To read more about how we reimplemented the model in JAX, we wrote it up.
-Both the [HTML](https://elarkk.github.io/jax-unirep/)
-and [PDF](https://elarkk.github.io/jax-unirep/paper.pdf)
-are available.
+Documentation on how to use `jax-unirep` is available [here][docs].
 
-## Feature Requests
+We highly encourage community contributions to this project! For more information, see the section in the docs on our [contributing][cont] guidelines.
 
-Feature requests are always welcome to be posted on the [issue tracker][it]!
-That said, please temper your expectations,
-as `jax-unirep` development happens as and when the lead maintainers
-(Arkadij Kummer and Eric Ma) encounter needs in their day jobs.
-We welcome your pull requests, and are happy to guide you through the development process
-and work with you to get what you need into the library,
-but any requests for us to implement features will be prioritized
-according to what we encounter in our day jobs.
 
-If you make in a pull request that gets accepted,
-we are more than happy to publicly acknowledge your contributions in the README
-and by sending tons of positive vibes throughout the Twitterverse and our LinkedIn connections!
+To read more about how we reimplemented the model in JAX,
+check out our preprint
+on [bioarxiv](https://www.biorxiv.org/content/10.1101/2020.05.11.088344v1).
+
 
 ## License
 
 All the model weights are licensed under the terms of
 Creative Commons Attribution-NonCommercial 4.0 International License.
 To view a copy of this license,
-visit http://creativecommons.org/licenses/by-nc/4.0/
+visit [here](http://creativecommons.org/licenses/by-nc/4.0/)
 or send a letter to Creative Commons, PO Box 1866, Mountain View, CA 94042, USA.
 
 Otherwise the code in this repository
@@ -213,4 +61,6 @@ is licensed under the terms of [GPL v3][gpl3].
 [examples]: https://github.com/ElArkk/jax-unirep/blob/master/examples
 [stax]: https://jax.readthedocs.io/en/latest/jax.experimental.stax.html
 [staxex]: https://github.com/google/jax/tree/master/examples
+[docs]: https://elarkk.github.io/jax-unirep/
+[cont]: https://elarkk.github.io/jax-unirep/contributing/
 [it]: https://github.com/ElArkk/jax-unirep/issues
