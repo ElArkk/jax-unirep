@@ -539,11 +539,13 @@ def evotune(
 
         from jax_unirep.evotuning import init_fun
         from jax.random import PRNGKey
+
         _, params = init_fun(PRNGKey(0), input_shape=(-1, 10))
 
     or dumped weights:
 
         from jax_unirep.utils import load_params
+        
         params = load_params(folderpath="path/to/params/folder")
 
     This function is intended as an automagic way of identifying
@@ -553,37 +555,40 @@ def evotune(
     There is an example in the `examples/` directory
     that shows how to use it.
 
-    :param sequences: Sequences to evotune against.
-    :param params: Parameters to be passed into `mLSTM1900` and `Dense`.
+    ### Parameters
+
+    - `sequences`: Sequences to evotune against.
+    - `params`: Parameters to be passed into `mLSTM1900` and `Dense`.
         Optional; if None, will default to weights from paper,
         or you can pass in your own set of parameters,
         as long as they are stax-compatible.
-    :param proj_name: Name of the project,
+    - `proj_name`: Name of the project,
         used to name created output directory.
-    :param out_dom_seqs: Out-domain holdout set of sequences,
+    - `out_dom_seqs`: Out-domain holdout set of sequences,
         to check for loss on to prevent overfitting.
-    :param n_trials: The number of trials Optuna should attempt.
-    :param n_epochs_config: A dictionary of kwargs
+    - `n_trials: The number of trials Optuna should attempt.
+    - `n_epochs_config`: A dictionary of kwargs
         to `trial.suggest_discrete_uniform`,
         which are: `name`, `low`, `high`, `q`.
         This controls how many epochs to have Optuna test.
         See source code for default configuration,
         at the definition of `n_epochs_kwargs`.
-    :param learning_rate_config: A dictionary of kwargs
+    - `learning_rate_config`: A dictionary of kwargs
         to `trial.suggest_loguniform`,
         which are: `name`, `low`, `high`.
         This controls the learning rate of the model.
         See source code for default configuration,
         at the definition of `learning_rate_kwargs`.
-    :param n_splits: The number of folds of cross-validation to do.
-    :param epochs_per_print: The number of steps between each
+    - `n_splits`: The number of folds of cross-validation to do.
+    - `epochs_per_print`: The number of steps between each
         printing and dumping of weights in the final
         evotuning step using the optimized hyperparameters.
 
-    :returns:
-        - study - The optuna study object, containing information
+    ### Returns
+
+    - `study`: The optuna study object, containing information
         about all evotuning trials.
-        - evotuned_params - A dictionary of optimized weights
+    - `evotuned_params`: A dictionary of the final, optimized weights.
     """
     study = optuna.create_study()
 
