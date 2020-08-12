@@ -21,7 +21,8 @@ install:
   - conda info -a
 
   # Install Python and required packages.
-  - conda env create -f environment.yml
+  - conda install -c conda-forge mamba
+  - mamba env create -f environment.yml
   - source activate jax-unirep
   - python setup.py install
   - pip install codecov
@@ -45,6 +46,9 @@ before_deploy:
   # Diagnostic commands
   - ls docs/
 
+  # Build docs
+  - mkdocs build
+
 # This is an example to deploy to a branch through Travis.
 deploy:
   provider: pages:git
@@ -53,10 +57,10 @@ deploy:
   edge: true # opt in to dpl v2
   keep_history: false
   # We read the master branch
-  # on:
-  #   branch: master
+  on:
+    branch: master
   # Take the docs/ directory
-  local_dir: docs
+  local_dir: site
   # Publish to the gh-pages branch
   target_branch: gh-pages
   verbose: true

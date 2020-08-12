@@ -1,0 +1,65 @@
+site_name: "jax-unirep: A performant reimplementation of UniRep in JAX"
+theme:
+  name: 'material'
+  palette:
+    primary: 'teal'
+    accent: 'teal'
+    icon:
+      logo: 'biotech'
+  features:
+    - tabs
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Advanced Usage: advanced.md
+  - Contributing: contributing.md
+  - Development: development.md
+  - API Docs: api.md
+
+plugins:
+  - search:
+      separator: '[\s\-\.]+'
+      lang:
+        - en
+
+# Taken from here: https://squidfunk.github.io/mkdocs-material/extensions/codehilite/
+markdown_extensions:
+  - codehilite
+  - pymdownx.arithmatex
+  - pymdownx.details
+  - pymdownx.superfences
+  # - pymdownx.superfences:
+  #     custom_fences:
+  #       - name: mermaid
+  #         class: mermaid
+  #         format: !!python/name:pymdownx.superfences.fence_div_format
+  - markdown.extensions.footnotes
+  - mkautodoc
+
+extra_css:
+  - https://unpkg.com/mermaid@7.1.2/dist/mermaid.css
+  - css/custom.css
+
+extra_javascript:
+  - https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML
+  - https://unpkg.com/mermaid@7.1.2/dist/mermaid.min.js
+
+google_analytics:
+  - 'UA-12498603-3'
+  - 'auto'
+
+repo_name: 'ElArkk/jax-unirep'
+repo_url: 'https://github.com/ElArkk/jax-unirep'
+
+# Arkadij, customise these if you'd like to :)
+# extra:
+#   social:
+#     - icon: 'material/email'
+#       link: 'http://www.shortwhale.com/ericmjl'
+#     - icon: 'fontawesome/brands/github'
+#       link: 'https://github.com/ElArkk'
+#     - icon: 'fontawesome/brands/twitter'
+#       link: 'https://twitter.com/ElArkk'
+#     - icon: 'fontawesome/brands/linkedin'
+#       link: 'https://linkedin.com/in/ericmjl'

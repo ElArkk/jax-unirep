@@ -23,6 +23,10 @@ dependencies:
   - optuna>=1.1.0
   - scikit-learn>=0.22.1
   - pip
+  # mkdocs dependencies
+  - click
+  - regex
+  - typed-ast
 # Code style
   - black>=19.10b0
   - isort>=4.3.21
@@ -35,3 +39,6 @@ dependencies:
     - pandoc-eqnos
     - pandoc-tablenos
     - pandoc-secnos
+    - mkdocs
+    - mkdocs-material
+    - mkautodoc
