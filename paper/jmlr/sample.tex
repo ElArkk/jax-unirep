@@ -32,112 +32,289 @@
 
 % Short headings should be running head and authors last names
 
-\ShortHeadings{Learning with Mixtures of Trees}{Meil\u{a} and Jordan}
+\ShortHeadings{jax-unirep: A user-centered, performant reimplentation of UniRep in JAX}{Kummer, Jayapurna and Ma}
 \firstpageno{1}
 
 \begin{document}
 
-\title{Learning with Mixtures of Trees}
+\title{jax-unirep: Accelerated and User-Friendly Protein Machine Learning with JAX}
 
-\author{\name Marina Meil\u{a} \email mmp@stat.washington.edu \\
-       \addr Department of Statistics\\
-       University of Washington\\
-       Seattle, WA 98195-4322, USA
+\author{\name Arkadij Kummer \email arkadij.kummer@novartis.com \\
+       \addr Global Discovery Chemistry\\
+       Novartis Institutes for Biomedical Research\\
+       Basel, Switzerland
        \AND
-       \name Michael I.\ Jordan \email jordan@cs.berkeley.edu \\
-       \addr Division of Computer Science and Department of Statistics\\
+       \name Ivan Jayapurna \email ivanfj@berkeley.edu \\
+       \addr University of California\\
        University of California\\
-       Berkeley, CA 94720-1776, USA}
+       Berkeley, CA, USA
+       \AND
+       \name Eric J. Ma \email eric.ma@novartis.com \\
+       \addr NIBR Informatics\\
+       Novartis Institutes for Biomedical Research\\
+       Cambridge, MA, USA
+       }
 
 \editor{Kevin Murphy and Bernhard Sch{\"o}lkopf}
 
 \maketitle
 
 \begin{abstract}%   <- trailing '%' for backward compatibility of .sty file
-This paper describes the mixtures-of-trees model, a probabilistic 
-model for discrete multidimensional domains.  Mixtures-of-trees 
-generalize the probabilistic trees of \citet{chow:68}
-in a different and complementary direction to that of Bayesian networks.
-We present efficient algorithms for learning mixtures-of-trees 
-models in maximum likelihood and Bayesian frameworks. 
-We also discuss additional efficiencies that can be
-obtained when data are ``sparse,'' and we present data 
-structures and algorithms that exploit such sparseness.
-Experimental results demonstrate the performance of the 
-model for both density estimation and classification. 
-We also discuss the sense in which tree-based classifiers
-perform an implicit form of feature selection, and demonstrate
-a resulting insensitivity to irrelevant attributes.
+We provide a significantly upgraded version of UniRep, jax-unirep,
+a recurrent neural network model trained on 24 million protein sequences,
+with significant speed improvements,
+API enhancements,
+and reliability upgrades.
+jax-unirep is implemented in JAX,
+and takes advantage of JAX's programming model
+to provide up to 100X speedup over the original implementation.
+Surrounding the package are API enhancements
+that support the "machine learning in protein engineering" workflow,
+including proposing new sequences to sample,
+writing end-to-end differentiable models with JAX
+that involve UniRep as a component
+and weight tuning,
+all of which require minimal user intervention.
+jax-unirep has easily accessible documentation,
+extensive (>93\%) code test coverage,
+automatic testing and docs redeployment,
+readily copy-pasteable examples for specific workflow pieces.
 \end{abstract}
 
 \begin{keywords}
-  Bayesian Networks, Mixture Models, Chow-Liu Trees
+  Recurrent Neural Networks, Machine Learning Application, Protein Engineering
 \end{keywords}
 
 \section{Introduction}
 
-Probabilistic inference has become a core technology in AI,
-largely due to developments in graph-theoretic methods for the 
-representation and manipulation of complex probability 
-distributions~\citep{pearl:88}.  Whether in their guise as 
-directed graphs (Bayesian networks) or as undirected graphs (Markov 
-random fields), \emph{probabilistic graphical models} have a number 
-of virtues as representations of uncertainty and as inference engines.  
-Graphical models allow a separation between qualitative, structural
-aspects of uncertain knowledge and the quantitative, parametric aspects 
-of uncertainty...\\
+UniRep is a recurrent neural network,
+trained using self-supervision
+on 24 million protein sequences
+to predict the next amino acid in a sequence (\cite{alley2019unified}).
+Its most powerful model allows for embedding
+arbitrary length sequences in a 1900-long feature vector
+that can be used as the input to a downstream model
+for unsupervised clustering or supervised prediction of protein properties.
 
-{\noindent \em Remainder omitted in this sample. See http://www.jmlr.org/papers/ for full paper.}
+The original model (also referred to here as \verb|tf-unirep|)
+was implemented in TensorFlow 1.13 (\cite{abadi2016tensorflow}).
+While test-driving \verb|tf-unirep|, we observed two issues
+that hindered us from using it productively.
+The first is that the original implementation
+took an abnormally long amount of time to process multiple sequences,
+requiring on the order of dozens of seconds to process tens of sequences.
+The second was that its API was unwieldy,
+and could have been simplified for protein engineers
+who might not necessarily be programming-savvy.
 
+In the presented library, we present a significant set of upgrades
+over the original implementation.
+Firstly, we accelerated the model 100X over the original,
+and provide a benchmark comparison on the most common use case for UniRep.
+Secondly, we added a library of APIs
+that ease the usage of the model in protein engineering workflows,
+as well as neural network layer definitions
+that allow its inclusion in end-to-end differentiable models.
+Thirdly, we provide extensive software testing,
+much beyond what was provided in the original.
+Finally, we provide documentation for the model,
+including introductory and advanced workflows,
+and contribution instructions.
+
+\section{Speed Profiling of UniRep}
+
+\begin{figure*}[!tpb]
+    \centerline{\includegraphics[width=6in]{fig01.jpg}}
+    \caption{
+        A. Speed comparison between the original implementation (UniRep)
+        and our re-implementation (jax-unirep).
+        Both one and ten random sequences of length ten
+        were transformed by both implementations.
+        B. Comparison of the average hidden state between the implementations
+        when transforming the same sequence.
+        The inset shows a slice of length 50 out of the total 1900 dimensions.
+    }
+    \label{fig:01}
+\end{figure*}
+
+To investigate the performance of \verb|tf-unirep|,
+we used Python's \verb|cProfile| facility to identify speed bottlenecks.
+On the basis of this, we hypothesized that the cause of speed problems
+was graph compilation in TF1.x,
+and that we could obtain speedups by using
+a non-graph-compiled tensor library.
+
+There were three options available: TF2.x, PyTorch (\cite{pytorch})
+and JAX (\cite{jax2018github}).
+We chose JAX, because it provides automatic differentiation
+on top of the idiomatic NumPy API (\cite{oliphant2006guide}).
+Using a familiar API with additional performant primitive functions,
+e.g. \verb|lax.scan|, \verb|jit| and \verb|vmap|
+reduces the barrier to community contributions.
+
+
+\section{Architecture and Design}
+
+In this section, we detail the architecture and design
+of \verb|jax-unirep|.
+
+\subsection{Top-level API}
+
+\verb|jax-unirep|'s top-level API provides direct access
+to user-facing functions:
+
+\begin{itemize}
+	\item \verb|get_reps| for a continuous, 1900-long representation of a protein sequence,
+	\item \verb|fit| and \verb|evotune| for "one-touch" evolutionary tuning of the model,
+	\item \verb|sample_one_chain| to perform \it{in silico} scoring of newly suggested mutants.
+\end{itemize}
+
+These cover the majority of tasks in a computational protein engineer's workflow
+that will also involve a machine learning model for scoring of mutants.
+
+\subsection{Model Implementation}
+
+We treat the core model implementation as a function
+that accepts a dictionary of parameters and input data.
+That core function is in a sufficiently generic form (Python function)
+that it can be easily incorporated into neural network layers.
+As a demonstration, we wrote \verb|stax|-compatible layers,
+though in principle the layers can be made Keras- or PyTorch-compatible easily,
+thanks to the core functions being written in generic Python and NumPy.
+Because neural network layers are nothing more than math functions
+composed into higher-order functions,
+we believe this architecture facilitates maximal portability
+across deep learning APIs.
+
+\subsection{Acceleration with JAX}
+
+In the reimplementation of the RNN,
+we took advantage of JAX's \verb|lax.scan| function,
+which allowed us to write performant RNN loops.
+We also used \verb|vmap| for performant mapping of a function
+over leading tensor axes
+and \verb|jit| to leverage just-in-time compilation.
+
+\section{Significant Software Improvements}
+
+In this section,
+we detail the software improvements of jax-unirep over the original.
+
+\subsection{Speed enhancements}
+
+In a formal speed comparison, we found that \verb|jax-unirep|
+performed up to 100X faster on the task of computing protein representations
+(using the \verb|get_reps()| function) (Figure 1A\vphantom{\ref{fig:01}}).
+We did not test more than 10 sequences
+as the original unirep implementation would have taken
+an unreasonably long amount of time to run
+when using the comparable \verb|babbler.get_reps()| class method.
+Comparisons to manual preprocessing for multiple sequences were not done,
+as it would not correspond to what we believe to be
+the most natural usage pattern of a first-time user of the original model:
+simply looping over sequences rather than perform custom preprocessing.
+Speed comparisons were performed on a single core of a 24-core
+CentOS7 workstation running Intel Xeon processors at 3.6 GHz
+with at least 7 replicates.
+
+\subsection{Processing multiple protein sequences}
+
+Processing multiple sequences is one place where \verb|jax-unirep|
+is more user-friendly than \verb|tf-unirep|.
+In \verb|tf-unirep|, to process multiple sequences,
+an end-user would call \verb|babbler.get_reps(sequence)| in a loop,
+essentially repeatedly paying the TensorFlow graph compilation penalty.
+Alternatively, they would have to manually preprocess sequences
+into the tensorized embedding using custom code
+before passing them into the UniRep model,
+impeding reproducibility of model usage results,
+and making comparisons between users extremely difficult.
+
+With \verb|jax-unirep|,
+to obtain numeric representations of single and multiple protein sequences,
+end-users use the high-level function \verb|get_reps()|,
+which we have designed to accept single sequences and multiple sequences.
+In the case of multiple sequences, the sequences need not necessarily be
+of the same length.
+In each case, conversion from strings to tensors happens automatically,
+eliminating onne source of user error affecting modelling results,
+thereby guaranteeing consistency between model usage runs.
+
+\subsection{Evolutionary tuning}
+
+"Evotuning" is fine-tuning of the UniRep weights
+for a defined collection
+of evolutionarily-related protein sequences (\cite{alley2019unified}).
+Here, we provide a \verb|fit()| function to perform this task,
+in which most of the code necessary for preprocessing the sequences
+and performing gradient updates to the weights
+are abstracted away from the end-user.
+Additionally, automatic checkpointing
+into a user-specified directory is available,
+allowing users to select
+which "evotuned" weights along the optimization path
+they wish to use.
+
+\subsection{Software testing and documentation}
+
+We also provide software tests and documentation,
+two pieces sorely lacking in \verb|tf-unirep|.
+In particular, our test suite covers over 93\% of the codebase;
+not only are core tensor operations tested for shape correctness,
+we have also unit- and integration-tested
+the majority of user-facing functions.
+As such, end-users can use the model reproducibly with confidence.
+
+Additionally, documentation is provided on advanced workflow pieces
+that can be modularly incorporated
+into a computational protein engineer's workflow.
+Starter code are provided that can be copy and pasted easily,
+thus providing an easy-to-use starting point for end-users.
+
+Finally, we welcome community contributions
+from amongst the technically adept users.
+One of the authors (IJ) found an earlier version of the package
+and contributed by working out the evotuning API,
+as well as providing self-contained examples to test execution times
+on Google Colab's GPUs.
+As such, documentation is provided to help newcomer contributors
+get set up for contributing.
+
+\section{Reimplementation Verification}
+
+To check that \verb|jax-unirep| was implemented correctly,
+we computed numeric representations for single protein sequences
+using the original and the reimplementation.
+Figure 1B\vphantom{\ref{fig:01}} shows, for one example sequence,
+that the representations are identical;
+the difference in the traces were injected after computation
+merely to visually separate them.
+
+\section{Discussion and Future Work}
+
+Through our reimplementation of UniRep,
+we have effectively provided it with non-trivial upgrades over the original.
+Having verified its correctness in reimplementation,
+we have improved the API, added software tests,
+and sped up model forward pass speed by nearly 100X,
+all of which are significant upgrades over the original implementation.
+
+Significant effort was invested in accelerating, refactoring, documenting,
+and testing the \verb|babbler1900| model.
+This was the model with the largest "capacity" by number of parameters),
+and likely is the most powerful of the three described in the original paper.
+Future work includes implementing
+the \verb|babbler256| and \verb|babbler64| models.
+
+\acks{We would like to acknowledge the original UniRep authors
+for open sourcing their implementation,
+our colleagues in the Protein Engineering Platform at NIBR
+for providing a use case for the model,
+and our beta tester colleagues
+in the Chemical Biology and Therapeutics platform at NIBR.
+Finally, we would like to thank our users across the world
+who have contributed their time raising issues and helping us find bugs.}
 % Acknowledgements should go at the end, before appendices and references
-
-\acks{We would like to acknowledge support for this project
-from the National Science Foundation (NSF grant IIS-9988642)
-and the Multidisciplinary Research Program of the Department
-of Defense (MURI N00014-00-1-0637). }
-
-% Manual newpage inserted to improve layout of sample file - not
-% needed in general before appendices/bibliography.
-
-\newpage
-
-\appendix
-\section*{Appendix A.}
-\label{app:theorem}
-
-% Note: in this sample, the section number is hard-coded in. Following
-% proper LaTeX conventions, it should properly be coded as a reference:
-
-%In this appendix we prove the following theorem from
-%Section~\ref{sec:textree-generalization}:
-
-In this appendix we prove the following theorem from
-Section~6.2:
-
-\noindent
-{\bf Theorem} {\it Let $u,v,w$ be discrete variables such that $v, w$ do
-not co-occur with $u$ (i.e., $u\neq0\;\Rightarrow \;v=w=0$ in a given
-dataset $\dataset$). Let $N_{v0},N_{w0}$ be the number of data points for
-which $v=0, w=0$ respectively, and let $I_{uv},I_{uw}$ be the
-respective empirical mutual information values based on the sample
-$\dataset$. Then
-\[
-	N_{v0} \;>\; N_{w0}\;\;\Rightarrow\;\;I_{uv} \;\leq\;I_{uw}
-\]
-with equality only if $u$ is identically 0.} \hfill\BlackBox
-
-\noindent
-{\bf Proof}. We use the notation:
-\[
-P_v(i) \;=\;\frac{N_v^i}{N},\;\;\;i \neq 0;\;\;\;
-P_{v0}\;\equiv\;P_v(0)\; = \;1 - \sum_{i\neq 0}P_v(i).
-\]
-These values represent the (empirical) probabilities of $v$
-taking value $i\neq 0$ and 0 respectively.  Entropies will be denoted
-by $H$. We aim to show that $\fracpartial{I_{uv}}{P_{v0}} < 0$....\\
-
-{\noindent \em Remainder omitted in this sample. See http://www.jmlr.org/papers/ for full paper.}
-
 
 \vskip 0.2in
 \bibliography{sample}
