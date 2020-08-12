@@ -14,7 +14,6 @@ from jax_unirep.utils import proposal_valid_letters
 
 
 @given(st.data())
-# @settings(deadline=None, max_examples=100)
 def test_is_accepted(data):
     best = data.draw(
         st.floats(
@@ -38,6 +37,24 @@ def test_propose_string(seq):
         if l1 != l2:
             different_positions.append(i)
     assert len(different_positions) == 1
+
+
+def test_propose_empty_string():
+    """Check that ValueError is raised with an empty string."""
+    with pytest.raises(ValueError):
+        new_seq = propose("")
+
+
+def test_propose_wrong_pos_prob_shape():
+    """Check that ValueError is raised when pos_prob of wrong shape is added."""
+    with pytest.raises(ValueError):
+        new_seq = propose("ADSV", pos_prob=np.array([0.2] * 5))
+
+
+def test_propose_wrong_pwm_shape():
+    """Check that ValueError is raised when pwm of wrong shape is passed in."""
+    with pytest.raises(ValueError):
+        new_seq = propose("ASDV", pwm=np.array([0.2] * 5))
 
 
 @pytest.mark.parametrize(
