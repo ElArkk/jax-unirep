@@ -29,11 +29,15 @@ pip install git+https://github.com/ElArkk/jax-unirep.git
 
 ## More Details
 
+Documentation on how to use `jax-unirep` is available [here][docs].
+
+We highly encourage community contributions to this project! For more information, see the section in the docs on our [contributing][cont] guidelines.
+
+
 To read more about how we reimplemented the model in JAX,
 check out our preprint
 on [bioarxiv](https://www.biorxiv.org/content/10.1101/2020.05.11.088344v1).
 
-Docs are in the making, keep your eyes peeled!
 
 ## License
 
@@ -57,4 +61,6 @@ is licensed under the terms of [GPL v3][gpl3].
 [examples]: https://github.com/ElArkk/jax-unirep/blob/master/examples
 [stax]: https://jax.readthedocs.io/en/latest/jax.experimental.stax.html
 [staxex]: https://github.com/google/jax/tree/master/examples
+[docs]: https://elarkk.github.io/jax-unirep/
+[cont]: https://elarkk.github.io/jax-unirep/contributing/
 [it]: https://github.com/ElArkk/jax-unirep/issues
