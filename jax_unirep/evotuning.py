@@ -545,7 +545,7 @@ def evotune(
     or dumped weights:
 
         from jax_unirep.utils import load_params
-        
+
         params = load_params(folderpath="path/to/params/folder")
 
     This function is intended as an automagic way of identifying
