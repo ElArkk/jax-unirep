@@ -59,8 +59,7 @@ def avg_loss(
     batch_size: int = 50,
 ) -> float:
     """
-    Return average loss of a set of parameters,
-    on a set of sequences.
+    Return average loss of a set of parameters, on a set of sequences.
 
     :param xs: List of NumPy arrays
     :param ys: List of NumPy arrays
@@ -119,14 +118,21 @@ def evotuning_pairs(s: str) -> Tuple[np.ndarray, np.ndarray]:
     Given the same 1D sequence,
     the output is defined as a 2D array of shape (k-1, 25),
     where 25 is number of indices available to us
-    in ``aa_to_int``,
+    in `aa_to_int`,
     and k-1 corresponds to the first a.a. to the nth a.a.
     This is the second element in the returned tuple.
 
-    :param s: The protein sequence to featurize.
-    :returns: Two 2D NumPy arrays,
-        the first corresponding to the input to evotuning with shape (n_letters, 10),
-        and the second corresponding to the output amino acid to predict with shape (n_letters, 25).
+    ### Parameters
+
+    - `s`: The protein sequence to featurize.
+
+    ### Returns
+
+    Two 2D NumPy arrays,
+    the first corresponding to
+    the input to evotuning with shape (n_letters, 10),
+    and the second corresponding to
+    the output amino acid to predict with shape (n_letters, 25).
     """
     seq_int = aa_seq_to_int(s[:-1])
     next_letters_int = aa_seq_to_int(s[1:])
@@ -217,9 +223,9 @@ def fit(
     Length batching:
 
     - At each iteration,
-    of all sequence lengths present in ``sequences``,
+    of all sequence lengths present in `sequences`,
     one length gets chosen at random.
-    - Next, ``batch_size`` number of sequences of the chosen length
+    - Next, `batch_size` number of sequences of the chosen length
     get selected at random.
     - If there are less sequences of a given length than `batch_size`,
     all sequences of that length get chosen.
@@ -227,7 +233,7 @@ def fit(
     No padding of sequences occurs.
 
     To get batching of sequences by length done,
-    we call on ``batch_sequences`` from our ``utils.py`` module,
+    we call on `batch_sequences` from our `utils.py` module,
     which returns a list of sub-lists,
     in which each sub-list contains the indices
     in the original list of sequences
@@ -237,9 +243,9 @@ def fit(
 
     - Before training, all sequences get padded
     to be the same length as the longest sequence
-    in ``sequences``.
+    in `sequences`.
     - Then, at each iteration,
-    we randomly sample ``batch_size`` sequences
+    we randomly sample `batch_size` sequences
     and pass them through the model.
 
     The training loop does not adhere
@@ -248,37 +254,43 @@ def fit(
     exactly once per epoch.
     Instead sequences always get sampled at random,
     and one epoch approximately consists of
-    ``round(len(sequences) / batch_size)`` weight updates.
+    `round(len(sequences) / batch_size)` weight updates.
     Asymptotically, this should be approximately equiavlent
     to doing epoch passes over the dataset.
 
-    To learn more about the passing of ``params``,
-    have a look at the ``evotune`` function docstring.
+    To learn more about the passing of `params`,
+    have a look at the `evotune` function docstring.
 
     You can optionally dump parameters
-    and print weights every ``epochs_per_print`` epochs
+    and print weights every `epochs_per_print` epochs
     to monitor training progress.
     For ergonomics, training/holdout set losses are estimated
-    on a batch size the same as ``batch_size``,
+    on a batch size the same as `batch_size`,
     rather than calculated exactly on the entire set.
-    Set ``epochs_per_print`` to ``None`` to avoid parameter dumping.
+    Set `epochs_per_print` to `None` to avoid parameter dumping.
 
-    :param params: mLSTM1900 and Dense parameters.
-    :param sequences: List of sequences to evotune on.
-    :param n: The number of iterations to evotune on.
-    :param batch_method: One of "length" or "random".
-    :param batch_size: If random batching is used,
+    ### Parameters
+
+    - `params`: mLSTM1900 and Dense parameters.
+    - `sequences`: List of sequences to evotune on.
+    - `n`: The number of iterations to evotune on.
+    - `batch_method`: One of "length" or "random".
+    - `batch_size`: If random batching is used,
         number of sequences per batch.
         As a rule of thumb, batch size of 50 consumes
         about 5GB of GPU RAM.
-    :param step_size: The learning rate.
-    :param holdout_seqs: Holdout set, an optional input.
-    :param proj_name: The directory path for weights to be output to.
-    :param epochs_per_print: Number of epochs to progress before printing
+    - `step_size`: The learning rate.
+    - `holdout_seqs`: Holdout set, an optional input.
+    - `proj_name`: The directory path for weights to be output to.
+    - `epochs_per_print`: Number of epochs to progress before printing
         and dumping of weights.
         Must be greater than or equal to 1.
-    :param backend: Whether or not to use the GPU. Defaults to "cpu",
+    - `backend`: Whether or not to use the GPU. Defaults to "cpu",
         but can be set to "gpu" if desired.
+
+    ### Returns
+
+    Final optimized parameters.
     """
 
     @jit
@@ -429,16 +441,16 @@ def objective(
     :param sequences: A list of strings corresponding to the sequences
         that we want to evotune against.
     :param params: A dictionary of parameters.
-        Should have the keys ``mLSTM1900`` and ``dense``,
+        Should have the keys `mLSTM1900` and `dense`,
         which correspond to the mLSTM weights and dense layer weights
         (output dimensions = 25)
         to predict the next character in the sequence.
     :param n_epochs_config: A dictionary of kwargs
-        to ``trial.suggest_discrete_uniform``,
-        which are: ``name``, ``low``, ``high``, ``q``.
+        to `trial.suggest_discrete_uniform`,
+        which are: `name`, `low`, `high`, `q`.
         This controls how many epochs to have Optuna test.
         See source code for default configuration,
-        at the definition of ``n_epochs_kwargs``.
+        at the definition of `n_epochs_kwargs`.
     :param n_splits: The number of folds of cross-validation to do.
 
     :returns: Average of 5-fold test loss.
@@ -552,17 +564,17 @@ def evotune(
         to check for loss on to prevent overfitting.
     :param n_trials: The number of trials Optuna should attempt.
     :param n_epochs_config: A dictionary of kwargs
-        to ``trial.suggest_discrete_uniform``,
-        which are: ``name``, ``low``, ``high``, ``q``.
+        to `trial.suggest_discrete_uniform`,
+        which are: `name`, `low`, `high`, `q`.
         This controls how many epochs to have Optuna test.
         See source code for default configuration,
-        at the definition of ``n_epochs_kwargs``.
+        at the definition of `n_epochs_kwargs`.
     :param learning_rate_config: A dictionary of kwargs
-        to ``trial.suggest_loguniform``,
-        which are: ``name``, ``low``, ``high``.
+        to `trial.suggest_loguniform`,
+        which are: `name`, `low`, `high`.
         This controls the learning rate of the model.
         See source code for default configuration,
-        at the definition of ``learning_rate_kwargs``.
+        at the definition of `learning_rate_kwargs`.
     :param n_splits: The number of folds of cross-validation to do.
     :param epochs_per_print: The number of steps between each
         printing and dumping of weights in the final
@@ -573,7 +585,6 @@ def evotune(
         about all evotuning trials.
         - evotuned_params - A dictionary of optimized weights
     """
-
     study = optuna.create_study()
 
     objective_func = lambda x: objective(

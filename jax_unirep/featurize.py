@@ -84,12 +84,15 @@ def get_reps(
     seqs: Union[str, Iterable[str]], params: Optional[Dict] = None
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
-    This function generates representations of protein sequences using the
-    1900 hidden-unit mLSTM model with pre-trained weights from the UniRep
-    paper (https://github.com/churchlab/UniRep).
+    Get reps of proteins.
+
+    This function generates representations of protein sequences
+    using the 1900 hidden-unit mLSTM model with pre-trained weights
+    from the [UniRep paper](https://github.com/churchlab/UniRep).
 
     Each element of the output 3-tuple is a `np.array`
     of shape (n_input_sequences, 1900):
+
     - `h_avg`: Average hidden state of the mLSTM over the whole sequence.
     - `h_final`: Final hidden state of the mLSTM
     - `c_final`: Final cell state of the mLSTM
@@ -105,16 +108,21 @@ def get_reps(
     to force python to wait with returning the values
     until the computation is completed.
 
-    The keys of the ``params`` dictionary must be:
+    The keys of the `params` dictionary must be:
 
         b, gh, gmh, gmx, gx, wh, wmh, wmx, wx
 
-    :param seqs: A list of sequences as strings or a single string.
-    :param params: A dictionary of mLSTM1900 weights.
-    :returns: A 3-tuple of `np.array`s containing the reps.
-        Each `np.array` has shape (n_sequences, 1900).
-    """
+    ### Parameters
 
+    - `seqs`: A list of sequences as strings or a single string.
+    - `params`: A dictionary of mLSTM1900 weights.
+
+    ### Returns
+
+    A 3-tuple of `np.array`s containing the reps,
+    in the order `h_avg`, `h_final`, and `c_final`.
+    Each `np.array` has shape (n_sequences, 1900).
+    """
     if params is None:
         params = load_params_1900()
     # Check that params have correct keys and shapes
