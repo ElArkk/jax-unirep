@@ -5,12 +5,10 @@
 Ensure that your compute environment allows you to run JAX code.
 (A modern Linux or macOS with a GLIBC>=2.23 is probably necessary.)
 
-For now, `jax-unirep` is available by pip installing from source.
-
-Installation for the moment is done from GitHub:
+Then, install from PyPI:
 
 ```bash
-pip install git+https://github.com/ElArkk/jax-unirep.git
+pip install jax-unirep
 ```
 
 On the roadmap is support for installation from PyPI and conda-forge.
