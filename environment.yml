@@ -4,7 +4,7 @@ channels:
   - defaults
 dependencies:
   - python=3.7
-  - pandoc>=2.9.1.1
+  - bumpversion
   - conda>=4.8.2
   - coverage>=5.0.3
   - hypothesis>=5.2.0
@@ -22,6 +22,7 @@ dependencies:
   - ipykernel>=5.1.4
   - optuna>=1.1.0
   - scikit-learn>=0.22.1
+  - twine
   - pip
   # mkdocs dependencies
   - click
