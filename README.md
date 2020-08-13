@@ -19,9 +19,13 @@ with additional utility APIs that support protein engineering workflows.
 Ensure that your compute environment allows you to run JAX code.
 (A modern Linux or macOS with a GLIBC>=2.23 is probably necessary.)
 
-For now, `jax-unirep` is available by pip installing from source.
+Then, you can install from PyPI:
 
-Installation from GitHub:
+```bash
+pip install jax-unirep
+```
+
+If you want the latest and greatest, you can install directly from source:
 
 ```bash
 pip install git+https://github.com/ElArkk/jax-unirep.git
@@ -31,20 +35,19 @@ pip install git+https://github.com/ElArkk/jax-unirep.git
 
 Documentation on how to use `jax-unirep` is available [here][docs].
 
-We highly encourage community contributions to this project! For more information, see the section in the docs on our [contributing][cont] guidelines.
-
+We highly encourage community contributions to this project!
+For more information, see the section in the docs on our [contributing][cont] guidelines.
 
 To read more about how we reimplemented the model in JAX,
 check out our preprint
-on [bioarxiv](https://www.biorxiv.org/content/10.1101/2020.05.11.088344v1).
-
+on [bioarxiv]).
 
 ## License
 
 All the model weights are licensed under the terms of
 Creative Commons Attribution-NonCommercial 4.0 International License.
 To view a copy of this license,
-visit [here](http://creativecommons.org/licenses/by-nc/4.0/)
+visit [here][cc])
 or send a letter to Creative Commons, PO Box 1866, Mountain View, CA 94042, USA.
 
 Otherwise the code in this repository
@@ -64,3 +67,5 @@ is licensed under the terms of [GPL v3][gpl3].
 [docs]: https://elarkk.github.io/jax-unirep/
 [cont]: https://elarkk.github.io/jax-unirep/contributing/
 [it]: https://github.com/ElArkk/jax-unirep/issues
+[bioarxiv]: https://www.biorxiv.org/content/10.1101/2020.05.11.088344v1
+[cc]: http://creativecommons.org/licenses/by-nc/4.0/
