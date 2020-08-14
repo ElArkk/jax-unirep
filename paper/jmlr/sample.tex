@@ -121,42 +121,9 @@ Finally, we provide documentation for the model,
 including introductory and advanced workflows,
 and contribution instructions.
 
-\section{Speed Profiling of UniRep}
-
-\begin{figure*}[!tpb]
-    \centerline{\includegraphics[width=6in]{fig01.jpg}}
-    \caption{
-        A. Speed comparison between the original implementation (UniRep)
-        and our re-implementation (jax-unirep).
-        Both one and ten random sequences of length ten
-        were transformed by both implementations.
-        B. Comparison of the average hidden state between the implementations
-        when transforming the same sequence.
-        The inset shows a slice of length 50 out of the total 1900 dimensions.
-    }
-    \label{fig:01}
-\end{figure*}
-
-To investigate the performance of \verb|tf-unirep|,
-we used Python's \verb|cProfile| facility to identify speed bottlenecks.
-On the basis of this, we hypothesized that the cause of speed problems
-was graph compilation in TF1.x,
-and that we could obtain speedups by using
-a non-graph-compiled tensor library.
-
-There were three options available: TF2.x, PyTorch (\cite{pytorch})
-and JAX (\cite{jax2018github}).
-We chose JAX, because it provides automatic differentiation
-on top of the idiomatic NumPy API (\cite{oliphant2006guide}).
-Using a familiar API with additional performant primitive functions,
-e.g. \verb|lax.scan|, \verb|jit| and \verb|vmap|
-reduces the barrier to community contributions.
-
-
 \section{Architecture and Design}
 
-In this section, we detail the architecture and design
-of \verb|jax-unirep|.
+In this section, we detail the architecture and design of \verb|jax-unirep|.
 
 \subsection{Top-level API}
 
@@ -188,12 +155,39 @@ across deep learning APIs.
 
 \subsection{Acceleration with JAX}
 
-In the reimplementation of the RNN,
+\begin{figure*}[!tpb]
+    \centerline{\includegraphics[width=6in]{fig01.jpg}}
+    \caption{
+        A. Speed comparison between the original implementation (UniRep)
+        and our re-implementation (jax-unirep).
+        Both one and ten random sequences of length ten
+        were transformed by both implementations.
+        B. Comparison of the average hidden state between the implementations
+        when transforming the same sequence.
+        The inset shows a slice of length 50 out of the total 1900 dimensions.
+    }
+    \label{fig:01}
+\end{figure*}
+
+To investigate the performance of \verb|tf-unirep|,
+we used Python's \verb|cProfile| facility to identify speed bottlenecks.
+On the basis of this, we hypothesized that the cause of speed problems
+was graph compilation in TF1.x,
+and that we could obtain speedups by using
+a non-graph-compiled tensor library.
+
+There were three options available: TF2.x, PyTorch (\cite{pytorch})
+and JAX (\cite{jax2018github}).
+We chose JAX, because it provides automatic differentiation
+on top of the idiomatic NumPy API (\cite{oliphant2006guide}).
+In our reimplementation of the model,
 we took advantage of JAX's \verb|lax.scan| function,
 which allowed us to write performant RNN loops.
 We also used \verb|vmap| for performant mapping of a function
 over leading tensor axes
-and \verb|jit| to leverage just-in-time compilation.
+and \verb|jit| to leverage just-in-time compilation,
+thus achieving at least two order of magnitudes speed-up
+over the original implementation.
 
 \section{Significant Software Improvements}
 
@@ -217,18 +211,18 @@ Speed comparisons were performed on a single core of a 24-core
 CentOS7 workstation running Intel Xeon processors at 3.6 GHz
 with at least 7 replicates.
 
-\subsection{Processing multiple protein sequences}
+\subsection{Batched processing of protein features}
 
-Processing multiple sequences is one place where \verb|jax-unirep|
-is more user-friendly than \verb|tf-unirep|.
+Batching multiple sequences is one place where \verb|jax-unirep|
+is significantly more user-friendly than \verb|tf-unirep|.
 In \verb|tf-unirep|, to process multiple sequences,
 an end-user would call \verb|babbler.get_reps(sequence)| in a loop,
 essentially repeatedly paying the TensorFlow graph compilation penalty.
-Alternatively, they would have to manually preprocess sequences
+Alternatively, users would have to manually preprocess sequences
 into the tensorized embedding using custom code
-before passing them into the UniRep model,
-impeding reproducibility of model usage results,
-and making comparisons between users extremely difficult.
+before passing them into the UniRep model.
+This extra preprocessing step introduces room for user error,
+impeding reproducibility of model usage results.
 
 With \verb|jax-unirep|,
 to obtain numeric representations of single and multiple protein sequences,
@@ -236,8 +230,8 @@ end-users use the high-level function \verb|get_reps()|,
 which we have designed to accept single sequences and multiple sequences.
 In the case of multiple sequences, the sequences need not necessarily be
 of the same length.
-In each case, conversion from strings to tensors happens automatically,
-eliminating onne source of user error affecting modelling results,
+Internally, conversion from strings to tensors happens automatically,
+eliminating one source of user error affecting modelling results,
 thereby guaranteeing consistency between model usage runs.
 
 \subsection{Evolutionary tuning}
@@ -259,26 +253,25 @@ they wish to use.
 
 We also provide software tests and documentation,
 two pieces sorely lacking in \verb|tf-unirep|.
-In particular, our test suite covers over 93\% of the codebase;
+In particular, our test suite covers over 95\% of the codebase;
+in contrast to the original, which had no testing.
 not only are core tensor operations tested for shape correctness,
 we have also unit- and integration-tested
 the majority of user-facing functions.
 As such, end-users can use the model reproducibly with confidence.
 
 Additionally, documentation is provided on advanced workflow pieces
-that can be modularly incorporated
-into a computational protein engineer's workflow.
-Starter code are provided that can be copy and pasted easily,
-thus providing an easy-to-use starting point for end-users.
+that can be \it{modularly} incorporated
+into a computational protein engineer's workflow,
+with easily copy-pasteable code provided for end-user ease.
 
-Finally, we welcome community contributions
-from amongst the technically adept users.
+Finally, we welcome community contributions.
 One of the authors (IJ) found an earlier version of the package
 and contributed by working out the evotuning API,
 as well as providing self-contained examples to test execution times
 on Google Colab's GPUs.
-As such, documentation is provided to help newcomer contributors
-get set up for contributing.
+To facilitate this process,
+documentation is provided to help newcomer contributors.
 
 \section{Reimplementation Verification}
 
@@ -293,7 +286,8 @@ merely to visually separate them.
 \section{Discussion and Future Work}
 
 Through our reimplementation of UniRep,
-we have effectively provided it with non-trivial upgrades over the original.
+we have effectively provided it with non-trivial upgrades
+over the original.
 Having verified its correctness in reimplementation,
 we have improved the API, added software tests,
 and sped up model forward pass speed by nearly 100X,
@@ -302,9 +296,11 @@ all of which are significant upgrades over the original implementation.
 Significant effort was invested in accelerating, refactoring, documenting,
 and testing the \verb|babbler1900| model.
 This was the model with the largest "capacity" by number of parameters),
-and likely is the most powerful of the three described in the original paper.
+and is the most powerful of the three described in the original manuscript.
 Future work includes implementing
-the \verb|babbler256| and \verb|babbler64| models.
+the \verb|babbler256| and \verb|babbler64| models,
+as well as continuing to serve the protein machine learning community
+with workflow-oriented APIs.
 
 \acks{We would like to acknowledge the original UniRep authors
 for open sourcing their implementation,
