@@ -41,7 +41,7 @@ For more information, see the section in the docs on our [contributing][cont] gu
 
 To read more about how we reimplemented the model in JAX,
 check out our preprint
-on [bioarxiv]).
+on [bioarxiv].
 
 ## License
 
