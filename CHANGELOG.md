@@ -4,6 +4,7 @@ In the changelog, @ElArkk and @ericmjl would like to acknowledge contributors wh
 
 <Please add your contribution to the top>
 
+- 29 August 2020: Fixed setup.py so that PEP 517 calls such as `pip install .` work, by @konstin.
 - 20 April 2020: Code fixes for major bug with negative and NaN losses due to Softmax issue by @ivanjayapurna,
 - 20 April 2020: (Also by @ivanjayapurna) Overhauled evotuning.py with major changes including
     1. option to supply an out-domain holdout set and print params as training progresses,
