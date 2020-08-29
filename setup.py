@@ -39,5 +39,5 @@ setup(
         "Topic :: Scientific/Engineering :: Bio-Informatics",
         "Topic :: Scientific/Engineering :: Chemistry",
     ],
-    python_requires=">=3.7",
+    python_requires=">=3.6",
 )
