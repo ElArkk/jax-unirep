@@ -1,8 +1,10 @@
-from setuptools import find_packages, setup
-from jax_unirep import __version__
+from setuptools import setup
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
+
+with open("jax_unirep/version.py") as fp:
+    version = fp.read().split('"')[1]
 
 setup(
     name="jax_unirep",
@@ -12,7 +14,7 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/ElArkk/jax-unirep",
-    version=__version__,
+    version=version,
     packages=["jax_unirep"],
     package_data={"jax_unirep": ["weights/1900_weights/uniref50/*.npy"],},
     install_requires=[
@@ -37,5 +39,5 @@ setup(
         "Topic :: Scientific/Engineering :: Bio-Informatics",
         "Topic :: Scientific/Engineering :: Chemistry",
     ],
-    python_requires=">=3.7",
+    python_requires=">=3.6",
 )

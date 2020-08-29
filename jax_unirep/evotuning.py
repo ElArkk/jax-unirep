@@ -29,18 +29,22 @@ from .utils import (
     validate_mLSTM1900_params,
 )
 
-# setup logger
 logger = logging.getLogger("evotuning")
-logger.setLevel(logging.INFO)
-fh = logging.FileHandler("evotuning.log")
-fh.setLevel(logging.INFO)
-formatter = logging.Formatter("%(asctime)s :: %(levelname)s :: %(message)s")
-fh.setFormatter(formatter)
-logger.addHandler(fh)
 
 # setup model
 model_layers = (mLSTM1900(), mLSTM1900_HiddenStates(), Dense(25), Softmax)
 init_fun, predict = serial(*model_layers)
+
+
+def setup_evotuning_log():
+    logger.setLevel(logging.INFO)
+    fh = logging.FileHandler("evotuning.log")
+    fh.setLevel(logging.INFO)
+    formatter = logging.Formatter(
+        "%(asctime)s :: %(levelname)s :: %(message)s"
+    )
+    fh.setFormatter(formatter)
+    logger.addHandler(fh)
 
 
 def evotune_loss(params, inputs, targets):
@@ -292,6 +296,8 @@ def fit(
 
     Final optimized parameters.
     """
+
+    setup_evotuning_log()
 
     @jit
     def step(i, x, y, state):
@@ -545,7 +551,7 @@ def evotune(
     or dumped weights:
 
         from jax_unirep.utils import load_params
-        
+
         params = load_params(folderpath="path/to/params/folder")
 
     This function is intended as an automagic way of identifying
