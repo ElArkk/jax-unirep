@@ -17,14 +17,16 @@
 %
 % Example of using the package with custom options:
 %
-% \usepackage[abbrvbib, preprint]{jmlr2e}
+% \usepackage[abbrvbib]{jmlr2e}
 
 \usepackage{jmlr2e}
 
 % Definitions of handy macros can go here
 
 \newcommand{\dataset}{{\cal D}}
-\newcommand{\fracpartial}[2]{\frac{\partial #1}{\partial  #2}}
+\newcommand{\fracpartial}[2]{
+    \frac{\partial #1}{\partial  #2}
+}
 
 % Heading arguments are {volume}{year}{pages}{date submitted}{date published}{paper id}{author-full-names}
 
@@ -39,22 +41,23 @@
 
 \title{jax-unirep: Accelerated and User-Friendly Protein Machine Learning with JAX}
 
-\author{\name Arkadij Kummer \email arkadij.kummer@novartis.com \\
-       \addr Global Discovery Chemistry\\
-       Novartis Institutes for Biomedical Research\\
-       Basel, Switzerland
-       \AND
-       \name Ivan Jayapurna \email ivanfj@berkeley.edu \\
-       \addr University of California\\
-       Berkeley, CA, USA
-       \AND
-       \name Eric J. Ma \email eric.ma@novartis.com \\
-       \addr NIBR Informatics\\
-       Novartis Institutes for Biomedical Research\\
-       Cambridge, MA, USA
-       }
+\author{
+    \name Arkadij Kummer \email arkadij.kummer@novartis.com \\
+    \addr Global Discovery Chemistry\\
+    Novartis Institutes for Biomedical Research\\
+    Basel, Switzerland
+    \AND
+    \name Ivan Jayapurna \email ivanfj@berkeley.edu \\
+    \addr University of California\\
+    Berkeley, CA, USA
+    \AND
+    \name Eric J. Ma \email eric.ma@novartis.com \\
+    \addr NIBR Informatics\\
+    Novartis Institutes for Biomedical Research\\
+    Cambridge, MA, USA
+}
 
-\editor{Kevin Murphy and Bernhard Sch{\"o}lkopf}
+\editor{}
 
 \maketitle
 
@@ -74,7 +77,7 @@ writing end-to-end differentiable models that involve UniRep as a component,
 and weight tuning,
 all of which require minimal user intervention.
 \verb|jax-unirep| has easily accessible documentation,
-extensive (>96\%) code test coverage,
+extensive (96\%) code test coverage,
 automatic testing and docs redeployment,
 readily copy-pasteable examples for workflow pieces,
 and has enjoyed growing community adoption.
@@ -151,7 +154,7 @@ across deep learning APIs.
 
 \subsection{Acceleration with JAX}
 
-\begin{figure*}[!tpb]
+\begin{figure}[!tpb]
     \centerline{\includegraphics[width=6in]{fig01.jpg}}
     \caption{
         A. Speed comparison between the original implementation (UniRep)
@@ -162,8 +165,8 @@ across deep learning APIs.
         when transforming the same sequence.
         The inset shows a slice of length 50 out of the total 1900 dimensions.
     }
-    \label{fig:01}
-\end{figure*}
+    \label{fig:fig01}
+\end{figure}
 
 To investigate the performance of \verb|tf-unirep|,
 we used Python's \verb|cProfile| facility to identify speed bottlenecks.
@@ -191,7 +194,7 @@ over the original implementation.
 
 In a formal speed comparison, we found that \verb|jax-unirep|
 performed up to 100X faster on the task of computing protein representations
-(using the \verb|get_reps()| function) (Figure 1A\vphantom{\ref{fig:01}}).
+(using the \verb|get_reps()| function) (Figure 1A\vphantom{\ref{fig:fig01}}).
 We did not test more than 10 sequences
 as the original unirep implementation would have taken
 an unreasonably long amount of time to run
@@ -257,7 +260,7 @@ documentation is provided to help newcomer contributors.
 To check that \verb|jax-unirep| was implemented correctly,
 we computed numeric representations for single protein sequences
 using the original and the reimplementation.
-Figure 1B\vphantom{\ref{fig:01}} shows, for one example sequence,
+Figure 1B\vphantom{\ref{fig:fig01}} shows, for one example sequence,
 that the representations are identical;
 the difference in the traces were injected after computation
 merely to visually separate them.
@@ -291,6 +294,7 @@ our colleagues at NIBR for beta-testing the package,
 and our users around the world who have helped us find bugs.}
 
 \vskip 0.2in
-\bibliography{sample}
-
 \end{document}
+
+\bibliographystyle{abbrv}
+\bibliography{references}
