@@ -46,7 +46,6 @@
        \AND
        \name Ivan Jayapurna \email ivanfj@berkeley.edu \\
        \addr University of California\\
-       University of California\\
        Berkeley, CA, USA
        \AND
        \name Eric J. Ma \email eric.ma@novartis.com \\
@@ -71,14 +70,14 @@ to provide up to 100X speedup over the original implementation.
 Surrounding the package are API enhancements
 that support the "machine learning in protein engineering" workflow,
 including proposing new sequences to sample,
-writing end-to-end differentiable models with JAX
-that involve UniRep as a component
+writing end-to-end differentiable models that involve UniRep as a component,
 and weight tuning,
 all of which require minimal user intervention.
-jax-unirep has easily accessible documentation,
-extensive (>93\%) code test coverage,
+\verb|jax-unirep| has easily accessible documentation,
+extensive (>96\%) code test coverage,
 automatic testing and docs redeployment,
-readily copy-pasteable examples for specific workflow pieces.
+readily copy-pasteable examples for workflow pieces,
+and has enjoyed growing community adoption.
 \end{abstract}
 
 \begin{keywords}
@@ -116,26 +115,23 @@ that ease the usage of the model in protein engineering workflows,
 as well as neural network layer definitions
 that allow its inclusion in end-to-end differentiable models.
 Thirdly, we provide extensive software testing,
-much beyond what was provided in the original.
+much beyond what was provided in the original,
+to facilitate further development work
+and build user confidence in the package.
 Finally, we provide documentation for the model,
 including introductory and advanced workflows,
 and contribution instructions.
 
 \section{Architecture and Design}
 
-In this section, we detail the architecture and design of \verb|jax-unirep|.
-
 \subsection{Top-level API}
 
 \verb|jax-unirep|'s top-level API provides direct access
 to user-facing functions:
-
-\begin{itemize}
-	\item \verb|get_reps| for a continuous, 1900-long representation of a protein sequence,
-	\item \verb|fit| and \verb|evotune| for "one-touch" evolutionary tuning of the model,
-	\item \verb|sample_one_chain| to perform \it{in silico} scoring of newly suggested mutants.
-\end{itemize}
-
+(1) \verb|get_reps| for a continuous, 1900-long vector representation of a protein sequence,
+(2) \verb|fit| and \verb|evotune| for "one-touch" evolutionary tuning of the model,
+and
+(3) \verb|sample_one_chain| to perform \textit{in silico} scoring of newly suggested mutants.
 These cover the majority of tasks in a computational protein engineer's workflow
 that will also involve a machine learning model for scoring of mutants.
 
@@ -179,20 +175,17 @@ a non-graph-compiled tensor library.
 There were three options available: TF2.x, PyTorch (\cite{pytorch})
 and JAX (\cite{jax2018github}).
 We chose JAX, because it provides automatic differentiation
-on top of the idiomatic NumPy API (\cite{oliphant2006guide}).
+on top of the idiomatic NumPy API (\cite{oliphant2006guide}),
 In our reimplementation of the model,
 we took advantage of JAX's \verb|lax.scan| function,
 which allowed us to write performant RNN loops.
 We also used \verb|vmap| for performant mapping of a function
 over leading tensor axes
-and \verb|jit| to leverage just-in-time compilation,
-thus achieving at least two order of magnitudes speed-up
+and \verb|jit| to leverage just-in-time compilation.
+Together, we achieved at least two order of magnitudes speed-up
 over the original implementation.
 
 \section{Significant Software Improvements}
-
-In this section,
-we detail the software improvements of jax-unirep over the original.
 
 \subsection{Speed enhancements}
 
@@ -203,10 +196,6 @@ We did not test more than 10 sequences
 as the original unirep implementation would have taken
 an unreasonably long amount of time to run
 when using the comparable \verb|babbler.get_reps()| class method.
-Comparisons to manual preprocessing for multiple sequences were not done,
-as it would not correspond to what we believe to be
-the most natural usage pattern of a first-time user of the original model:
-simply looping over sequences rather than perform custom preprocessing.
 Speed comparisons were performed on a single core of a 24-core
 CentOS7 workstation running Intel Xeon processors at 3.6 GHz
 with at least 7 replicates.
@@ -228,8 +217,7 @@ With \verb|jax-unirep|,
 to obtain numeric representations of single and multiple protein sequences,
 end-users use the high-level function \verb|get_reps()|,
 which we have designed to accept single sequences and multiple sequences.
-In the case of multiple sequences, the sequences need not necessarily be
-of the same length.
+Sequences need not necessarily be of the same length.
 Internally, conversion from strings to tensors happens automatically,
 eliminating one source of user error affecting modelling results,
 thereby guaranteeing consistency between model usage runs.
@@ -238,7 +226,8 @@ thereby guaranteeing consistency between model usage runs.
 
 "Evotuning" is fine-tuning of the UniRep weights
 for a defined collection
-of evolutionarily-related protein sequences (\cite{alley2019unified}).
+of evolutionarily-related protein sequences (\cite{alley2019unified})
+that the end-user has curated.
 Here, we provide a \verb|fit()| function to perform this task,
 in which most of the code necessary for preprocessing the sequences
 and performing gradient updates to the weights
@@ -252,24 +241,14 @@ they wish to use.
 \subsection{Software testing and documentation}
 
 We also provide software tests and documentation,
-two pieces sorely lacking in \verb|tf-unirep|.
-In particular, our test suite covers over 95\% of the codebase;
+two pieces that were lacking in the original \verb|tf-unirep|.
+In particular, our test suite covers over 96\% of the codebase;
 in contrast to the original, which had no testing.
-not only are core tensor operations tested for shape correctness,
-we have also unit- and integration-tested
-the majority of user-facing functions.
-As such, end-users can use the model reproducibly with confidence.
-
 Additionally, documentation is provided on advanced workflow pieces
-that can be \it{modularly} incorporated
+that can be \textit{modularly} incorporated
 into a computational protein engineer's workflow,
-with easily copy-pasteable code provided for end-user ease.
-
+with reference code in the docs provided.
 Finally, we welcome community contributions.
-One of the authors (IJ) found an earlier version of the package
-and contributed by working out the evotuning API,
-as well as providing self-contained examples to test execution times
-on Google Colab's GPUs.
 To facilitate this process,
 documentation is provided to help newcomer contributors.
 
@@ -292,6 +271,10 @@ Having verified its correctness in reimplementation,
 we have improved the API, added software tests,
 and sped up model forward pass speed by nearly 100X,
 all of which are significant upgrades over the original implementation.
+Because of the API efforts,
+users have commented on our issue tracker and in pull requests
+that it is a joy and delight to use,
+and it is being incorporated into the \verb|bio-embeddings| package.
 
 Significant effort was invested in accelerating, refactoring, documenting,
 and testing the \verb|babbler1900| model.
@@ -304,13 +287,8 @@ with workflow-oriented APIs.
 
 \acks{We would like to acknowledge the original UniRep authors
 for open sourcing their implementation,
-our colleagues in the Protein Engineering Platform at NIBR
-for providing a use case for the model,
-and our beta tester colleagues
-in the Chemical Biology and Therapeutics platform at NIBR.
-Finally, we would like to thank our users across the world
-who have contributed their time raising issues and helping us find bugs.}
-% Acknowledgements should go at the end, before appendices and references
+our colleagues at NIBR for beta-testing the package,
+and our users around the world who have helped us find bugs.}
 
 \vskip 0.2in
 \bibliography{sample}
