@@ -51,7 +51,7 @@ before_deploy:
 
 # This is an example to deploy to a branch through Travis.
 deploy:
-  provider: pages:git
+  provider: pages
   cleanup: false
   deploy_key: $GITHUB_TOKEN
   edge: true # opt in to dpl v2
