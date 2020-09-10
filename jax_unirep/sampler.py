@@ -5,9 +5,9 @@ from typing import Callable, Dict
 import numpy as np
 import numpy.random as npr
 from multipledispatch import dispatch
+from tqdm.autonotebook import tqdm
 
 from jax_unirep.utils import proposal_valid_letters
-from tqdm.autonotebook import tqdm
 
 letters_sorted = sorted(proposal_valid_letters)
 

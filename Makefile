@@ -3,13 +3,13 @@
 
 format:
 	@printf "Checking code style with black...\n"
-	isort -rc -y .
-	black -l 79 .
+	isort .
+	black .
 	@printf "\033[1;34mBlack passes!\033[0m\n\n"
 
 style:
 	@printf "Checking code style...\n"
-	black -l 79 . --check
+	black . --check
 	@printf "\033[1;34mPylint passes!\033[0m\n\n"
 
 test:  # Test code using pytest.

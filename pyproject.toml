@@ -36,3 +36,10 @@ exclude = '''
 [build-system]
 requires = ["setuptools>=41.0", "setuptools-scm", "wheel"]
 build-backend = "setuptools.build_meta"
+
+
+[tool.isort]
+src_paths = ["jax_unirep", "test"]
+float_to_top = true
+profile = "black"
+line_length = 79

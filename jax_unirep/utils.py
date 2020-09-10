@@ -9,6 +9,9 @@ from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple
 import jax.numpy as np
 import numpy as onp
 import pkg_resources
+from jax.nn.initializers import glorot_normal
+from jax.random import PRNGKey
+from jax.tree_util import tree_map
 from tqdm.autonotebook import tqdm
 
 from .errors import SequenceLengthsError
@@ -395,13 +398,6 @@ def letter_seq(arr: np.array) -> str:
     for letter in arr:
         sequence += arr_to_letter(np.round(letter))
     return sequence.strip("start").strip("stop")
-
-
-from jax.random import PRNGKey, split
-from jax.nn.initializers import glorot_normal
-
-
-from jax.tree_util import tree_map
 
 
 def random_like(param):
