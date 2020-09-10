@@ -17,6 +17,7 @@ There are two functions with differing levels of control available.
 
 The `evotune` function uses `optuna` under the hood
 to automatically find:
+
 1. the optimal number of epochs to train for, and
 2. the optimal learning rate,
 
@@ -94,7 +95,6 @@ evotuned_params = fit(
 
 dump_params(evotuned_params, PROJECT_NAME)
 print("Evotuning done! Find output weights in", PROJECT_NAME)
-
 ```
 
 If you want to pass a set of mLSTM and dense weights
