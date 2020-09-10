@@ -11,6 +11,7 @@ from jax_unirep.utils import (
     load_embedding_1900,
     load_params,
     load_params_1900,
+    load_random_evotuning_params,
     right_pad,
     validate_mLSTM1900_params,
 )
@@ -116,3 +117,8 @@ def test_dump_params():
 )
 def test_right_pad(seqs, max_len, expected):
     assert right_pad(seqs, max_len) == expected
+
+
+def test_load_random_evotuning_params():
+    params = load_random_evotuning_params()
+    validate_params(params)
