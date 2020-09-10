@@ -61,6 +61,8 @@ to get kickstarted.
 
 ```python
 from jax_unirep.utils import load_random_evotuning_params
+from random import shuffle
+from jax_unirep.evotuning import fit, dump_params
 # Prepare your sequences as a list of strings,
 # using whatever parsers you need.
 # This is a pre-requisite step that will likely be project-specific.
