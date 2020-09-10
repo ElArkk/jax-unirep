@@ -82,7 +82,7 @@ params = load_random_evotuning_params()
 
 # Now to evotuning
 evotuned_params = fit(
-    params=params,
+    params=params,  # you can also set this to None if you want to use the published weights as the starting point.
     sequences=sequences,
     n_epochs=N_EPOCHS,
     step_size=LEARN_RATE,
