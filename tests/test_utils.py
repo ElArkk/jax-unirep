@@ -52,7 +52,7 @@ def test_batch_sequences(seqs, expected):
 
 def test_load_dense_1900():
     """
-    Make sure that parameters to be passed to 
+    Make sure that parameters to be passed to
     the dense layer of the evotuning stax model have the right shapes.
     """
     dense = load_dense_1900()
@@ -62,7 +62,7 @@ def test_load_dense_1900():
 
 def test_load_params_1900():
     """
-    Make sure that parameters to be passed to 
+    Make sure that parameters to be passed to
     the mlstm1900 have the right shapes.
     """
     params = load_params_1900()
@@ -71,7 +71,7 @@ def test_load_params_1900():
 
 def test_load_embedding_1900():
     """
-    Make sure that the inital 10 dimensional aa embedding vectors 
+    Make sure that the inital 10 dimensional aa embedding vectors
     have the right shapes.
     """
     emb = load_embedding_1900()

@@ -1,4 +1,3 @@
-"""jax-unirep utils."""
 import os
 from collections import Counter
 from functools import lru_cache
@@ -15,6 +14,9 @@ from jax.tree_util import tree_map
 from tqdm.autonotebook import tqdm
 
 from .errors import SequenceLengthsError
+
+"""jax-unirep utils."""
+
 
 aa_to_int = {
     "-": 0,
@@ -65,7 +67,9 @@ def get_weights_dir(folderpath: Optional[str] = None):
 
 
 def dump_params(
-    params: Dict, dir_path: Optional[str] = "temp", step: Optional[int] = 0,
+    params: Dict,
+    dir_path: Optional[str] = "temp",
+    step: Optional[int] = 0,
 ):
     """
     Dumps the current params of model being trained to a .npy file.
@@ -116,7 +120,8 @@ def dump_params(
         # Save file
         fpath = iteration_path / fname
         onp.save(
-            fpath, onp.array(val),
+            fpath,
+            onp.array(val),
         )
     # iterate through and save dense params as npy files.
     dense_names = [
@@ -131,7 +136,8 @@ def dump_params(
         # Save file
         fpath = iteration_path / dense_names[i]
         onp.save(
-            fpath, onp.array(val),
+            fpath,
+            onp.array(val),
         )
 
 

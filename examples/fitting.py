@@ -1,4 +1,3 @@
-"""Fitting on a bunch of sequences."""
 import logging
 from random import shuffle
 
@@ -7,6 +6,9 @@ from pyprojroot import here
 
 from jax_unirep import fit
 from jax_unirep.utils import dump_params, load_random_evotuning_params
+
+"""Fitting on a bunch of sequences."""
+
 
 seqs = []
 with open(here() / "examples/enzymes.fa", "r+") as f:
