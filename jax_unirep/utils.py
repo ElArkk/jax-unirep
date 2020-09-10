@@ -395,3 +395,23 @@ def letter_seq(arr: np.array) -> str:
     for letter in arr:
         sequence += arr_to_letter(np.round(letter))
     return sequence.strip("start").strip("stop")
+
+
+from jax.random import PRNGKey, split
+from jax.nn.initializers import glorot_normal
+
+
+from jax.tree_util import tree_map
+
+
+def random_like(param):
+    key = PRNGKey(39)
+    return glorot_normal(key, param.shape)
+
+
+def load_random_evotuning_params():
+    params_1900 = load_params_1900()
+    random_params_1900 = tree_map(random_like, params_1900)
+    params_dense = load_dense_1900()
+    random_dense_1900 = tree_map(random_like, params_dense)
+    return (params_1900, (), params_dense, ())
