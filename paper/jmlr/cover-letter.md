@@ -2,8 +2,14 @@ Dear Editors,
 
 We submit our manuscript titled,
 "jax-unirep: Accelerated and User-Friendly Protein Machine Learning with JAX"
-for consideration under the Machine Learning Open Source Software section
-of JMLR.
+for consideration under
+the Machine Learning Open Source Software section of JMLR.
+This is a performant and user-friendly reimplementation of the UniRep model
+originally published by the Church Lab at Harvard Medical School.
+In our work, we have made significant performance and usability improvements to the model.
+Those improvements are documented in a [to-be-released branch][docs].
+
+[docs]: https://github.com/ElArkk/jax-unirep/blob/docs-update/docs/improvements.md
 
 In particular, we are submitting `jax-unirep` version 1.0.1.
 Our reimplementation is licensed under the terms of GPL-3.0;
