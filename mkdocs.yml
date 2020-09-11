@@ -12,6 +12,7 @@ theme:
 nav:
   - Home: index.md
   - Getting Started: getting-started.md
+  - Improvements: improvements.md
   - Advanced Usage: advanced.md
   - Contributing: contributing.md
   - Development: development.md
