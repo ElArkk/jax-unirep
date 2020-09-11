@@ -11,6 +11,9 @@ we were able to accelerate the UniRep model over 100X over the original.
 Secondly, robustness:
 we have extensively unit tested the model code,
 so that others may use it with confidence.
+The code has 96% test coverage,
+and we leverage Travis CI for continuous integration,
+such that every change is tested extensively.
 
 Thirdly, user-friendly APIs:
 Most of our expected user base should be not-so-technical protein engineers.
