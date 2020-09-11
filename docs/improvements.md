@@ -7,6 +7,9 @@ Primarily, we have made improvements in three areas.
 Firstly, speed through reimplementation:
 By leveraging modern automatic differentiation packages, specifically JAX,
 we were able to accelerate the UniRep model over 100X over the original.
+Our preprint [on bioarxiv][preprint] provides additional detail on our claim.
+
+[preprint]: https://www.biorxiv.org/content/10.1101/2020.05.11.088344v1
 
 Secondly, robustness:
 we have extensively unit tested the model code,
