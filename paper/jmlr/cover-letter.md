@@ -17,7 +17,8 @@ the weights provided by the original authors
 are licensed under the Creative Commons Attribution-NonCommercial 4.0 license.
 
 Since announcing the pre-1.x version of the model earlier this year,
-we have accepted contributions from contributors who are not part of Novartis
+we have accepted contributions from contributors who are not part of
+the Novartis group of comapnies
 (which employs the two main developers of `jax-unirep`).
 Additionally, it has been starred by 35 users, 7 forks exist,
 and 7 unique users from academic institutes and companies
@@ -35,7 +36,8 @@ who would be qualified to review the package from two different perspectives:
 
 We believe a subject domain-specific machine learning package
 would be a valuable addition to the MLOSS section of JMLR,
-as real-world impact is generated at the front-lines of domain application.
+as real-world impact is generated at the front-lines of domain application,
+which in our case is protein engineering.
 Consideration for review would also be in-line with the broader JMLR mission
 of honoring the effort of turning a method
 into a highly usable piece of software.
