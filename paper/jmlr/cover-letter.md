@@ -25,7 +25,7 @@ For reviews, we would like to suggest the following individuals,
 who would be qualified to review the package from two different perspectives:
 
 1. Matthew Johnson (mattjj@google.com): He is one of the lead developers of JAX.
-2. Simone Fulle (Novo Nordisk): She is a fellow protein engineer and modeller.
+2. Simone Fulle (snfu@novonordisk.com): She is a fellow protein engineer and modeller.
 
 We believe a subject domain-specific machine learning package
 would be a valuable addition to the MLOSS section of JMLR,
