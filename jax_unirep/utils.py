@@ -1,4 +1,3 @@
-"""jax-unirep utils."""
 import os
 from collections import Counter
 from functools import lru_cache
@@ -9,9 +8,15 @@ from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple
 import jax.numpy as np
 import numpy as onp
 import pkg_resources
+from jax.nn.initializers import glorot_normal
+from jax.random import PRNGKey
+from jax.tree_util import tree_map
 from tqdm.autonotebook import tqdm
 
 from .errors import SequenceLengthsError
+
+"""jax-unirep utils."""
+
 
 aa_to_int = {
     "-": 0,
@@ -62,7 +67,9 @@ def get_weights_dir(folderpath: Optional[str] = None):
 
 
 def dump_params(
-    params: Dict, dir_path: Optional[str] = "temp", step: Optional[int] = 0,
+    params: Dict,
+    dir_path: Optional[str] = "temp",
+    step: Optional[int] = 0,
 ):
     """
     Dumps the current params of model being trained to a .npy file.
@@ -113,7 +120,8 @@ def dump_params(
         # Save file
         fpath = iteration_path / fname
         onp.save(
-            fpath, onp.array(val),
+            fpath,
+            onp.array(val),
         )
     # iterate through and save dense params as npy files.
     dense_names = [
@@ -128,7 +136,8 @@ def dump_params(
         # Save file
         fpath = iteration_path / dense_names[i]
         onp.save(
-            fpath, onp.array(val),
+            fpath,
+            onp.array(val),
         )
 
 
@@ -395,3 +404,16 @@ def letter_seq(arr: np.array) -> str:
     for letter in arr:
         sequence += arr_to_letter(np.round(letter))
     return sequence.strip("start").strip("stop")
+
+
+def random_like(param):
+    key = PRNGKey(39)
+    return glorot_normal(key, param.shape)
+
+
+def load_random_evotuning_params():
+    params_1900 = load_params_1900()
+    random_params_1900 = tree_map(random_like, params_1900)
+    params_dense = load_dense_1900()
+    random_dense_1900 = tree_map(random_like, params_dense)
+    return (params_1900, (), params_dense, ())

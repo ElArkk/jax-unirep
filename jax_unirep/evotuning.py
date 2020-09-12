@@ -1,4 +1,3 @@
-"""API for evolutionary tuning."""
 import logging
 from functools import partial
 from random import choice
@@ -28,6 +27,9 @@ from .utils import (
     right_pad,
     validate_mLSTM1900_params,
 )
+
+"""API for evolutionary tuning."""
+
 
 logger = logging.getLogger("evotuning")
 
@@ -146,7 +148,9 @@ def evotuning_pairs(s: str) -> Tuple[np.ndarray, np.ndarray]:
     return x, y
 
 
-def input_output_pairs(sequences: List[str],) -> Tuple[np.ndarray, np.ndarray]:
+def input_output_pairs(
+    sequences: List[str],
+) -> Tuple[np.ndarray, np.ndarray]:
     """
     Generate input-output tensor pairs for evo-tuning.
 

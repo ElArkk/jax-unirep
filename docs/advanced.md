@@ -17,6 +17,7 @@ There are two functions with differing levels of control available.
 
 The `evotune` function uses `optuna` under the hood
 to automatically find:
+
 1. the optimal number of epochs to train for, and
 2. the optimal learning rate,
 
@@ -26,7 +27,7 @@ about the training process of each trial.
 `evotuned_params` will contain the fine-tuned mLSTM and dense weights
 from the trial with the lowest test set loss.
 
-??? note "Speed freaks read this!"
+!!! note "Speed freaks read this!"
 
     As a heads-up, using `evotune` is kind of slow,
     so read on if you're of the impatient kind -- use `fit`!
@@ -39,7 +40,7 @@ The `fit` function has further customization options,
 such as different batching strategies.
 Please see the function docstring [here][fitdoc] for more information.
 
-??? note "GPU usage"
+!!! note "GPU usage"
 
     The `fit` function will always default to using a
     GPU `backend` if available for the forward and backward passes
@@ -48,7 +49,55 @@ Please see the function docstring [here][fitdoc] for more information.
     on the dataset after every epoch, you can decide
     if the CPU or GPU `backend` should be used (default is CPU).
 
-You can find an example usages of both `evotune` and `fit` [here][examples].
+You can find an example usages of both `evotune` and `fit` [here][examples],
+but for convenience, here's a code block that you can copy/paste
+to get kickstarted.
+
+!!! warning "Read the docs!"
+
+    Can't emphasize this enough:
+    Be sure to read the [API docs for the `fit` function][fitdoc]
+    to learn about what's going on underneath the hood!
+
+```python
+from jax_unirep.utils import load_random_evotuning_params
+from random import shuffle
+from jax_unirep.evotuning import fit, dump_params
+# Prepare your sequences as a list of strings,
+# using whatever parsers you need.
+# This is a pre-requisite step that will likely be project-specific.
+seqs = [...]
+
+# You can optionally split the dataset so that you have a holdout set.
+shuffle(seqs)
+break_point = int(len(seqs) * 0.7)
+sequences = seqs[0:break_point]
+holdout_sequences = seqs[break_point:]
+
+# Set some evotuning parameters.
+N_EPOCHS = 20  # probably want this to be quite high, like in the hundreds.
+LEARN_RATE = 1e-5  # this is a very sane default to start with.
+PROJECT_NAME = "temp"  # where the weights will be dumped
+
+# Pre-load some evotuning params that are randomly initialized.
+params = load_random_evotuning_params()
+
+# Now to evotuning
+evotuned_params = fit(
+    params=params,  # you can also set this to None if you want to use the published weights as the starting point.
+    sequences=sequences,
+    n_epochs=N_EPOCHS,
+    step_size=LEARN_RATE,
+    holdout_seqs=holdout_sequences,
+    batch_method="random",
+    proj_name=PROJECT_NAME,
+    epochs_per_print=1,  # also controls how often weights are dumped.
+    backend="cpu",  # default is "cpu", can also set to "gpu" if you have it.
+)
+
+dump_params(evotuned_params, PROJECT_NAME)
+print("Evotuning done! Find output weights in", PROJECT_NAME)
+```
 
 If you want to pass a set of mLSTM and dense weights
 that were dumped in an earlier run,
@@ -195,4 +244,3 @@ chain_data = pd.concat([pd.DataFrame(r) for r in chain_results])
 
 Is there an "advanced" protocol that you've developed surrounding `jax-unirep`?
 If so, please consider contributing it here!
-

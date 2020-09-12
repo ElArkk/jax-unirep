@@ -16,7 +16,9 @@ setup(
     url="https://github.com/ElArkk/jax-unirep",
     version=version,
     packages=["jax_unirep"],
-    package_data={"jax_unirep": ["weights/1900_weights/uniref50/*.npy"],},
+    package_data={
+        "jax_unirep": ["weights/1900_weights/uniref50/*.npy"],
+    },
     install_requires=[
         "jax",
         "jaxlib",
