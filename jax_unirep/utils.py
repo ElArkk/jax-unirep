@@ -391,7 +391,5 @@ def letter_seq(arr: np.array) -> str:
 
     TODO: More docstrings needed.
     """
-    sequence = ""
-    for letter in arr:
-        sequence += arr_to_letter(np.round(letter))
-    return sequence.strip("start").strip("stop")
+    sequence = "".join([arr_to_letter(np.round(letter)) for letter in arr])
+    return sequence.replace("start", "").replace("stop", "")
