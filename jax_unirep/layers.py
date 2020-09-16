@@ -160,77 +160,78 @@ def mLSTM1900_batch(
     h_t = np.zeros(params["wmh"].shape[0])
     c_t = np.zeros(params["wmh"].shape[0])
 
-    step_func = partial(mLSTM1900_step, params)
+    def mLSTM1900_step(
+        carry: Tuple[np.ndarray, np.ndarray],
+        x_t: np.ndarray,
+    ) -> Tuple[Tuple[np.ndarray, np.ndarray], np.ndarray]:
+        """
+        Implementation of mLSTMCell from UniRep paper, with weight normalization.
+
+        Exact source code reference:
+        https://github.com/churchlab/UniRep/blob/master/unirep.py#L75
+
+        Shapes of parameters:
+
+        - wmx: 10, 1900
+        - wmh: 1900, 1900
+        - wx: 10, 7600
+        - wh: 1900, 7600
+        - gmx: 1900
+        - gmh: 1900
+        - gx: 7600
+        - gh: 7600
+        - b: 7600
+
+        Shapes of inputs:
+
+        - x_t: (1, 10)
+        - carry:
+            - h_t: (1, 1900)
+            - c_t: (1, 1900)
+        """
+        h_t, c_t = carry
+
+        # Perform weight normalization first
+        # (Corresponds to Line 113).
+        # In the original implementation, this is toggled by a boolean flag,
+        # but here we are enabling it by default.
+        params["wx"] = l2_normalize(params["wx"], axis=0) * params["gx"]
+        params["wh"] = l2_normalize(params["wh"], axis=0) * params["gh"]
+        params["wmx"] = l2_normalize(params["wmx"], axis=0) * params["gmx"]
+        params["wmh"] = l2_normalize(params["wmh"], axis=0) * params["gmh"]
+
+        # Shape annotation
+        # (:, 10) @ (10, 1900) * (:, 1900) @ (1900, 1900) => (:, 1900)
+        m = np.matmul(x_t, params["wmx"]) * np.matmul(h_t, params["wmh"])
+
+        # (:, 10) @ (10, 7600) * (:, 1900) @ (1900, 7600) + (7600, ) => (:, 7600)
+        z = (
+            np.matmul(x_t, params["wx"])
+            + np.matmul(m, params["wh"])
+            + params["b"]
+        )
+
+        # Splitting along axis 1, four-ways, gets us (:, 1900) as the shape
+        # for each of i, f, o and u
+        i, f, o, u = np.split(z, 4, axis=-1)  # input, forget, output, update
+
+        # Elementwise transforms here.
+        # Shapes are are (:, 1900) for each of the four.
+        i = sigmoid(i, version="exp")
+        f = sigmoid(f, version="exp")
+        o = sigmoid(o, version="exp")
+        u = tanh(u)
+
+        # (:, 1900) * (:, 1900) + (:, 1900) * (:, 1900) => (:, 1900)
+        c_t = f * c_t + i * u
+
+        # (:, 1900) * (:, 1900) => (:, 1900)
+        h_t = o * tanh(c_t)
+
+        # h, c each have shape (:, 1900)
+        return (h_t, c_t), h_t
+
     (h_final, c_final), outputs = lax.scan(
-        step_func, init=(h_t, c_t), xs=batch
+        mLSTM1900_step, init=(h_t, c_t), xs=batch
     )
     return h_final, c_final, outputs
-
-
-def mLSTM1900_step(
-    params: Dict[str, np.ndarray],
-    carry: Tuple[np.ndarray, np.ndarray],
-    x_t: np.ndarray,
-) -> Tuple[Tuple[np.ndarray, np.ndarray], np.ndarray]:
-    """
-    Implementation of mLSTMCell from UniRep paper, with weight normalization.
-
-    Exact source code reference:
-    https://github.com/churchlab/UniRep/blob/master/unirep.py#L75
-
-    Shapes of parameters:
-
-    - wmx: 10, 1900
-    - wmh: 1900, 1900
-    - wx: 10, 7600
-    - wh: 1900, 7600
-    - gmx: 1900
-    - gmh: 1900
-    - gx: 7600
-    - gh: 7600
-    - b: 7600
-
-    Shapes of inputs:
-
-    - x_t: (1, 10)
-    - carry:
-        - h_t: (1, 1900)
-        - c_t: (1, 1900)
-    """
-    h_t, c_t = carry
-
-    # Perform weight normalization first
-    # (Corresponds to Line 113).
-    # In the original implementation, this is toggled by a boolean flag,
-    # but here we are enabling it by default.
-    params["wx"] = l2_normalize(params["wx"], axis=0) * params["gx"]
-    params["wh"] = l2_normalize(params["wh"], axis=0) * params["gh"]
-    params["wmx"] = l2_normalize(params["wmx"], axis=0) * params["gmx"]
-    params["wmh"] = l2_normalize(params["wmh"], axis=0) * params["gmh"]
-
-    # Shape annotation
-    # (:, 10) @ (10, 1900) * (:, 1900) @ (1900, 1900) => (:, 1900)
-    m = np.matmul(x_t, params["wmx"]) * np.matmul(h_t, params["wmh"])
-
-    # (:, 10) @ (10, 7600) * (:, 1900) @ (1900, 7600) + (7600, ) => (:, 7600)
-    z = np.matmul(x_t, params["wx"]) + np.matmul(m, params["wh"]) + params["b"]
-
-    # Splitting along axis 1, four-ways, gets us (:, 1900) as the shape
-    # for each of i, f, o and u
-    i, f, o, u = np.split(z, 4, axis=-1)  # input, forget, output, update
-
-    # Elementwise transforms here.
-    # Shapes are are (:, 1900) for each of the four.
-    i = sigmoid(i, version="exp")
-    f = sigmoid(f, version="exp")
-    o = sigmoid(o, version="exp")
-    u = tanh(u)
-
-    # (:, 1900) * (:, 1900) + (:, 1900) * (:, 1900) => (:, 1900)
-    c_t = f * c_t + i * u
-
-    # (:, 1900) * (:, 1900) => (:, 1900)
-    h_t = o * tanh(c_t)
-
-    # h, c each have shape (:, 1900)
-    return (h_t, c_t), h_t  # returned this way to match rest of fundl API.
