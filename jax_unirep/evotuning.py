@@ -28,6 +28,8 @@ from .utils import (
     validate_mLSTM1900_params,
 )
 
+from joblib import Parallel, delayed
+
 """API for evolutionary tuning."""
 
 
@@ -149,7 +151,7 @@ def evotuning_pairs(s: str) -> Tuple[np.ndarray, np.ndarray]:
 
 
 def input_output_pairs(
-    sequences: List[str],
+    sequences: List[str], n_cores: int = 1
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Generate input-output tensor pairs for evo-tuning.
@@ -176,13 +178,28 @@ Please ensure that they are all of the same length before passing them in.
 """
         )
 
-    xs = []
-    ys = []
-    for s in tqdm(sequences, desc="evotuning pairs"):
-        x, y = evotuning_pairs(s)
-        xs.append(x)
-        ys.append(y)
-    return onp.stack(xs), onp.stack(ys)
+    def embed_chunk(seq_chunk):
+        xs = []
+        ys = []
+
+        for s in seq_chunk:
+            x, y = evotuning_pairs(s)
+            xs.append(x)
+            ys.append(y)
+        return onp.stack(xs), onp.stack(ys)
+
+    chunk_size = int(len(sequences) / n_cores)
+    chunks = [
+        sequences[x : x + chunk_size]
+        for x in range(0, len(sequences), chunk_size)
+    ]
+
+    result = Parallel(n_jobs=n_cores, verbose=1)(
+        map(delayed(embed_chunk), chunks)
+    )
+    xs = onp.concatenate([r[0] for r in result])
+    ys = onp.concatenate([r[1] for r in result])
+    return xs, ys
 
 
 def length_batch_input_outputs(
