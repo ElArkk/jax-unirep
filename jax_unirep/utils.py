@@ -1,4 +1,5 @@
 import os
+import logging
 from collections import Counter
 from functools import lru_cache
 from pathlib import Path
@@ -67,9 +68,7 @@ def get_weights_dir(folderpath: Optional[str] = None):
 
 
 def dump_params(
-    params: Dict,
-    dir_path: Optional[str] = "temp",
-    step: Optional[int] = 0,
+    params: Dict, dir_path: Optional[str] = "temp", step: Optional[int] = 0,
 ):
     """
     Dumps the current params of model being trained to a .npy file.
@@ -120,8 +119,7 @@ def dump_params(
         # Save file
         fpath = iteration_path / fname
         onp.save(
-            fpath,
-            onp.array(val),
+            fpath, onp.array(val),
         )
     # iterate through and save dense params as npy files.
     dense_names = [
@@ -136,8 +134,7 @@ def dump_params(
         # Save file
         fpath = iteration_path / dense_names[i]
         onp.save(
-            fpath,
-            onp.array(val),
+            fpath, onp.array(val),
         )
 
 
@@ -329,9 +326,7 @@ def right_pad(seqs: Iterable[str], max_len: int):
     ]
 
 
-def get_batching_func(
-    xs: np.ndarray, ys: np.ndarray, batch_size: int = 25
-) -> Callable:
+def get_batching_func(seq_batch, batch_size: int = 25) -> Callable:
     """
     Create a function which returns batches of sequences
 
@@ -340,11 +335,11 @@ def get_batching_func(
     """
 
     def batching_func():
-        pairs = list(zip(xs, ys))
-        if len(pairs) > batch_size:
-            pairs = sample(pairs, batch_size)
-        x, y = zip(*pairs)
-        return onp.stack(x), onp.stack(y)
+        seqs = seq_batch
+        if len(seqs) > batch_size:
+            seqs = sample(seqs, batch_size)
+        xs, ys = input_output_pairs(seqs)
+        return xs, ys
 
     return batching_func
 
@@ -417,3 +412,104 @@ def load_random_evotuning_params():
     params_dense = load_dense_1900()
     random_dense_1900 = tree_map(random_like, params_dense)
     return (params_1900, (), params_dense, ())
+
+
+def evotuning_pairs(s: str) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Given a sequence, return input-output pairs for evotuning.
+
+    The goal of evotuning is to get the RNN to accurately predict
+    the next character in a sequence.
+    This convenience function exists to prep a single sequence
+    into its corresponding input-output tensor pairs.
+
+    Given a 1D sequence of length `k`,
+    it gets represented as a 2D array of shape (k, 10),
+    where 10 is the size of the embedding of each amino acid,
+    and k-1 ranges from the zeroth a.a. to the nth a.a.
+    This is the first element in the returned tuple.
+
+    Given the same 1D sequence,
+    the output is defined as a 2D array of shape (k-1, 25),
+    where 25 is number of indices available to us
+    in `aa_to_int`,
+    and k-1 corresponds to the first a.a. to the nth a.a.
+    This is the second element in the returned tuple.
+
+    ### Parameters
+
+    - `s`: The protein sequence to featurize.
+
+    ### Returns
+
+    Two 2D NumPy arrays,
+    the first corresponding to
+    the input to evotuning with shape (n_letters, 10),
+    and the second corresponding to
+    the output amino acid to predict with shape (n_letters, 25).
+    """
+    seq_int = aa_seq_to_int(s[:-1])
+    next_letters_int = aa_seq_to_int(s[1:])
+    embeddings = load_embedding_1900()
+    x = onp.stack([embeddings[i] for i in seq_int])
+    y = onp.stack([one_hots[i] for i in next_letters_int])
+    return x, y
+
+
+def input_output_pairs(sequences: List[str],) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Generate input-output tensor pairs for evo-tuning.
+    We check that lengths of sequences are identical,
+    as this is necessary to ensure stacking of tensors happens correctly.
+    :param sequences: A list of sequences
+        to generate input-output tensor pairs.
+    :returns: Two NumPy arrays,
+        the first corresponding to the input to evotuning
+        with shape (n_sequences, n_letters+1, 10),
+        and the second corresponding to the output amino acids to predict
+        with shape (n_sequences, n_letters+1, 25).
+        Both will have an additional "sample" dimension as the first dim.
+    """
+    seqlengths = set(map(len, sequences))
+    logging.debug(seqlengths)
+    if not len(seqlengths) == 1:
+        raise ValueError(
+            """
+Sequences should be of uniform length, but are not.
+Please ensure that they are all of the same length before passing them in.
+"""
+        )
+
+    xs = []
+    ys = []
+    for s in tqdm(sequences, desc="evotuning pairs"):
+        x, y = evotuning_pairs(s)
+        xs.append(x)
+        ys.append(y)
+    return onp.stack(xs), onp.stack(ys)
+
+
+def length_batch_input_outputs(
+    sequences: Iterable[str],
+) -> Tuple[List[np.ndarray], List[np.ndarray], int]:
+    """
+    Return lists of x and y tensors for evotuning, batched by their length.
+
+    This function exists because we need a way of
+    batching sequences by size conveniently.
+
+    :param sequences: A list of sequences to evotune on.
+    :returns: Two lists of NumPy arrays, one for xs and the other for ys.
+    """
+    idxs_batched = batch_sequences(sequences)
+
+    seqs_batched = []
+    lens = []
+    for idxs in tqdm(idxs_batched):
+        seqs = [sequences[i] for i in idxs]
+        # x, y = input_output_pairs(seqs)
+        # xs.append(x)
+        # ys.append(y)
+        seqs_batched.append(seqs)
+        lens.append(len(seqs[0]))
+    return seqs_batched, lens
