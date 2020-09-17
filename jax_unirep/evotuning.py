@@ -29,8 +29,6 @@ from .utils import (
     length_batch_input_outputs,
 )
 
-from joblib import Parallel, delayed
-
 """API for evolutionary tuning."""
 
 
