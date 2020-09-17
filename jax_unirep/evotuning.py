@@ -407,7 +407,7 @@ def objective(
             step_size=learning_rate,
         )
 
-        xs, ys, _ = length_batch_input_outputs(sequences)
+        xs, ys, _ = length_batch_input_outputs(test_sequences)
 
         avg_test_losses.append(avg_loss(xs, ys, evotuned_params))
 
