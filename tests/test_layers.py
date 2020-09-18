@@ -11,7 +11,7 @@ from jax_unirep.layers import (
     mLSTM1900_AvgHidden,
     mLSTM1900_batch,
     mLSTM1900_Fusion,
-    mLSTM1900_step,
+    # mLSTM1900_step,
 )
 from jax_unirep.utils import (
     get_embedding,
@@ -21,24 +21,6 @@ from jax_unirep.utils import (
 )
 
 rng = random.PRNGKey(0)
-
-
-def test_mLSTM1900_step():
-    """
-    Given fake data of the correct input shapes,
-    make sure that the output shapes are also correct.
-    """
-    params = load_params_1900()
-
-    x_t = npr.normal(size=(1, 10))
-    h_t = np.zeros(shape=(1, 1900))
-    c_t = np.zeros(shape=(1, 1900))
-
-    carry = (h_t, c_t)
-
-    (h_t, c_t), _ = mLSTM1900_step(params, carry, x_t)
-    assert h_t.shape == (1, 1900)
-    assert c_t.shape == (1, 1900)
 
 
 def test_mLSTM1900_batch():
