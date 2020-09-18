@@ -335,10 +335,9 @@ def get_batching_func(seq_batch, batch_size: int = 25) -> Callable:
     """
 
     def batching_func():
-        seqs = seq_batch
-        if len(seqs) > batch_size:
-            seqs = sample(seqs, batch_size)
-        xs, ys = input_output_pairs(seqs)
+        if len(seq_batch) > batch_size:
+            seq_batch = sample(seq_batch, batch_size)
+        xs, ys = input_output_pairs(seq_batch)
         return xs, ys
 
     return batching_func
