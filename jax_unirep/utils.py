@@ -328,7 +328,7 @@ def right_pad(seqs: Iterable[str], max_len: int):
 
 def get_batching_func(seq_batch, batch_size: int = 25) -> Callable:
     """
-    Create a function which returns batches of sequences
+    Create a function which returns batches of embedded sequences
 
     :param xs: array of embedded same-length sequences
     :param ys: array of one-hot encoded groud truth next-AA labels
@@ -482,7 +482,7 @@ Please ensure that they are all of the same length before passing them in.
 
     xs = []
     ys = []
-    for s in tqdm(sequences, desc="evotuning pairs"):
+    for s in sequences:
         x, y = evotuning_pairs(s)
         xs.append(x)
         ys.append(y)
@@ -491,15 +491,15 @@ Please ensure that they are all of the same length before passing them in.
 
 def length_batch_input_outputs(
     sequences: Iterable[str],
-) -> Tuple[List[np.ndarray], List[np.ndarray], int]:
+) -> Tuple[List[str], int]:
     """
-    Return lists of x and y tensors for evotuning, batched by their length.
+    Return sequences, batched by their length, plus a list of unique lengths.
 
     This function exists because we need a way of
     batching sequences by size conveniently.
 
     :param sequences: A list of sequences to evotune on.
-    :returns: Two lists of NumPy arrays, one for xs and the other for ys.
+    :returns: Two lists, sequences and lengths.
     """
     idxs_batched = batch_sequences(sequences)
 
@@ -507,9 +507,6 @@ def length_batch_input_outputs(
     lens = []
     for idxs in tqdm(idxs_batched):
         seqs = [sequences[i] for i in idxs]
-        # x, y = input_output_pairs(seqs)
-        # xs.append(x)
-        # ys.append(y)
         seqs_batched.append(seqs)
         lens.append(len(seqs[0]))
     return seqs_batched, lens
