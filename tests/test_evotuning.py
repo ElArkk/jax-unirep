@@ -5,12 +5,7 @@ import pytest
 from jax import vmap
 from jax.random import PRNGKey
 
-from jax_unirep.evotuning import (
-    evotune,
-    fit,
-    init_fun,
-    predict,
-)
+from jax_unirep.evotuning import evotune, fit, init_fun, predict
 from jax_unirep.utils import input_output_pairs
 
 from .test_layers import validate_mLSTM1900_params

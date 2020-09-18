@@ -1,3 +1,4 @@
+from contextlib import suppress as does_not_raise
 from shutil import rmtree
 
 import numpy as np
@@ -6,7 +7,10 @@ import pytest
 from jax_unirep.utils import (
     batch_sequences,
     dump_params,
+    evotuning_pairs,
+    input_output_pairs,
     l2_normalize,
+    length_batch_input_outputs,
     load_dense_1900,
     load_embedding_1900,
     load_params,
@@ -14,12 +18,7 @@ from jax_unirep.utils import (
     load_random_evotuning_params,
     right_pad,
     validate_mLSTM1900_params,
-    evotuning_pairs,
-    input_output_pairs,
-    length_batch_input_outputs,
 )
-
-from contextlib import suppress as does_not_raise
 
 
 def test_l2_normalize():

@@ -16,18 +16,15 @@ from jax_unirep.losses import _neg_cross_entropy_loss
 
 from .layers import mLSTM1900, mLSTM1900_HiddenStates
 from .optimizers import adamW
-from .utils import (
-    # aa_seq_to_int,
-    # batch_sequences,
+
+from .utils import (  # aa_seq_to_int,; batch_sequences,; load_embedding_1900,; one_hots,
     dump_params,
     get_batching_func,
-    # load_embedding_1900,
+    input_output_pairs,
+    length_batch_input_outputs,
     load_params,
-    # one_hots,
     right_pad,
     validate_mLSTM1900_params,
-    length_batch_input_outputs,
-    input_output_pairs,
 )
 
 """API for evolutionary tuning."""
