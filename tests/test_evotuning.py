@@ -1,24 +1,12 @@
-from contextlib import suppress as does_not_raise
 from functools import partial
-from typing import Dict
 
 import numpy as np
 import pytest
 from jax import vmap
-from jax.experimental.optimizers import adam
 from jax.random import PRNGKey
 
-from jax_unirep.evotuning import (
-    evotune,
-    evotune_loss,
-    evotuning_pairs,
-    fit,
-    init_fun,
-    input_output_pairs,
-    length_batch_input_outputs,
-    predict,
-)
-from jax_unirep.utils import load_dense_1900, load_params_1900
+from jax_unirep.evotuning import evotune, fit, init_fun, predict
+from jax_unirep.utils import input_output_pairs
 
 from .test_layers import validate_mLSTM1900_params
 
@@ -29,25 +17,6 @@ from .test_layers import validate_mLSTM1900_params
 def params():
     _, params = init_fun(PRNGKey(0), (-1, 10))
     return params
-
-
-@pytest.mark.parametrize(
-    "seqs, expected",
-    [
-        ([], pytest.raises(ValueError)),
-        (["MT", "MTN"], pytest.raises(ValueError)),
-        (["MT", "MB", "MD"], does_not_raise()),
-    ],
-)
-def test_input_output_pairs(seqs, expected):
-
-    with expected:
-        assert input_output_pairs(seqs) is not None
-
-    if expected == does_not_raise():
-        xs, ys = input_output_pairs(seqs)
-        assert xs.shape == (len(seqs), len(seqs[0]) + 1, 10)
-        assert ys.shape == (len(seqs), len(seqs[0]) + 1, 25)
 
 
 def test_evotune():
@@ -62,23 +31,6 @@ def test_evotune():
         params=None,
         n_epochs_config=n_epochs_config,
     )
-
-
-def test_length_batch_input_outputs():
-    """Example test for ``length_batch_input_outputs``."""
-    sequences = ["ASDF", "GHJKL", "PILKN"]
-    xs, ys, seq_lens = length_batch_input_outputs(sequences)
-    assert len(xs) == len(set([len(x) for x in sequences]))
-    assert len(ys) == len(set([len(x) for x in sequences]))
-    assert len(xs) == len(seq_lens)
-
-
-def test_evotuning_pairs():
-    """Unit test for evotuning_pairs function."""
-    sequence = "ACGHJKL"
-    x, y = evotuning_pairs(sequence)
-    assert x.shape == (len(sequence) + 1, 10)  # embeddings ("x") are width 10
-    assert y.shape == (len(sequence) + 1, 25)  # output is one of 25 chars
 
 
 def test_predict(params):
