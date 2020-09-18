@@ -19,5 +19,8 @@ def test_add_mLSTM1900_params():
     I thus defaulted to just using an execution test.
     """
     params = dict()
-    params = add_mLSTM1900_params(params, name="mLSTM1900",)
+    params = add_mLSTM1900_params(
+        params,
+        name="mLSTM1900",
+    )
     validate_mLSTM1900_params(params["mLSTM1900"])
