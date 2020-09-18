@@ -16,8 +16,7 @@ from jax_unirep.losses import _neg_cross_entropy_loss
 
 from .layers import mLSTM1900, mLSTM1900_HiddenStates
 from .optimizers import adamW
-
-from .utils import (  # aa_seq_to_int,; batch_sequences,; load_embedding_1900,; one_hots,
+from .utils import (
     dump_params,
     get_batching_func,
     input_output_pairs,
