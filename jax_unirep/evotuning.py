@@ -27,6 +27,7 @@ from .utils import (
     right_pad,
     validate_mLSTM1900_params,
     length_batch_input_outputs,
+    input_output_pairs,
 )
 
 """API for evolutionary tuning."""
@@ -407,7 +408,12 @@ def objective(
             step_size=learning_rate,
         )
 
-        xs, ys, _ = length_batch_input_outputs(test_sequences)
+        seqs_batched, _ = length_batch_input_outputs(test_sequences)
+        xs, ys = [], []
+        for seq_batch in seqs_batched:
+            x, y = input_output_pairs(seq_batch)
+            xs.append(x)
+            ys.append(y)
 
         avg_test_losses.append(avg_loss(xs, ys, evotuned_params))
 
