@@ -8,7 +8,6 @@ It's a silly task,
 but I think it gives us ability to sanity-check that we have
 the right thing going.
 """
-
 from jax_unirep import get_reps
 from jax_unirep.sampler import is_accepted, propose
 

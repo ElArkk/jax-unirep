@@ -140,3 +140,6 @@ paper/cabios-template/Untitled.ipynb
 */temp/*
 temp/*
 *.dvi
+*.out
+*.bbl
+*.blg

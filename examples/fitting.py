@@ -1,4 +1,3 @@
-"""Fitting on a bunch of sequences."""
 import logging
 from random import shuffle
 
@@ -6,7 +5,10 @@ from Bio import SeqIO
 from pyprojroot import here
 
 from jax_unirep import fit
-from jax_unirep.utils import dump_params
+from jax_unirep.utils import dump_params, load_random_evotuning_params
+
+"""Fitting on a bunch of sequences."""
+
 
 seqs = []
 with open(here() / "examples/enzymes.fa", "r+") as f:
@@ -29,16 +31,18 @@ N_EPOCHS = 20
 LEARN_RATE = 1e-5
 PROJECT_NAME = "temp"
 
+params = load_random_evotuning_params()
+
 evotuned_params = fit(
-    params=None,
+    params=params,
     sequences=sequences,
     n_epochs=N_EPOCHS,
     step_size=LEARN_RATE,
     holdout_seqs=holdout_sequences,
     batch_method="random",
     proj_name=PROJECT_NAME,
-    epochs_per_print=None,
-    backend="gpu",  # default is "cpu"
+    epochs_per_print=1,
+    backend="cpu",  # default is "cpu"
 )
 
 dump_params(evotuned_params, PROJECT_NAME)
