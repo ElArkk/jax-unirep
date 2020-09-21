@@ -156,7 +156,7 @@ def fit(
     Instead sequences always get sampled at random,
     and one epoch approximately consists of
     `round(len(sequences) / batch_size)` weight updates.
-    Asymptotically, this should be approximately equiavlent
+    Asymptotically, this should be approximately equivalent
     to doing epoch passes over the dataset.
 
     To learn more about the passing of `params`,
