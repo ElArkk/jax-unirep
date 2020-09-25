@@ -277,7 +277,7 @@ def fit(
     # )
 
     init, update, get_params = adamW(step_size=step_size)
-    # get_params = jit(get_params)
+    get_params = jit(get_params)
     state = init(params)
 
     # calculate how many iterations constitute one epoch approximately
@@ -309,32 +309,31 @@ def fit(
         # # Choose a sequence length at random for this iteration
         # l = choice(seq_lens)
 
-        ##### TEMPORARILY COMMNETING OUT THIS BLOCK 25 September 2020
-        # if is_starting_new_printing_epoch:
-        #     logger.info(f"Starting epoch {current_epoch}")
-        #     params = get_params(state)
-        #     x, y = training_batching_func()
-        #     # loss = avg_loss([x], [y], params, backend=backend)
-        #     loss = evotune_loss(params, x, y)
+        if is_starting_new_printing_epoch:
+            logger.info(f"Starting epoch {current_epoch}")
+            params = get_params(state)
+            x, y = training_batching_func()
+            # loss = avg_loss([x], [y], params, backend=backend)
+            loss = evotune_loss(params, x, y)
 
-        #     logger.info(
-        #         f"Epoch {current_epoch - 1}: "
-        #         f"Estimated average training-set loss: {loss}. "
-        #         "Weights dumped."
-        #     )
+            logger.info(
+                f"Epoch {current_epoch - 1}: "
+                f"Estimated average training-set loss: {loss}. "
+                "Weights dumped."
+            )
 
-        #     if holdout_seqs is not None:
-        #         # calculate and print loss for out-domain holdout set
-        #         x, y = holdout_batching_func()
-        #         # loss = avg_loss([x], [y], params, backend=backend)
-        #         loss = evotune_loss(params, x, y)
-        #         logger.info(
-        #             f"Epoch {current_epoch - 1}: "
-        #             + f"Estimaged average holdout-set loss: {loss}"
-        #         )
+            if holdout_seqs is not None:
+                # calculate and print loss for out-domain holdout set
+                x, y = holdout_batching_func()
+                # loss = avg_loss([x], [y], params, backend=backend)
+                loss = evotune_loss(params, x, y)
+                logger.info(
+                    f"Epoch {current_epoch - 1}: "
+                    + f"Estimaged average holdout-set loss: {loss}"
+                )
 
-        #     # dump current params in case run crashes or loss increases
-        #     dump_params(get_params(state), proj_name, current_epoch - 1)
+            # dump current params in case run crashes or loss increases
+            dump_params(get_params(state), proj_name, current_epoch - 1)
 
         logger.debug("Getting batches")
         x, y = training_batching_func()
