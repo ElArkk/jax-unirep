@@ -324,24 +324,25 @@ def batch_sequences(seqs: Iterable[str]) -> List[List]:
 
 def right_pad(seqs: Iterable[str], max_len: int):
     """Pad all seqs in a list to longest length on the right with "-"."""
-    return [
-        seq.ljust(max_len, "-")
-        for seq in tqdm(seqs, desc="right-padding sequences")
-    ]
+    return [seq.ljust(max_len, "-") for seq in seqs]
 
 
-def get_batching_func(seq_batch, batch_size: int = 25) -> Callable:
+def get_batching_func(
+    seq_batch, batch_size: int = 25, seq_max_length: int = 2000
+) -> Callable:
     """
     Create a function which returns batches of embedded sequences
 
     :param xs: array of embedded same-length sequences
     :param ys: array of one-hot encoded groud truth next-AA labels
+    :param seq_max_length: The maximum length to pad sequences to.
     """
 
     def batching_func():
         seqs = seq_batch
         if len(seqs) > batch_size:
             seqs = sample(seqs, batch_size)
+        seqs = right_pad(seqs, seq_max_length)
         xs, ys = input_output_pairs(seqs)
         return xs, ys
 
@@ -480,8 +481,10 @@ def input_output_pairs(
     logging.debug(seqlengths)
     if not len(seqlengths) == 1:
         raise ValueError(
-            """
+            f"""
 Sequences should be of uniform length, but are not.
+Got lengths {seqlengths}.
+Sequences are {sequences}.
 Please ensure that they are all of the same length before passing them in.
 """
         )

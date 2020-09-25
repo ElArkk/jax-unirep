@@ -48,10 +48,7 @@ def setup_evotuning_log():
 
 
 def evotune_loss(params, inputs, targets):
-    logging.debug(f"Input shape: {inputs.shape}")
-    logging.debug(f"Output shape: {targets.shape}")
     predictions = vmap(partial(predict, params))(inputs)
-
     return _neg_cross_entropy_loss(targets, predictions)
 
 
@@ -81,8 +78,8 @@ def avg_loss(
     logging.debug("Calculating average loss.")
     sum_loss = 0
     num_seqs = 0
-    global evotune_loss  # this is necessary for JIT to reference evotune_loss
-    evotune_loss_jit = jit(evotune_loss, backend=backend)
+    # global evotune_loss  # this is necessary for JIT to reference evotune_loss
+    # evotune_loss_jit = jit(evotune_loss, backend=backend)
 
     def batch_iter(
         xs: np.ndarray, ys: np.ndarray, batch_size: int = batch_size
@@ -98,7 +95,7 @@ def avg_loss(
     for xmat, ymat in zip(xs, ys):
         # Send x and y in small batches of 100 to control memory usage.
         for x, y in batch_iter(xmat, ymat, batch_size=batch_size):
-            sum_loss += evotune_loss_jit(params, inputs=x, targets=y) * len(x)
+            sum_loss += evotune_loss(params, inputs=x, targets=y) * len(x)
             num_seqs += len(x)
 
     return sum_loss / num_seqs
@@ -108,9 +105,10 @@ def fit(
     params: Dict,
     sequences: Set[str],
     n_epochs: int,
-    batch_method: Optional[str] = "random",
+    # batch_method: Optional[str] = "random",
     batch_size: Optional[int] = 25,
     step_size: float = 0.0001,
+    seq_max_length: Optional[int] = None,
     holdout_seqs: Optional[Set[str]] = None,
     proj_name: Optional[str] = "temp",
     epochs_per_print: Optional[int] = 1,
@@ -175,12 +173,13 @@ def fit(
     - `params`: mLSTM1900 and Dense parameters.
     - `sequences`: List of sequences to evotune on.
     - `n`: The number of iterations to evotune on.
-    - `batch_method`: One of "length" or "random".
+    # - `batch_method`: One of "length" or "random".
     - `batch_size`: If random batching is used,
         number of sequences per batch.
         As a rule of thumb, batch size of 50 consumes
         about 5GB of GPU RAM.
     - `step_size`: The learning rate.
+    - `seq_max_length`: The maximum length to pad sequences to.
     - `holdout_seqs`: Holdout set, an optional input.
     - `proj_name`: The directory path for weights to be output to.
     - `epochs_per_print`: Number of epochs to progress before printing
@@ -196,7 +195,6 @@ def fit(
 
     setup_evotuning_log()
 
-    @jit
     def step(i, x, y, state):
         """
         Perform one step of evolutionary updating.
@@ -217,6 +215,8 @@ def fit(
 
         return state
 
+    step = jit(step, backend=backend)
+
     # Load and check that params have correct keys and shapes
     if params is None:
         params = load_params()
@@ -230,8 +230,8 @@ def fit(
     validate_mLSTM1900_params(params[0])
 
     # Defensive programming checks
-    if batch_method not in ["length", "random"]:
-        raise ValueError("batch_method must be one of 'length' or 'random'")
+    # if batch_method not in ["length", "random"]:
+    #     raise ValueError("batch_method must be one of 'length' or 'random'")
     if not isinstance(epochs_per_print, int):
         raise TypeError("epochs_per_print must be an integer.")
     if epochs_per_print < 1:
@@ -239,48 +239,65 @@ def fit(
             "epochs_per_print must be greater than or equal to 1."
         )
 
-    if batch_method == "random":
-        # First pad to the same length, effectively giving us one length batch.
-        all_sequences = set(sequences)
-        if holdout_seqs is not None:
-            all_sequences = all_sequences.union(set(holdout_seqs))
-        max_len = max([len(seq) for seq in all_sequences])
-        sequences = right_pad(sequences, max_len)
-        if holdout_seqs is not None:
-            holdout_seqs = right_pad(holdout_seqs, max_len)
+    # if batch_method == "random":
+    #     # First pad to the same length, effectively giving us one length batch.
+    #     all_sequences = set(sequences)
+    #     if holdout_seqs is not None:
+    #         all_sequences = all_sequences.union(set(holdout_seqs))
+    #     # max_len = max([len(seq) for seq in all_sequences])
+    #     max_len = max(map(len, sequences))
+    #     sequences = right_pad(sequences, max_len)
+    #     if holdout_seqs is not None:
+    #         holdout_seqs = right_pad(holdout_seqs, max_len)
 
-    # batch sequences by length
-    seqs_batched, seq_lens = length_batch_input_outputs(sequences)
-    len_batching_funcs = {
-        sl: get_batching_func(seq_batch, batch_size)
-        for (sl, seq_batch) in zip(seq_lens, seqs_batched)
-    }
+    # # batch sequences by length
+    # seqs_batched, seq_lens = length_batch_input_outputs(sequences)
+    # len_batching_funcs = {
+    #     sl: get_batching_func(seq_batch, batch_size)
+    #     for (sl, seq_batch) in zip(seq_lens, seqs_batched)
+    # }
 
-    if holdout_seqs is not None:
-        holdout_seqs_batched, holdout_seq_lens = length_batch_input_outputs(
-            holdout_seqs
-        )
-        holdout_len_batching_funcs = {
-            sl: get_batching_func(holdout_seq_batch, batch_size)
-            for (sl, holdout_seq_batch) in zip(
-                holdout_seq_lens, holdout_seqs_batched
-            )
-        }
+    # if holdout_seqs is not None:
+    #     holdout_seqs_batched, holdout_seq_lens = length_batch_input_outputs(
+    #         holdout_seqs
+    #     )
+    #     holdout_len_batching_funcs = {
+    #         sl: get_batching_func(holdout_seq_batch, batch_size)
+    #         for (sl, holdout_seq_batch) in zip(
+    #             holdout_seq_lens, holdout_seqs_batched
+    #         )
+    #     }
 
-    batch_lens = [len(batch) for batch in seqs_batched]
-    logger.info(
-        f"Length-batching done: "
-        f"{len(batch_lens)} unique lengths, "
-        f"with average length {onp.mean(batch_lens)}, "
-        f"max length {max(batch_lens)} and min length {min(batch_lens)}."
-    )
+    # batch_lens = [len(batch) for batch in seqs_batched]
+    # logger.info(
+    #     f"Length-batching done: "
+    #     f"{len(batch_lens)} unique lengths, "
+    #     f"with average length {onp.mean(batch_lens)}, "
+    #     f"max length {max(batch_lens)} and min length {min(batch_lens)}."
+    # )
 
     init, update, get_params = adamW(step_size=step_size)
-    get_params = jit(get_params)
+    # get_params = jit(get_params)
     state = init(params)
 
     # calculate how many iterations constitute one epoch approximately
     epoch_len = round(len(sequences) / batch_size)
+
+    if seq_max_length is None:
+        seq_max_length = max(map(len, sequences))
+
+    # Construct the batching func
+    training_batching_func = get_batching_func(
+        seq_batch=sequences,
+        batch_size=batch_size,
+        seq_max_length=seq_max_length,
+    )
+    if holdout_seqs is not None:
+        holdout_batching_func = get_batching_func(
+            seq_batch=holdout_seqs,
+            batch_size=batch_size,
+            seq_max_length=seq_max_length,
+        )
 
     n = n_epochs * epoch_len
     for i in tqdm(range(n), desc="Iteration"):
@@ -289,35 +306,38 @@ def fit(
         is_starting_new_printing_epoch = (
             i % (epochs_per_print * epoch_len) == 0
         )
-        # Choose a sequence length at random for this iteration
-        l = choice(seq_lens)
+        # # Choose a sequence length at random for this iteration
+        # l = choice(seq_lens)
 
-        if is_starting_new_printing_epoch:
-            logger.info(f"Starting epoch {current_epoch}")
-            params = get_params(state)
-            x, y = len_batching_funcs[l]()
-            loss = avg_loss([x], [y], params, backend=backend)
-            logger.info(
-                f"Epoch {current_epoch - 1}: "
-                f"Estimated average training-set loss: {loss}. "
-                "Weights dumped."
-            )
+        ##### TEMPORARILY COMMNETING OUT THIS BLOCK 25 September 2020
+        # if is_starting_new_printing_epoch:
+        #     logger.info(f"Starting epoch {current_epoch}")
+        #     params = get_params(state)
+        #     x, y = training_batching_func()
+        #     # loss = avg_loss([x], [y], params, backend=backend)
+        #     loss = evotune_loss(params, x, y)
 
-            if holdout_seqs is not None:
-                # calculate and print loss for out-domain holdout set
-                hl = choice(holdout_seq_lens)
-                x, y = holdout_len_batching_funcs[hl]()
-                loss = avg_loss([x], [y], params, backend=backend)
-                logger.info(
-                    f"Epoch {current_epoch - 1}: "
-                    + f"Estimaged average holdout-set loss: {loss}"
-                )
+        #     logger.info(
+        #         f"Epoch {current_epoch - 1}: "
+        #         f"Estimated average training-set loss: {loss}. "
+        #         "Weights dumped."
+        #     )
 
-            # dump current params in case run crashes or loss increases
-            dump_params(get_params(state), proj_name, current_epoch - 1)
+        #     if holdout_seqs is not None:
+        #         # calculate and print loss for out-domain holdout set
+        #         x, y = holdout_batching_func()
+        #         # loss = avg_loss([x], [y], params, backend=backend)
+        #         loss = evotune_loss(params, x, y)
+        #         logger.info(
+        #             f"Epoch {current_epoch - 1}: "
+        #             + f"Estimaged average holdout-set loss: {loss}"
+        #         )
+
+        #     # dump current params in case run crashes or loss increases
+        #     dump_params(get_params(state), proj_name, current_epoch - 1)
 
         logger.debug("Getting batches")
-        x, y = len_batching_funcs[l]()
+        x, y = training_batching_func()
 
         # actual forward & backwrd pass happens here
         logger.debug("Getting state")
