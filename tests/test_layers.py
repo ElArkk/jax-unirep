@@ -6,12 +6,11 @@ from hypothesis import strategies as st
 from jax import random
 from jax.experimental import stax
 
-from jax_unirep.layers import (
+from jax_unirep.layers import (  # mLSTM1900_step,
     mLSTM1900,
     mLSTM1900_AvgHidden,
     mLSTM1900_batch,
     mLSTM1900_Fusion,
-    # mLSTM1900_step,
 )
 from jax_unirep.utils import (
     get_embedding,
@@ -87,8 +86,7 @@ def test_mLSTM1900_AvgHidden(data):
     embedding = load_embedding_1900()
     x = get_embedding(sequence, embedding)
     init_fun, apply_fun = stax.serial(
-        mLSTM1900(output_dim=1900),
-        mLSTM1900_AvgHidden(output_dim=1900),
+        mLSTM1900(output_dim=1900), mLSTM1900_AvgHidden(output_dim=1900),
     )
     output_shape, params = init_fun(rng, (length, 10))
     h_avg = apply_fun(params=params, inputs=x)
@@ -113,8 +111,7 @@ def test_mLSTM1900_Fusion(data):
     embedding = load_embedding_1900()
     x = get_embedding(sequence, embedding)
     init_fun, apply_fun = stax.serial(
-        mLSTM1900(output_dim=1900),
-        mLSTM1900_Fusion(output_dim=5700),
+        mLSTM1900(output_dim=1900), mLSTM1900_Fusion(output_dim=5700),
     )
     output_shape, params = init_fun(rng, (length, 10))
     h_avg = apply_fun(params=params, inputs=x)

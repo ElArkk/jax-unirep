@@ -68,9 +68,7 @@ def get_weights_dir(folderpath: Optional[str] = None):
 
 
 def dump_params(
-    params: Dict,
-    dir_path: Optional[str] = "temp",
-    step: Optional[int] = 0,
+    params: Dict, dir_path: Optional[str] = "temp", step: Optional[int] = 0,
 ):
     """
     Dumps the current params of model being trained to a .npy file.
@@ -121,8 +119,7 @@ def dump_params(
         # Save file
         fpath = iteration_path / fname
         onp.save(
-            fpath,
-            onp.array(val),
+            fpath, onp.array(val),
         )
     # iterate through and save dense params as npy files.
     dense_names = [
@@ -137,8 +134,7 @@ def dump_params(
         # Save file
         fpath = iteration_path / dense_names[i]
         onp.save(
-            fpath,
-            onp.array(val),
+            fpath, onp.array(val),
         )
 
 
@@ -460,9 +456,7 @@ def evotuning_pairs(s: str) -> Tuple[np.ndarray, np.ndarray]:
     return x, y
 
 
-def input_output_pairs(
-    sequences: List[str],
-) -> Tuple[np.ndarray, np.ndarray]:
+def input_output_pairs(sequences: List[str],) -> Tuple[np.ndarray, np.ndarray]:
     """
     Generate input-output tensor pairs for evo-tuning.
     We check that lengths of sequences are identical,
