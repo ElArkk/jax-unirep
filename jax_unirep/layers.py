@@ -161,11 +161,13 @@ def mLSTM1900_batch(
     c_t = np.zeros(params["wmh"].shape[0])
 
     def mLSTM1900_step(
-        carry: Tuple[np.ndarray, np.ndarray],
-        x_t: np.ndarray,
+        carry: Tuple[np.ndarray, np.ndarray], x_t: np.ndarray,
     ) -> Tuple[Tuple[np.ndarray, np.ndarray], np.ndarray]:
         """
-        Implementation of mLSTMCell from UniRep paper, with weight normalization.
+        Run one step of mLSTM cell.
+
+        Implementation of mLSTMCell from UniRep paper,
+        with weight normalization.
 
         Exact source code reference:
         https://github.com/churchlab/UniRep/blob/master/unirep.py#L75
@@ -195,21 +197,17 @@ def mLSTM1900_batch(
         # (Corresponds to Line 113).
         # In the original implementation, this is toggled by a boolean flag,
         # but here we are enabling it by default.
-        params["wx"] = l2_normalize(params["wx"], axis=0) * params["gx"]
-        params["wh"] = l2_normalize(params["wh"], axis=0) * params["gh"]
-        params["wmx"] = l2_normalize(params["wmx"], axis=0) * params["gmx"]
-        params["wmh"] = l2_normalize(params["wmh"], axis=0) * params["gmh"]
+        wx = l2_normalize(params["wx"], axis=0) * params["gx"]
+        wh = l2_normalize(params["wh"], axis=0) * params["gh"]
+        wmx = l2_normalize(params["wmx"], axis=0) * params["gmx"]
+        wmh = l2_normalize(params["wmh"], axis=0) * params["gmh"]
 
         # Shape annotation
         # (:, 10) @ (10, 1900) * (:, 1900) @ (1900, 1900) => (:, 1900)
-        m = np.matmul(x_t, params["wmx"]) * np.matmul(h_t, params["wmh"])
+        m = np.matmul(x_t, wmx) * np.matmul(h_t, wmh)
 
         # (:, 10) @ (10, 7600) * (:, 1900) @ (1900, 7600) + (7600, ) => (:, 7600)
-        z = (
-            np.matmul(x_t, params["wx"])
-            + np.matmul(m, params["wh"])
-            + params["b"]
-        )
+        z = np.matmul(x_t, wx) + np.matmul(m, wh) + params["b"]
 
         # Splitting along axis 1, four-ways, gets us (:, 1900) as the shape
         # for each of i, f, o and u
