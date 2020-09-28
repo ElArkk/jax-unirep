@@ -1,11 +1,13 @@
-from functools import partial
+"""
+mLSTM cell layers.
+"""
 from typing import Dict, Tuple
 
 import jax.numpy as np
-from jax import lax, random, vmap
+from jax import lax, random
 from jax.nn.initializers import glorot_normal, normal
 
-from .activations import identity, sigmoid, tanh
+from .activations import sigmoid, tanh
 from .utils import l2_normalize
 
 
@@ -80,7 +82,7 @@ def mLSTM1900(output_dim=1900, W_init=glorot_normal(), b_init=normal()):
     return init_fun, apply_fun
 
 
-def mLSTM1900_AvgHidden(output_dim=1900, **kwargs):
+def mLSTM1900_AvgHidden(**kwargs):
     """
     Returns the average hidden state of the mlstm.
 
@@ -88,8 +90,6 @@ def mLSTM1900_AvgHidden(output_dim=1900, **kwargs):
     """
 
     def init_fun(rng, input_shape):
-        # Maybe include a assertion here that output_dim == output_shape[0]?
-        # Not sure how to handle output_dim and output_shape here
         output_shape = (input_shape[1],)
         return output_shape, ()
 
@@ -99,7 +99,7 @@ def mLSTM1900_AvgHidden(output_dim=1900, **kwargs):
     return init_fun, apply_fun
 
 
-def mLSTM1900_HiddenStates(output_dim=1900, **kwargs):
+def mLSTM1900_HiddenStates(**kwargs):
     """
     Returns the full hidden states (last element) of the mLSTM1900 layer.
     """
@@ -116,7 +116,7 @@ def mLSTM1900_HiddenStates(output_dim=1900, **kwargs):
     return init_fun, apply_fun
 
 
-def mLSTM1900_Fusion(output_dim=5700, **kwargs):
+def mLSTM1900_Fusion(**kwargs):
     """
     Returns the concatenation of all states of the mlstm.
 
