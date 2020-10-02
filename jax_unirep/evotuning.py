@@ -1,8 +1,9 @@
 import logging
 from functools import partial
 from random import choice
-from typing import Dict, Iterable, List, Optional, Set, Tuple, Callable
+from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple
 
+import jax
 import numpy as onp
 import optuna
 from jax import grad, jit
@@ -108,9 +109,6 @@ def avg_loss(
             num_seqs += len(x)
 
     return sum_loss / num_seqs
-
-
-import jax
 
 
 def fit(

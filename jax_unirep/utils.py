@@ -1,4 +1,3 @@
-"""Utility functions for jax-unirep."""
 import logging
 import os
 from collections import Counter
@@ -16,6 +15,9 @@ from jax.tree_util import tree_map
 from tqdm.autonotebook import tqdm
 
 from .errors import SequenceLengthsError
+
+"""Utility functions for jax-unirep."""
+
 
 """jax-unirep utils."""
 
