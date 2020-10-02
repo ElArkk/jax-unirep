@@ -235,7 +235,7 @@ def load_params_1900(folderpath: Optional[str] = None) -> Dict:
     return params
 
 
-def validate_mLSTM_params(params: Dict):
+def validate_mLSTM_params(params: Dict, n_outputs: int = 1900):
     """
     Validate shapes of mLSTM parameter dictionary.
 
@@ -245,15 +245,15 @@ def validate_mLSTM_params(params: Dict):
     :param params: A dictionary of mLSTM weights.
     """
     expected = {
-        "gh": (7600,),
-        "gmh": (1900,),
-        "gmx": (1900,),
-        "gx": (7600,),
-        "wh": (1900, 7600),
-        "wmh": (1900, 1900),
-        "wmx": (10, 1900),
-        "wx": (10, 7600),
-        "b": (7600,),
+        "gh": (n_outputs * 4,),
+        "gmh": (n_outputs,),
+        "gmx": (n_outputs,),
+        "gx": (n_outputs * 4,),
+        "wh": (n_outputs, n_outputs * 4),
+        "wmh": (n_outputs, n_outputs),
+        "wmx": (10, n_outputs),
+        "wx": (10, n_outputs * 4),
+        "b": (n_outputs * 4,),
     }
 
     for key, value in params.items():

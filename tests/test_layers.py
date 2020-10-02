@@ -17,6 +17,7 @@ from jax_unirep.utils import (
     get_embeddings,
     load_embedding_1900,
     load_params_1900,
+    validate_mLSTM_params,
 )
 
 rng = random.PRNGKey(0)
@@ -34,19 +35,6 @@ def test_mLSTMBatch():
 
     h_final, c_final, h = mLSTMBatch(params, x)
     assert h.shape == (x.shape[0], 1900)
-
-
-def validate_mLSTM_params(params):
-    assert params["wmx"].shape == (10, 1900)
-    assert params["wmh"].shape == (1900, 1900)
-    assert params["wx"].shape == (10, 7600)
-    assert params["wh"].shape == (1900, 7600)
-    assert params["gmx"].shape == (1900,)
-    assert params["gmh"].shape == (1900,)
-    assert params["gx"].shape == (7600,)
-    assert params["gh"].shape == (7600,)
-    assert params["b"].shape == (7600,)
-    return None
 
 
 @given(st.data())
