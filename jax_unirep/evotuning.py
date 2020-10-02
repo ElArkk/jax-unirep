@@ -182,8 +182,15 @@ def fit(
     ### Parameters
 
     - `mlstm_size`: The number of units in the mLSTM layer.
+    - `rng`: A JAX PRNGKey, for reproducibility.
     - `sequences`: List of sequences to evotune on.
-    - `n`: The number of iterations to evotune on.
+    - `n_epochs`: The number of iterations to evotune on.
+    - `params`: Optionally pass in the params you want to use.
+        These params must yield a correctly-sized mLSTM,
+        otherwise you will get cryptic shape errors!
+        We recommend leaving this one as None,
+        so that you can get automatically-generated
+        random parameters.
     - `batch_method`: One of "length" or "random".
     - `batch_size`: If random batching is used,
         number of sequences per batch.
@@ -197,6 +204,8 @@ def fit(
         Must be greater than or equal to 1.
     - `backend`: Whether or not to use the GPU. Defaults to "cpu",
         but can be set to "gpu" if desired.
+        If you set it to GPU, make sure you have
+        a version of `jax` that is pre-compiled to work with GPUs.
 
     ### Returns
 
