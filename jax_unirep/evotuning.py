@@ -33,7 +33,8 @@ from .utils import (
 logger = logging.getLogger("evotuning")
 
 
-def evotuning_model(mlstm_size: int = 1900):
+def evotuning_layers(mlstm_size: int = 1900):
+    """Return model layers for the mLSTM1900 model."""
     model_layers = (mLSTM(mlstm_size), mLSTMHiddenStates(), Dense(25), Softmax)
     return model_layers
 
@@ -214,7 +215,7 @@ def fit(
 
     setup_evotuning_log()
     # setup model
-    model_layers = evotuning_model(mlstm_size)
+    model_layers = evotuning_layers(mlstm_size)
     init_func, predict_func = serial(*model_layers)
     predict_func = jit(predict_func)
 
@@ -334,7 +335,13 @@ def fit(
                 # calculate and print loss for out-domain holdout set
                 hl = choice(holdout_seq_lens)
                 x, y = holdout_len_batching_funcs[hl]()
-                loss = avg_loss([x], [y], params, backend=backend)
+                loss = avg_loss(
+                    [x],
+                    [y],
+                    params,
+                    predict_func=predict_func,
+                    backend=backend,
+                )
                 logger.info(
                     f"Epoch {current_epoch - 1}: "
                     + f"Estimaged average holdout-set loss: {loss}"
