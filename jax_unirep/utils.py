@@ -264,7 +264,7 @@ def validate_mLSTM_params(params: Dict, n_outputs: int = 1900):
 
 
 def load_params(folderpath: Optional[str] = None):
-    """load params for passing to evotuning stax model"""
+    """Load params for passing to evotuning stax model."""
     return (
         load_params_1900(folderpath=folderpath),
         (),
