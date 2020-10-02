@@ -68,7 +68,9 @@ def get_weights_dir(folderpath: Optional[str] = None):
 
 
 def dump_params(
-    params: Dict, dir_path: Optional[str] = "temp", step: Optional[int] = 0,
+    params: Dict,
+    dir_path: Optional[str] = "temp",
+    step: Optional[int] = 0,
 ):
     """
     Dumps the current params of model being trained to a .npy file.
@@ -119,7 +121,8 @@ def dump_params(
         # Save file
         fpath = iteration_path / fname
         onp.save(
-            fpath, onp.array(val),
+            fpath,
+            onp.array(val),
         )
     # iterate through and save dense params as npy files.
     dense_names = [
@@ -134,7 +137,8 @@ def dump_params(
         # Save file
         fpath = iteration_path / dense_names[i]
         onp.save(
-            fpath, onp.array(val),
+            fpath,
+            onp.array(val),
         )
 
 
@@ -202,7 +206,7 @@ def load_dense_1900(folderpath: Optional[str] = None) -> Tuple:
     Load pre-trained dense layer weights from the UniRep paper.
 
     The dense layer weights are used to predict next character
-    from the output of the mLSTM1900.
+    from the output of the mLSTM.
     """
     weights_1900_dir = get_weights_dir(folderpath=folderpath)
 
@@ -212,7 +216,7 @@ def load_dense_1900(folderpath: Optional[str] = None) -> Tuple:
 
 
 def load_params_1900(folderpath: Optional[str] = None) -> Dict:
-    """Load pre-trained mLSTM1900 weights from the UniRep paper."""
+    """Load pre-trained mLSTM weights from the UniRep paper."""
     weights_1900_dir = get_weights_dir(folderpath=folderpath)
 
     params = dict()
@@ -231,14 +235,14 @@ def load_params_1900(folderpath: Optional[str] = None) -> Dict:
     return params
 
 
-def validate_mLSTM1900_params(params: Dict):
+def validate_mLSTM_params(params: Dict):
     """
-    Validate shapes of mLSTM1900 parameter dictionary.
+    Validate shapes of mLSTM parameter dictionary.
 
-    Check that mLSTM1900 params dictionary contains the correct set of keys
+    Check that mLSTM params dictionary contains the correct set of keys
     and that the shapes of the params are correct.
 
-    :param params: A dictionary of mLSTM1900 weights.
+    :param params: A dictionary of mLSTM weights.
     """
     expected = {
         "gh": (7600,),
@@ -456,7 +460,9 @@ def evotuning_pairs(s: str) -> Tuple[np.ndarray, np.ndarray]:
     return x, y
 
 
-def input_output_pairs(sequences: List[str],) -> Tuple[np.ndarray, np.ndarray]:
+def input_output_pairs(
+    sequences: List[str],
+) -> Tuple[np.ndarray, np.ndarray]:
     """
     Generate input-output tensor pairs for evo-tuning.
     We check that lengths of sequences are identical,

@@ -14,7 +14,7 @@ from tqdm.autonotebook import tqdm
 
 from jax_unirep.losses import _neg_cross_entropy_loss
 
-from .layers import mLSTM1900, mLSTM1900_HiddenStates
+from .layers import mLSTM, mLSTMHiddenStates
 from .optimizers import adamW
 from .utils import (
     dump_params,
@@ -23,7 +23,7 @@ from .utils import (
     length_batch_input_outputs,
     load_params,
     right_pad,
-    validate_mLSTM1900_params,
+    validate_mLSTM_params,
 )
 
 """API for evolutionary tuning."""
@@ -32,7 +32,7 @@ from .utils import (
 logger = logging.getLogger("evotuning")
 
 # setup model
-model_layers = (mLSTM1900(), mLSTM1900_HiddenStates(), Dense(25), Softmax)
+model_layers = (mLSTM(), mLSTMHiddenStates(), Dense(25), Softmax)
 init_fun, predict = serial(*model_layers)
 
 
@@ -172,7 +172,7 @@ def fit(
 
     ### Parameters
 
-    - `params`: mLSTM1900 and Dense parameters.
+    - `params`: mLSTM and Dense parameters.
     - `sequences`: List of sequences to evotune on.
     - `n`: The number of iterations to evotune on.
     - `batch_method`: One of "length" or "random".
@@ -227,7 +227,7 @@ def fit(
             "The number of parameters specified must "
             "match the number of stax.serial layers"
         )
-    validate_mLSTM1900_params(params[0])
+    validate_mLSTM_params(params[0])
 
     # Defensive programming checks
     if batch_method not in ["length", "random"]:
@@ -346,7 +346,7 @@ def objective(
     :param sequences: A list of strings corresponding to the sequences
         that we want to evotune against.
     :param params: A dictionary of parameters.
-        Should have the keys `mLSTM1900` and `dense`,
+        Should have the keys `mLSTM` and `dense`,
         which correspond to the mLSTM weights and dense layer weights
         (output dimensions = 25)
         to predict the next character in the sequence.
@@ -443,7 +443,7 @@ def evotune(
     To save on computation time, the number of trials run
     defaults to 20, but can be configured.
 
-    By default, mLSTM1900 and Dense weights from the paper are used
+    By default, mLSTM and Dense weights from the paper are used
     by passing in `params=None`,
     but if you want to use randomly intialized weights:
 
@@ -468,7 +468,7 @@ def evotune(
     ### Parameters
 
     - `sequences`: Sequences to evotune against.
-    - `params`: Parameters to be passed into `mLSTM1900` and `Dense`.
+    - `params`: Parameters to be passed into `mLSTM` and `Dense`.
         Optional; if None, will default to weights from paper,
         or you can pass in your own set of parameters,
         as long as they are stax-compatible.

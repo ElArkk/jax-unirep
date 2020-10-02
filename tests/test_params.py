@@ -1,5 +1,5 @@
-from jax_unirep.params import add_dense_params, add_mLSTM1900_params
-from jax_unirep.utils import validate_mLSTM1900_params
+from jax_unirep.params import add_dense_params, add_mLSTM_params
+from jax_unirep.utils import validate_mLSTM_params
 
 
 def test_add_dense_params():
@@ -12,12 +12,15 @@ def test_add_dense_params():
     assert params["param1"]["b"].shape == (20,)
 
 
-def test_add_mLSTM1900_params():
-    """Execution test for add_mLSTM1900_params.
+def test_add_mLSTM_params():
+    """Execution test for add_mLSTM_params.
 
     Forgive me, I was being lazy when doing this test,
     I thus defaulted to just using an execution test.
     """
     params = dict()
-    params = add_mLSTM1900_params(params, name="mLSTM1900",)
-    validate_mLSTM1900_params(params["mLSTM1900"])
+    params = add_mLSTM_params(
+        params,
+        name="mLSTM",
+    )
+    validate_mLSTM_params(params["mLSTM"])

@@ -17,7 +17,7 @@ from jax_unirep.utils import (
     load_params_1900,
     load_random_evotuning_params,
     right_pad,
-    validate_mLSTM1900_params,
+    validate_mLSTM_params,
 )
 
 
@@ -68,10 +68,10 @@ def test_load_dense_1900():
 def test_load_params_1900():
     """
     Make sure that parameters to be passed to
-    the mlstm1900 have the right shapes.
+    the mLSTM have the right shapes.
     """
     params = load_params_1900()
-    validate_mLSTM1900_params(params)
+    validate_mLSTM_params(params)
 
 
 def test_load_embedding_1900():
@@ -84,7 +84,7 @@ def test_load_embedding_1900():
 
 
 def validate_params(params):
-    validate_mLSTM1900_params(params[0])
+    validate_mLSTM_params(params[0])
     assert params[1] == ()
     assert params[2][0].shape == (1900, 25)
     assert params[2][1].shape == (25,)

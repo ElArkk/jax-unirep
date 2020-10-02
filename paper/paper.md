@@ -258,13 +258,13 @@ z = np.matmul(x_t, params["wx"]) + np.matmul(m, params["wh"]) + params["b"]
 
 The process of tensor ops reimplementation were as follows.
 
-Firstly, we started from the RNN cell (`mLSTM1900_step`),
+Firstly, we started from the RNN cell (`mLSTMCell`),
 which sequentially walks down the protein sequence
 and generates the single step embedding.
 We thus end up with a "unit cell" function:
 
 ```python
-def mlstm1900_step(params, carry, x_t):
+def mLSTMCell(params, carry, x_t):
     h_t, c_t = carry
     # Unit cell implementation goes here.
     return (h_t, c_t), h_t
@@ -272,12 +272,12 @@ def mlstm1900_step(params, carry, x_t):
 
 Secondly, we wrapped the RNN cell using `lax.scan`
 to scan over a single sequence.
-This is the `mlstm1900_batch` function:
+This is the `mLSTMBatch` function:
 
 ```python
-def mlstm1900_batch(params, batch):
+def mLSTMBatch(params, batch):
     # code setup goes here.
-    step_func = partial(mlstm1900_step, params)
+    step_func = partial(mLSTMCell, params)
 
     # use of lax.scan below:
     (h_final, c_final), outputs = lax.scan(
@@ -288,14 +288,14 @@ def mlstm1900_batch(params, batch):
 
 Thirdly, we then used `jax.vmap`
 to vectorize the operation over multiple sequences,
-thus generating `mlstm1900`:
+thus generating `mLSTM`:
 
 ```python
-def mlstm1900(params, x):
-    def mlstm1900_vmappable(x):
-        return mlstm1900_batch(params=params, batch=x)
+def mLSTM(params, x):
+    def mLSTM_vmappable(x):
+        return mLSTMBatch(params=params, batch=x)
 
-    h_final, c_final, outputs = vmap(mlstm1900_vmappable)(x)
+    h_final, c_final, outputs = vmap(mLSTM_vmappable)(x)
     return h_final, c_final, outputs
 ```
 

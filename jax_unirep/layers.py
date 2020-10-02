@@ -11,9 +11,9 @@ from .activations import sigmoid, tanh
 from .utils import l2_normalize
 
 
-def mLSTM1900(output_dim=1900, W_init=glorot_normal(), b_init=normal()):
+def mLSTM(output_dim=1900, W_init=glorot_normal(), b_init=normal()):
     """
-    mLSTM cell from the UniRep paper, stax compatible
+    Return stax-compatible mLSTM layer from the UniRep paper.
 
     This function works on a per-sequence basis,
     meaning that mapping over batches of sequences
@@ -26,13 +26,12 @@ def mLSTM1900(output_dim=1900, W_init=glorot_normal(), b_init=normal()):
         h_final, c_final, outputs = vmap(apply_fun_vmapped)(emb_seqs)
 
     It returns the average hidden, final hidden and final cell states
-    of the mlstm.
-
+    of the mLSTM.
     """
 
     def init_fun(rng, input_shape):
         """
-        Initialize parameters for mLSTM1900
+        Initialize parameters for mLSTM.
 
         output_dim:
             mlstm cell size -> (1900,)
@@ -77,12 +76,12 @@ def mLSTM1900(output_dim=1900, W_init=glorot_normal(), b_init=normal()):
         return output_shape, params
 
     def apply_fun(params, inputs, **kwargs):
-        return mLSTM1900_batch(params=params, batch=inputs)
+        return mLSTMBatch(params=params, batch=inputs)
 
     return init_fun, apply_fun
 
 
-def mLSTM1900_AvgHidden(**kwargs):
+def mLSTMAvgHidden(**kwargs):
     """
     Returns the average hidden state of the mlstm.
 
@@ -99,14 +98,12 @@ def mLSTM1900_AvgHidden(**kwargs):
     return init_fun, apply_fun
 
 
-def mLSTM1900_HiddenStates(**kwargs):
+def mLSTMHiddenStates(**kwargs):
     """
-    Returns the full hidden states (last element) of the mLSTM1900 layer.
+    Returns the full hidden states (last element) of the mLSTM layer.
     """
 
     def init_fun(rng, input_shape):
-        # Maybe include a assertion here that output_dim == output_shape[0]?
-        # Not sure how to handle output_dim and output_shape here
         output_shape = (input_shape[1],)
         return output_shape, ()
 
@@ -116,9 +113,9 @@ def mLSTM1900_HiddenStates(**kwargs):
     return init_fun, apply_fun
 
 
-def mLSTM1900_Fusion(**kwargs):
+def mLSTMFusion(**kwargs):
     """
-    Returns the concatenation of all states of the mlstm.
+    Return the concatenation of all states of the mLSTM.
 
     This means, it concatenates the average hidden, final hidden and final cell states.
 
@@ -135,10 +132,12 @@ def mLSTM1900_Fusion(**kwargs):
     return init_fun, apply_fun
 
 
-def mLSTM1900_batch(
+def mLSTMBatch(
     params: Dict[str, np.ndarray], batch: np.ndarray
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
+    Scan mLSTMCell over one sequence batch.
+
     LSTM layer implemented according to UniRep,
     found here:
     https://github.com/churchlab/UniRep/blob/master/unirep.py#L43,
@@ -150,7 +149,7 @@ def mLSTM1900_batch(
     and the number of columns being the embedding of each sequence letter.
 
     :param params: All weights and biases for a single
-        mLSTM1900 RNN cell.
+        mLSTM RNN cell.
     :param batch: One sequence embedded in a (n, 10) matrix,
         where `n` is the number of sequences
     :returns:
@@ -158,8 +157,9 @@ def mLSTM1900_batch(
     h_t = np.zeros(params["wmh"].shape[0])
     c_t = np.zeros(params["wmh"].shape[0])
 
-    def mLSTM1900_step(
-        carry: Tuple[np.ndarray, np.ndarray], x_t: np.ndarray,
+    def mLSTMCell(
+        carry: Tuple[np.ndarray, np.ndarray],
+        x_t: np.ndarray,
     ) -> Tuple[Tuple[np.ndarray, np.ndarray], np.ndarray]:
         """
         Run one step of mLSTM cell.
@@ -172,27 +172,26 @@ def mLSTM1900_batch(
 
         Shapes of parameters:
 
-        - wmx: 10, 1900
-        - wmh: 1900, 1900
-        - wx: 10, 7600
-        - wh: 1900, 7600
-        - gmx: 1900
-        - gmh: 1900
-        - gx: 7600
-        - gh: 7600
-        - b: 7600
+        - wmx: 10, n_outputs
+        - wmh: n_outputs, n_outputs
+        - wx: 10, n_outputs * 4
+        - wh: n_outputs, n_outputs * 4
+        - gmx: n_outputs
+        - gmh: n_outputs
+        - gx: n_outputs * 4
+        - gh: n_outputs * 4
+        - b: n_outputs * 4
 
         Shapes of inputs:
 
         - x_t: (1, 10)
         - carry:
-            - h_t: (1, 1900)
-            - c_t: (1, 1900)
+            - h_t: (1, n_outputs)
+            - c_t: (1, n_outputs)
         """
         h_t, c_t = carry
 
         # Perform weight normalization first
-        # (Corresponds to Line 113).
         # In the original implementation, this is toggled by a boolean flag,
         # but here we are enabling it by default.
         wx = l2_normalize(params["wx"], axis=0) * params["gx"]
@@ -201,33 +200,33 @@ def mLSTM1900_batch(
         wmh = l2_normalize(params["wmh"], axis=0) * params["gmh"]
 
         # Shape annotation
-        # (:, 10) @ (10, 1900) * (:, 1900) @ (1900, 1900) => (:, 1900)
+        # (:, 10) @ (10, n_outputs) * (:, n_outputs) @ (n_outputs, n_outputs) => (:, n_outputs)
         m = np.matmul(x_t, wmx) * np.matmul(h_t, wmh)
 
-        # (:, 10) @ (10, 7600) * (:, 1900) @ (1900, 7600) + (7600, ) => (:, 7600)
+        # (:, 10) @ (10, n_outputs * 4) * (:, n_outputs) @ (n_outputs, n_outputs * 4) + (n_outputs * 4, ) => (:, n_outputs * 4)
         z = np.matmul(x_t, wx) + np.matmul(m, wh) + params["b"]
 
-        # Splitting along axis 1, four-ways, gets us (:, 1900) as the shape
+        # Splitting along axis 1, four-ways, gets us (:, n_outputs) as the shape
         # for each of i, f, o and u
         i, f, o, u = np.split(z, 4, axis=-1)  # input, forget, output, update
 
         # Elementwise transforms here.
-        # Shapes are are (:, 1900) for each of the four.
+        # Shapes are are (:, n_outputs) for each of the four.
         i = sigmoid(i, version="exp")
         f = sigmoid(f, version="exp")
         o = sigmoid(o, version="exp")
         u = tanh(u)
 
-        # (:, 1900) * (:, 1900) + (:, 1900) * (:, 1900) => (:, 1900)
+        # (:, n_outputs) * (:, n_outputs) + (:, n_outputs) * (:, n_outputs) => (:, n_outputs)
         c_t = f * c_t + i * u
 
-        # (:, 1900) * (:, 1900) => (:, 1900)
+        # (:, n_outputs) * (:, n_outputs) => (:, n_outputs)
         h_t = o * tanh(c_t)
 
-        # h, c each have shape (:, 1900)
+        # h, c each have shape (:, n_outputs)
         return (h_t, c_t), h_t
 
     (h_final, c_final), outputs = lax.scan(
-        mLSTM1900_step, init=(h_t, c_t), xs=batch
+        mLSTMCell, init=(h_t, c_t), xs=batch
     )
     return h_final, c_final, outputs

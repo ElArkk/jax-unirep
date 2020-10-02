@@ -8,7 +8,7 @@ from jax.random import PRNGKey
 from jax_unirep.evotuning import evotune, fit, init_fun, predict
 from jax_unirep.utils import input_output_pairs
 
-from .test_layers import validate_mLSTM1900_params
+from .test_layers import validate_mLSTM_params
 
 """Evolutionary tuning function tests."""
 
@@ -77,8 +77,8 @@ def test_fit(params, holdout_seqs):
         holdout_seqs=holdout_seqs,
     )
 
-    validate_mLSTM1900_params(length_fitted_params[0])
-    validate_mLSTM1900_params(random_fitted_params[0])
+    validate_mLSTM_params(length_fitted_params[0])
+    validate_mLSTM_params(random_fitted_params[0])
 
 
 @pytest.mark.skip(reason="Execution test already done in ``test_evotune``.")

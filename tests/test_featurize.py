@@ -6,7 +6,7 @@ import pytest
 from jax_unirep import get_reps
 from jax_unirep.errors import SequenceLengthsError
 from jax_unirep.featurize import rep_arbitrary_lengths, rep_same_lengths
-from jax_unirep.layers import mLSTM1900
+from jax_unirep.layers import mLSTM
 from jax_unirep.utils import load_params_1900
 
 

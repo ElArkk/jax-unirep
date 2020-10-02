@@ -143,11 +143,11 @@ and a top-model at once:
 from jax.experimental import stax
 from jax.experimental.stax import Dense, Relu
 
-from jax_unirep.layers import mLSTM1900, mLSTM1900_AvgHidden
+from jax_unirep.layers import mLSTM, mLSTMAvgHidden
 
 init_fun, apply_fun = stax.serial(
-    mLSTM1900(),
-    mLSTM1900_AvgHidden(),
+    mLSTM(),
+    mLSTMAvgHidden(),
     # Add two layers, one dense layer that results in 512-dim activations
     Dense(512), Relu(),
     # And then a linear layer to produce a 1-dim activation
