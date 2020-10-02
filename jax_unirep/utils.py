@@ -1,3 +1,4 @@
+"""Utility functions for jax-unirep."""
 import logging
 import os
 from collections import Counter
@@ -55,7 +56,9 @@ proposal_valid_letters = "ACDEFGHIKLMNPQRSTVWY"
 
 def get_weights_dir(folderpath: Optional[str] = None):
     """
-    Fetch the paper weights per default, or from a specified folderpath
+    Fetch model weights.
+
+    If `folderpath` is None, retrieve the mLSTM1900 weights.
     """
     if folderpath:
         return Path(folderpath)
@@ -73,7 +76,7 @@ def dump_params(
     step: Optional[int] = 0,
 ):
     """
-    Dumps the current params of model being trained to a .npy file.
+    Dump the current params of model being trained to a .npy file.
 
     The directory is specified by dir_path,
     and will be created, if it does not exist yet.
@@ -103,7 +106,6 @@ def dump_params(
     :param step: the number of training steps to get to this state.
     :param dir_name: path of directory params will save to.
     """
-
     # create directory if it doesn't already exist:
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
@@ -235,7 +237,7 @@ def load_params_1900(folderpath: Optional[str] = None) -> Dict:
     return params
 
 
-def validate_mLSTM_params(params: Dict, n_outputs: int = 1900):
+def validate_mLSTM_params(params: Dict, n_outputs):
     """
     Validate shapes of mLSTM parameter dictionary.
 
@@ -304,9 +306,11 @@ def batch_sequences(seqs: Iterable[str]) -> List[List]:
     where each sub-list contains the positions of same-length sequences
     in the original list.
 
-    Example:
+    For example:
 
-        ['MTN', 'MT', 'MDN', 'M'] -> [[3], [1], [0, 2]]
+    ```
+    ['MTN', 'MT', 'MDN', 'M'] -> [[3], [1], [0, 2]]
+    ```
 
     :param seqs: List of sequences as strings.
     :returns: List of lists, where each sub-list contains the positions of
@@ -332,7 +336,7 @@ def right_pad(seqs: Iterable[str], max_len: int):
 
 def get_batching_func(seq_batch, batch_size: int = 25) -> Callable:
     """
-    Create a function which returns batches of embedded sequences
+    Create a function which returns batches of embedded sequences.
 
     :param xs: array of embedded same-length sequences
     :param ys: array of one-hot encoded groud truth next-AA labels
@@ -405,12 +409,14 @@ def letter_seq(arr: np.array) -> str:
     return sequence.strip("start").strip("stop")
 
 
-def random_like(param):
+def random_like(param: np.ndarray) -> np.ndarray:
+    """Generate random parameters in the same shape as the specified param."""
     key = PRNGKey(39)
     return glorot_normal(key, param.shape)
 
 
 def load_random_evotuning_params():
+    """Load random evotuning params."""
     params_1900 = load_params_1900()
     random_params_1900 = tree_map(random_like, params_1900)
     params_dense = load_dense_1900()

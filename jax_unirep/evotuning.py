@@ -1,7 +1,7 @@
 import logging
 from functools import partial
 from random import choice
-from typing import Dict, Iterable, List, Optional, Set, Tuple
+from typing import Dict, Iterable, List, Optional, Set, Tuple, Callable
 
 import numpy as onp
 import optuna
@@ -31,9 +31,10 @@ from .utils import (
 
 logger = logging.getLogger("evotuning")
 
-# setup model
-model_layers = (mLSTM(), mLSTMHiddenStates(), Dense(25), Softmax)
-init_fun, predict = serial(*model_layers)
+
+def evotuning_model(mlstm_size: int = 1900):
+    model_layers = (mLSTM(mlstm_size), mLSTMHiddenStates(), Dense(25), Softmax)
+    return model_layers
 
 
 def setup_evotuning_log():
@@ -47,7 +48,7 @@ def setup_evotuning_log():
     logger.addHandler(fh)
 
 
-def evotune_loss(params, inputs, targets):
+def evotune_loss(params, predict, inputs, targets):
     logging.debug(f"Input shape: {inputs.shape}")
     logging.debug(f"Output shape: {targets.shape}")
     predictions = vmap(partial(predict, params))(inputs)
@@ -58,7 +59,8 @@ def evotune_loss(params, inputs, targets):
 def avg_loss(
     xs: List[np.ndarray],
     ys: List[np.ndarray],
-    params,
+    params: Tuple,
+    predict_func: Callable,
     backend: str = "cpu",
     batch_size: int = 50,
 ) -> float:
@@ -82,7 +84,9 @@ def avg_loss(
     sum_loss = 0
     num_seqs = 0
     global evotune_loss  # this is necessary for JIT to reference evotune_loss
-    evotune_loss_jit = jit(evotune_loss, backend=backend)
+    evotune_loss_jit = jit(
+        partial(evotune_loss, predict=predict_func), backend=backend
+    )
 
     def batch_iter(
         xs: np.ndarray, ys: np.ndarray, batch_size: int = batch_size
@@ -98,16 +102,23 @@ def avg_loss(
     for xmat, ymat in zip(xs, ys):
         # Send x and y in small batches of 100 to control memory usage.
         for x, y in batch_iter(xmat, ymat, batch_size=batch_size):
-            sum_loss += evotune_loss_jit(params, inputs=x, targets=y) * len(x)
+            sum_loss += evotune_loss_jit(
+                params=params, inputs=x, targets=y
+            ) * len(x)
             num_seqs += len(x)
 
     return sum_loss / num_seqs
 
 
+import jax
+
+
 def fit(
-    params: Dict,
+    mlstm_size: int,
+    rng: jax.interpreters.xla.DeviceArray,
     sequences: Set[str],
     n_epochs: int,
+    params: Optional[Dict] = None,
     batch_method: Optional[str] = "random",
     batch_size: Optional[int] = 25,
     step_size: float = 0.0001,
@@ -172,7 +183,7 @@ def fit(
 
     ### Parameters
 
-    - `params`: mLSTM and Dense parameters.
+    - `mlstm_size`: The number of units in the mLSTM layer.
     - `sequences`: List of sequences to evotune on.
     - `n`: The number of iterations to evotune on.
     - `batch_method`: One of "length" or "random".
@@ -195,6 +206,10 @@ def fit(
     """
 
     setup_evotuning_log()
+    # setup model
+    model_layers = evotuning_model(mlstm_size)
+    init_func, predict_func = serial(*model_layers)
+    predict_func = jit(predict_func)
 
     @jit
     def step(i, x, y, state):
@@ -212,14 +227,16 @@ def fit(
         :param state: Current state of parameters from jax.
         """
         params = get_params(state)
-        g = grad(evotune_loss)(params, x, y)
+        g = grad(partial(evotune_loss, predict=predict_func))(
+            params, inputs=x, targets=y
+        )
         state = update(i, g, state)
 
         return state
 
     # Load and check that params have correct keys and shapes
     if params is None:
-        params = load_params()
+        _, params = init_func(rng=rng, input_shape=(-1, 10))
 
     # Defensive programming checks
     if len(params) != len(model_layers):
@@ -227,7 +244,7 @@ def fit(
             "The number of parameters specified must "
             "match the number of stax.serial layers"
         )
-    validate_mLSTM_params(params[0])
+    validate_mLSTM_params(params[0], n_outputs=mlstm_size)
 
     # Defensive programming checks
     if batch_method not in ["length", "random"]:
@@ -270,9 +287,10 @@ def fit(
     batch_lens = [len(batch) for batch in seqs_batched]
     logger.info(
         f"Length-batching done: "
-        f"{len(batch_lens)} unique lengths, "
-        f"with average length {onp.mean(batch_lens)}, "
-        f"max length {max(batch_lens)} and min length {min(batch_lens)}."
+        f"{len(batch_lens)} unique sequence lengths, "
+        f"with average batch length {onp.mean(batch_lens)}, "
+        f"max batch length {max(batch_lens)} "
+        f"and min batch length {min(batch_lens)}."
     )
 
     init, update, get_params = adamW(step_size=step_size)
@@ -296,7 +314,9 @@ def fit(
             logger.info(f"Starting epoch {current_epoch}")
             params = get_params(state)
             x, y = len_batching_funcs[l]()
-            loss = avg_loss([x], [y], params, backend=backend)
+            loss = avg_loss(
+                [x], [y], params, predict_func=predict_func, backend=backend
+            )
             logger.info(
                 f"Epoch {current_epoch - 1}: "
                 f"Estimated average training-set loss: {loss}. "
@@ -447,10 +467,10 @@ def evotune(
     by passing in `params=None`,
     but if you want to use randomly intialized weights:
 
-        from jax_unirep.evotuning import init_fun
+        from jax_unirep.evotuning import init_func
         from jax.random import PRNGKey
 
-        _, params = init_fun(PRNGKey(0), input_shape=(-1, 10))
+        _, params = init_func(PRNGKey(0), input_shape=(-1, 10))
 
     or dumped weights:
 
