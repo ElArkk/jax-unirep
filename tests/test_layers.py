@@ -55,7 +55,7 @@ def test_mLSTM(data):
     output_shape, params = init_fun(rng, (length, 10))
     h_final, c_final, outputs = apply_fun(params=params, inputs=x)
     assert output_shape == (length, 1900)
-    validate_mLSTM_params(params)
+    validate_mLSTM_params(params, 1900)
     assert outputs.shape == (length + 1, 1900)
 
 
@@ -80,7 +80,7 @@ def test_mLSTMAvgHidden(data):
     output_shape, params = init_fun(rng, (length, 10))
     h_avg = apply_fun(params=params, inputs=x)
     assert output_shape == (1900,)
-    validate_mLSTM_params(params[0])
+    validate_mLSTM_params(params[0], 1900)
     assert params[1] == ()
     assert h_avg.shape == (1900,)
 
@@ -106,6 +106,6 @@ def test_mLSTMFusion(data):
     output_shape, params = init_fun(rng, (length, 10))
     h_avg = apply_fun(params=params, inputs=x)
     assert output_shape == (5700,)
-    validate_mLSTM_params(params[0])
+    validate_mLSTM_params(params[0], 1900)
     assert params[1] == ()
     assert h_avg.shape == (5700,)

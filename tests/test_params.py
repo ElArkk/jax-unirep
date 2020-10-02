@@ -23,4 +23,4 @@ def test_add_mLSTM_params():
         params,
         name="mLSTM",
     )
-    validate_mLSTM_params(params["mLSTM"])
+    validate_mLSTM_params(params["mLSTM"], 1900)

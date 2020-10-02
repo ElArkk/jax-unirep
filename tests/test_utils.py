@@ -15,7 +15,6 @@ from jax_unirep.utils import (
     load_embedding_1900,
     load_params,
     load_params_1900,
-    load_random_evotuning_params,
     right_pad,
     validate_mLSTM_params,
 )
@@ -71,7 +70,7 @@ def test_load_params_1900():
     the mLSTM have the right shapes.
     """
     params = load_params_1900()
-    validate_mLSTM_params(params)
+    validate_mLSTM_params(params, n_outputs=1900)
 
 
 def test_load_embedding_1900():
@@ -84,7 +83,7 @@ def test_load_embedding_1900():
 
 
 def validate_params(params):
-    validate_mLSTM_params(params[0])
+    validate_mLSTM_params(params[0], 1900)
     assert params[1] == ()
     assert params[2][0].shape == (1900, 25)
     assert params[2][1].shape == (25,)
@@ -121,11 +120,6 @@ def test_dump_params():
 )
 def test_right_pad(seqs, max_len, expected):
     assert right_pad(seqs, max_len) == expected
-
-
-def test_load_random_evotuning_params():
-    params = load_random_evotuning_params()
-    validate_params(params)
 
 
 @pytest.mark.parametrize(

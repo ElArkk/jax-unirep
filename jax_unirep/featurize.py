@@ -126,7 +126,7 @@ def get_reps(
     if params is None:
         params = load_params_1900()
     # Check that params have correct keys and shapes
-    validate_mLSTM_params(params)
+    validate_mLSTM_params(params, n_outputs=1900)
     # If single string sequence is passed, package it into a list
     if isinstance(seqs, str):
         seqs = [seqs]

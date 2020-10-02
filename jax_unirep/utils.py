@@ -261,7 +261,7 @@ def validate_mLSTM_params(params: Dict, n_outputs):
     }
 
     for key, value in params.items():
-        if value.shape != expected[key]:
+        if hasattr(value, "shape") and value.shape != expected[key]:
             raise ValueError(
                 f"Param {key} does not have the right shape. Expected: {expected[key]}, got: {value.shape} instead."
             )
@@ -409,21 +409,6 @@ def letter_seq(arr: np.array) -> str:
     for letter in arr:
         sequence += arr_to_letter(np.round(letter))
     return sequence.strip("start").strip("stop")
-
-
-def random_like(param: np.ndarray) -> np.ndarray:
-    """Generate random parameters in the same shape as the specified param."""
-    key = PRNGKey(39)
-    return glorot_normal(key, param.shape)
-
-
-def load_random_evotuning_params():
-    """Load random evotuning params."""
-    params_1900 = load_params_1900()
-    random_params_1900 = tree_map(random_like, params_1900)
-    params_dense = load_dense_1900()
-    random_dense_1900 = tree_map(random_like, params_dense)
-    return (params_1900, (), params_dense, ())
 
 
 def evotuning_pairs(s: str) -> Tuple[np.ndarray, np.ndarray]:
