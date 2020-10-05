@@ -17,20 +17,6 @@ from jax_unirep.utils import (
 rng = random.PRNGKey(0)
 
 
-# def test_mLSTMBatch():
-#     """
-#     Given one fake embedded sequence,
-#     ensure that we get out _an_ output from mLSTM.
-#     """
-#     emb = load_embedding_1900()
-#     x = get_embedding("TEST", emb)
-
-#     params = load_params_1900()
-
-#     h_final, c_final, h = mLSTMBatch(params, x)
-#     assert h.shape == (x.shape[0], 1900)
-
-
 @given(st.data())
 @settings(deadline=None, max_examples=20)
 def test_mLSTM(data):
