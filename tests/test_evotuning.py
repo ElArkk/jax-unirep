@@ -1,7 +1,6 @@
 """Evolutionary tuning function tests."""
 from functools import partial
 
-import numpy as np
 import pytest
 
 from jax.experimental import stax
