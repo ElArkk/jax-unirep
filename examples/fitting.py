@@ -1,21 +1,19 @@
 import logging
-from random import shuffle, choice
+from enum import Enum
+from random import choice, shuffle
+from typing import Optional
 
 from Bio import SeqIO
 from pyprojroot import here
 
+import typer
+from jax.random import PRNGKey
 from jax_unirep import fit
 from jax_unirep.utils import dump_params
-from jax.random import PRNGKey
-
-import typer
-from typing import Optional
 
 app = typer.Typer()
 
 """Fitting mLSTM weights based on randomly initialized weights."""
-
-from enum import Enum
 
 
 class DataType(str, Enum):

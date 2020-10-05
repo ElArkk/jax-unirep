@@ -2,11 +2,11 @@ from functools import partial
 
 import numpy as np
 import pytest
+
 from jax import vmap
 from jax.experimental import stax
 from jax.random import PRNGKey
-
-from jax_unirep.evotuning import evotune, fit, evotuning_layers
+from jax_unirep.evotuning import evotune, evotuning_layers, fit
 from jax_unirep.utils import input_output_pairs
 
 from .test_layers import validate_mLSTM_params

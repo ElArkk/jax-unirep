@@ -1,15 +1,13 @@
 """Tests for neural network layers."""
 
+from functools import partial
+
 from hypothesis import given, settings
 from hypothesis import strategies as st
-from jax import random
-from jax.experimental import stax
 
-from jax_unirep.layers import (
-    mLSTM,
-    mLSTMAvgHidden,
-    mLSTMFusion,
-)
+from jax import random, vmap
+from jax.experimental import stax
+from jax_unirep.layers import mLSTM, mLSTMAvgHidden, mLSTMFusion
 from jax_unirep.utils import (
     get_embedding,
     load_embedding_1900,
@@ -50,8 +48,8 @@ def test_mLSTM(data):
     output_dim = 256
     init_fun, apply_fun = mLSTM(output_dim=output_dim)
     output_shape, params = init_fun(rng, (-1, 10))
-    _, _, outputs = apply_fun(params=params, inputs=x)
-    assert output_shape == (length, output_dim)
+    _, _, outputs = vmap(partial(apply_fun, params=params))(inputs=x)
+    assert output_shape == (-1, output_dim)
     assert outputs.shape == (length + 1, output_dim)
 
 
