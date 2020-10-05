@@ -48,7 +48,7 @@ def test_mLSTM(data):
     output_dim = 256
     init_fun, apply_fun = mLSTM(output_dim=output_dim)
     output_shape, params = init_fun(rng, (-1, 10))
-    _, _, outputs = vmap(partial(apply_fun, params=params))(inputs=x)
+    _, _, outputs = apply_fun(params=params, inputs=x)
     assert output_shape == (-1, output_dim)
     assert outputs.shape == (length + 1, output_dim)
 
