@@ -5,6 +5,8 @@ import numpy as np
 import pytest
 
 from jax_unirep.utils import (
+    aa_seq_to_int,
+    arr_to_letter,
     batch_sequences,
     dump_params,
     evotuning_pairs,
@@ -17,6 +19,8 @@ from jax_unirep.utils import (
     load_params_1900,
     right_pad,
     validate_mLSTM_params,
+    one_hots,
+    letter_seq,
 )
 
 
@@ -155,3 +159,11 @@ def test_evotuning_pairs():
     x, y = evotuning_pairs(sequence)
     assert x.shape == (len(sequence) + 1, 10)  # embeddings ("x") are width 10
     assert y.shape == (len(sequence) + 1, 25)  # output is one of 25 chars
+
+
+def test_letter_seq():
+    """Test letter_seq function."""
+    seq = "ACDEF"
+    ints = aa_seq_to_int(seq)
+    one_hot = np.stack([one_hots[i] for i in ints])
+    assert letter_seq(one_hot) == seq
