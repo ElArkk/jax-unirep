@@ -23,24 +23,23 @@ from jax_unirep.utils import (
 rng = random.PRNGKey(0)
 
 
-def test_mLSTMBatch():
-    """
-    Given one fake embedded sequence,
-    ensure that we get out _an_ output from mLSTM.
-    """
-    emb = load_embedding_1900()
-    x = get_embedding("TEST", emb)
+# def test_mLSTMBatch():
+#     """
+#     Given one fake embedded sequence,
+#     ensure that we get out _an_ output from mLSTM.
+#     """
+#     emb = load_embedding_1900()
+#     x = get_embedding("TEST", emb)
 
-    params = load_params_1900()
+#     params = load_params_1900()
 
-    h_final, c_final, h = mLSTMBatch(params, x)
-    assert h.shape == (x.shape[0], 1900)
+#     h_final, c_final, h = mLSTMBatch(params, x)
+#     assert h.shape == (x.shape[0], 1900)
 
 
 @given(st.data())
 @settings(deadline=None, max_examples=20)
 def test_mLSTM(data):
-    params = load_params_1900()
     length = data.draw(st.integers(min_value=1, max_value=10))
     sequence = data.draw(
         st.text(
@@ -51,18 +50,17 @@ def test_mLSTM(data):
     )
     embedding = load_embedding_1900()
     x = get_embedding(sequence, embedding)
-    init_fun, apply_fun = mLSTM(output_dim=1900)
-    output_shape, params = init_fun(rng, (length, 10))
-    h_final, c_final, outputs = apply_fun(params=params, inputs=x)
-    assert output_shape == (length, 1900)
-    validate_mLSTM_params(params, 1900)
-    assert outputs.shape == (length + 1, 1900)
+    output_dim = 256
+    init_fun, apply_fun = mLSTM(output_dim=output_dim)
+    output_shape, params = init_fun(rng, (-1, 10))
+    _, _, outputs = apply_fun(params=params, inputs=x)
+    assert output_shape == (length, output_dim)
+    assert outputs.shape == (length + 1, output_dim)
 
 
 @given(st.data())
 @settings(deadline=None, max_examples=20)
 def test_mLSTMAvgHidden(data):
-    params = load_params_1900()
     length = data.draw(st.integers(min_value=1, max_value=10))
     sequence = data.draw(
         st.text(
@@ -73,16 +71,17 @@ def test_mLSTMAvgHidden(data):
     )
     embedding = load_embedding_1900()
     x = get_embedding(sequence, embedding)
+    output_dim = 256
     init_fun, apply_fun = stax.serial(
-        mLSTM(output_dim=1900),
-        mLSTMAvgHidden(output_dim=1900),
+        mLSTM(output_dim=output_dim),
+        mLSTMAvgHidden(),
     )
     output_shape, params = init_fun(rng, (length, 10))
     h_avg = apply_fun(params=params, inputs=x)
-    assert output_shape == (1900,)
-    validate_mLSTM_params(params[0], 1900)
+    assert output_shape == (output_dim,)
+    validate_mLSTM_params(params[0], output_dim)
     assert params[1] == ()
-    assert h_avg.shape == (1900,)
+    assert h_avg.shape == (output_dim,)
 
 
 @given(st.data())
@@ -99,13 +98,14 @@ def test_mLSTMFusion(data):
     )
     embedding = load_embedding_1900()
     x = get_embedding(sequence, embedding)
+    output_dim = 256
     init_fun, apply_fun = stax.serial(
-        mLSTM(output_dim=1900),
-        mLSTMFusion(output_dim=5700),
+        mLSTM(output_dim=output_dim),
+        mLSTMFusion(),
     )
     output_shape, params = init_fun(rng, (length, 10))
     h_avg = apply_fun(params=params, inputs=x)
-    assert output_shape == (5700,)
-    validate_mLSTM_params(params[0], 1900)
+    assert output_shape == (output_dim * 3,)
+    validate_mLSTM_params(params[0], output_dim)
     assert params[1] == ()
-    assert h_avg.shape == (5700,)
+    assert h_avg.shape == (output_dim * 3,)

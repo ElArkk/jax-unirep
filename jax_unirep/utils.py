@@ -159,7 +159,7 @@ def aa_seq_to_int(s: str) -> List[int]:
 
 @lru_cache(maxsize=128)
 def load_embedding_1900(folderpath: Optional[str] = None):
-    """Load pre-trained embedding weights for uniref50 model."""
+    """Load pre-trained embedding weights for UniRep1900 model."""
     weights_1900_dir = get_weights_dir(folderpath=folderpath)
 
     return np.load(weights_1900_dir / "embed_matrix:0.npy")
