@@ -1,6 +1,4 @@
-"""
-mLSTM cell layers.
-"""
+"""mLSTM cell layers."""
 from typing import Dict, Tuple
 
 import jax.numpy as np
