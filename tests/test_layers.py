@@ -1,20 +1,17 @@
-import numpy as np
-import numpy.random as npr
-import pytest
+"""Tests for neural network layers."""
+
 from hypothesis import given, settings
 from hypothesis import strategies as st
 from jax import random
 from jax.experimental import stax
 
-from jax_unirep.layers import (  # mLSTMCell,
+from jax_unirep.layers import (
     mLSTM,
     mLSTMAvgHidden,
-    mLSTMBatch,
     mLSTMFusion,
 )
 from jax_unirep.utils import (
     get_embedding,
-    get_embeddings,
     load_embedding_1900,
     load_params_1900,
     validate_mLSTM_params,
