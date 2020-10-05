@@ -1,11 +1,10 @@
 """Tests for neural network layers."""
 
-from functools import partial
 
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from jax import random, vmap
+from jax import random
 from jax.experimental import stax
 from jax_unirep.layers import mLSTM, mLSTMAvgHidden, mLSTMFusion
 from jax_unirep.utils import (
