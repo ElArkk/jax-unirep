@@ -39,6 +39,11 @@ def evotuning_layers(mlstm_size: int = 1900):
     return model_layers
 
 
+def evotuning_funcs(mlstm_size: int = 1900):
+    init_func, apply_func = serial(*evotuning_layers(mlstm_size))
+    return init_func, apply_func
+
+
 def setup_evotuning_log():
     logger.setLevel(logging.INFO)
     fh = logging.FileHandler("evotuning.log")
@@ -363,7 +368,7 @@ def fit(
 def objective(
     trial,
     sequences: Iterable[str],
-    params: Optional[Dict] = None,
+    fit_func: Callable,
     n_epochs_config: Dict = None,
     learning_rate_config: Dict = None,
     n_splits: Optional[int] = 5,
@@ -394,6 +399,9 @@ def objective(
 
     :returns: Average of 5-fold test loss.
     """
+    _, predict_func = evotuning_funcs(
+        mlstm_size=fit_func.keywords["mlstm_size"]
+    )
     # Default settings for n_epochs_kwargs
     n_epochs_kwargs = {
         "name": "n_epochs",
@@ -431,9 +439,8 @@ def objective(
             sequences[test_index],
         )
 
-        evotuned_params = fit(
-            params,
-            train_sequences,
+        evotuned_params = fit_func(
+            sequences=train_sequences,
             n_epochs=int(n_epochs),
             step_size=learning_rate,
         )
@@ -445,22 +452,22 @@ def objective(
             xs.append(x)
             ys.append(y)
 
-        avg_test_losses.append(avg_loss(xs, ys, evotuned_params))
+        avg_test_losses.append(
+            avg_loss(xs, ys, evotuned_params, predict_func=predict_func)
+        )
 
     return sum(avg_test_losses) / len(avg_test_losses)
 
 
 def evotune(
     sequences: Iterable[str],
-    params: Optional[Dict] = None,
-    proj_name: Optional[str] = "temp",
-    out_dom_seqs: Optional[Iterable[str]] = None,
+    fit_func: Callable,
     n_trials: Optional[int] = 20,
     n_epochs_config: Dict = None,
     learning_rate_config: Dict = None,
     n_splits: Optional[int] = 5,
-    epochs_per_print: Optional[int] = 200,
-) -> Dict:
+    out_dom_seqs: Optional[List[str]] = None,
+) -> Tuple:
     """
     Evolutionarily tune the model to a set of sequences.
 
@@ -481,9 +488,10 @@ def evotune(
     by passing in `params=None`,
     but if you want to use randomly intialized weights:
 
-        from jax_unirep.evotuning import init_func
+        from jax_unirep.evotuning import evotuning_funcs
         from jax.random import PRNGKey
 
+        init_func, _ = evotuning_funcs(mlstm_size=256)
         _, params = init_func(PRNGKey(0), input_shape=(-1, 10))
 
     or dumped weights:
@@ -502,14 +510,8 @@ def evotune(
     ### Parameters
 
     - `sequences`: Sequences to evotune against.
-    - `params`: Parameters to be passed into `mLSTM` and `Dense`.
-        Optional; if None, will default to weights from paper,
-        or you can pass in your own set of parameters,
-        as long as they are stax-compatible.
-    - `proj_name`: Name of the project,
-        used to name created output directory.
-    - `out_dom_seqs`: Out-domain holdout set of sequences,
-        to check for loss on to prevent overfitting.
+    - `fit_func`: A partially-evaluated `fit` function,
+        such that the arguments `mlstm_size`, `rng`, are set.
     - `n_trials: The number of trials Optuna should attempt.
     - `n_epochs_config`: A dictionary of kwargs
         to `trial.suggest_discrete_uniform`,
@@ -524,9 +526,8 @@ def evotune(
         See source code for default configuration,
         at the definition of `learning_rate_kwargs`.
     - `n_splits`: The number of folds of cross-validation to do.
-    - `epochs_per_print`: The number of steps between each
-        printing and dumping of weights in the final
-        evotuning step using the optimized hyperparameters.
+    - `out_dom_seqs`: Out-domain holdout set of sequences,
+        to check for loss on to prevent overfitting.
 
     ### Returns
 
@@ -536,30 +537,27 @@ def evotune(
     """
     study = optuna.create_study()
 
-    objective_func = lambda x: objective(
-        x,
-        params=params,
+    objective_func = lambda trial: objective(
+        trial,
         sequences=sequences,
+        fit_func=fit_func,
         n_epochs_config=n_epochs_config,
         learning_rate_config=learning_rate_config,
         n_splits=n_splits,
     )
     study.optimize(objective_func, n_trials=n_trials)
-    num_epochs = int(study.best_params["n_epochs"])
+    n_epochs = int(study.best_params["n_epochs"])
     learning_rate = float(study.best_params["learning_rate"])
 
     logger.info(
         f"Optuna done, starting tuning with learning rate={learning_rate}, "
     )
 
-    evotuned_params = fit(
-        params=params,
+    evotuned_params = fit_func(
         sequences=sequences,
-        n_epochs=num_epochs,
+        n_epochs=n_epochs,
         step_size=learning_rate,
         holdout_seqs=out_dom_seqs,
-        proj_name=proj_name,
-        epochs_per_print=epochs_per_print,
     )
 
     return study, evotuned_params

@@ -22,17 +22,18 @@ def params():
     return parameters
 
 
-@pytest.mark.skip(reason="Maybe deprecate?")
+# @pytest.mark.skip(reason="Maybe deprecate?")
 def test_evotune():
     """
     Simple execution test for evotune.
     """
     seqs = ["MTN", "BDD"] * 5
     n_epochs_config = {"high": 1}
+    fit_func = partial(fit, mlstm_size=256, rng=PRNGKey(0))
     _, params_new = evotune(
         sequences=seqs,
+        fit_func=fit_func,
         n_trials=1,
-        params=None,
         n_epochs_config=n_epochs_config,
     )
 
