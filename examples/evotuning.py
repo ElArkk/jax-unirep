@@ -1,9 +1,10 @@
 """Evotuning two ways."""
-from jax_unirep import evotune, fit
-from jax_unirep.utils import dump_params
-from jax.random import PRNGKey
 from functools import partial
 
+from jax.random import PRNGKey
+
+from jax_unirep import evotune, fit
+from jax_unirep.utils import dump_params
 
 # Test sequences:
 sequences = ["HASTA", "VISTA", "ALAVA", "LIMED", "HAST", "HAS", "HASVASTA"] * 5
@@ -16,12 +17,7 @@ holdout_sequences = [
     "HASVALTA",
 ] * 5
 PROJECT_NAME = "evotuning_temp"
-fit_func = partial(
-    fit,
-    mlstm_size=256,
-    rng=PRNGKey(42),
-    epochs_per_print=1,
-)
+fit_func = partial(fit, mlstm_size=256, rng=PRNGKey(42), epochs_per_print=1,)
 
 ## 1. Evotuning with Optuna
 n_epochs_config = {"low": 1, "high": 1}

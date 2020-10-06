@@ -13,14 +13,14 @@ from jax_unirep.utils import (
     input_output_pairs,
     l2_normalize,
     length_batch_input_outputs,
+    letter_seq,
     load_dense_params,
     load_embedding_1900,
-    load_params,
     load_mlstm_params,
+    load_params,
+    one_hots,
     right_pad,
     validate_mLSTM_params,
-    one_hots,
-    letter_seq,
 )
 
 

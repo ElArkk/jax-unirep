@@ -2,7 +2,6 @@ from functools import partial
 from typing import Dict, Iterable, List, Optional, Tuple, Union
 
 import numpy as np
-
 from jax import vmap
 
 from .errors import SequenceLengthsError

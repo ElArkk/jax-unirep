@@ -6,14 +6,13 @@ from pathlib import Path
 from random import choice, sample
 from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple
 
+import jax.numpy as np
 import numpy as onp
 import pkg_resources
-from tqdm.autonotebook import tqdm
-
-import jax.numpy as np
 from jax.nn.initializers import glorot_normal
 from jax.random import PRNGKey
 from jax.tree_util import tree_map
+from tqdm.autonotebook import tqdm
 
 from .errors import SequenceLengthsError
 

@@ -156,8 +156,7 @@ def mLSTMBatch(
     c_t = np.zeros(params["wmh"].shape[0])
 
     def mLSTMCell(
-        carry: Tuple[np.ndarray, np.ndarray],
-        x_t: np.ndarray,
+        carry: Tuple[np.ndarray, np.ndarray], x_t: np.ndarray,
     ) -> Tuple[Tuple[np.ndarray, np.ndarray], np.ndarray]:
         """
         Run one step of mLSTM cell.

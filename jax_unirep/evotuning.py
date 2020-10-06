@@ -3,17 +3,17 @@ from functools import partial
 from random import choice
 from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple
 
+import jax
 import numpy as onp
 import optuna
-from sklearn.model_selection import KFold
-from tqdm.autonotebook import tqdm
-
-import jax
 from jax import grad, jit
 from jax import numpy as np
 from jax import vmap
 from jax.experimental.stax import Dense, Softmax, serial
 from jax.random import PRNGKey
+from sklearn.model_selection import KFold
+from tqdm.autonotebook import tqdm
+
 from jax_unirep.losses import _neg_cross_entropy_loss
 
 from .layers import mLSTM, mLSTMHiddenStates

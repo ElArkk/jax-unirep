@@ -3,11 +3,11 @@ from enum import Enum
 from random import choice, shuffle
 from typing import Optional
 
+import typer
 from Bio import SeqIO
+from jax.random import PRNGKey
 from pyprojroot import here
 
-import typer
-from jax.random import PRNGKey
 from jax_unirep import fit
 from jax_unirep.utils import dump_params
 

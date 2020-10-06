@@ -2,9 +2,9 @@
 from functools import partial
 
 import pytest
-
 from jax.experimental import stax
 from jax.random import PRNGKey
+
 from jax_unirep.evotuning import evotune, evotuning_layers, fit
 
 from .test_layers import validate_mLSTM_params
