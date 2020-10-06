@@ -17,7 +17,12 @@ holdout_sequences = [
     "HASVALTA",
 ] * 5
 PROJECT_NAME = "evotuning_temp"
-fit_func = partial(fit, mlstm_size=256, rng=PRNGKey(42), epochs_per_print=1,)
+fit_func = partial(
+    fit,
+    mlstm_size=256,
+    rng=PRNGKey(42),
+    epochs_per_print=1,
+)
 
 ## 1. Evotuning with Optuna
 n_epochs_config = {"low": 1, "high": 1}

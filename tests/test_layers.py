@@ -53,7 +53,8 @@ def test_mLSTMAvgHidden(data):
     x = get_embedding(sequence, embedding)
     output_dim = 256
     init_fun, apply_fun = stax.serial(
-        mLSTM(output_dim=output_dim), mLSTMAvgHidden(),
+        mLSTM(output_dim=output_dim),
+        mLSTMAvgHidden(),
     )
     output_shape, params = init_fun(rng, (length, 10))
     h_avg = apply_fun(params=params, inputs=x)
@@ -79,7 +80,8 @@ def test_mLSTMFusion(data):
     x = get_embedding(sequence, embedding)
     output_dim = 256
     init_fun, apply_fun = stax.serial(
-        mLSTM(output_dim=output_dim), mLSTMFusion(),
+        mLSTM(output_dim=output_dim),
+        mLSTMFusion(),
     )
     output_shape, params = init_fun(rng, (length, 10))
     h_avg = apply_fun(params=params, inputs=x)
