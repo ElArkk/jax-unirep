@@ -10,7 +10,7 @@ from .layers import mLSTM
 from .utils import (
     batch_sequences,
     get_embeddings,
-    load_params_1900,
+    load_mlstm_params,
     validate_mLSTM_params,
 )
 
@@ -125,7 +125,7 @@ def get_reps(
     Each `np.array` has shape (n_sequences, 1900).
     """
     if params is None:
-        params = load_params_1900()
+        params = load_mlstm_params()
     # Check that params have correct keys and shapes
     validate_mLSTM_params(params, n_outputs=1900)
     # If single string sequence is passed, package it into a list

@@ -74,9 +74,7 @@ def get_weights_dir(folderpath: Optional[str] = None):
 
 
 def dump_params(
-    params: Dict,
-    dir_path: Optional[str] = "temp",
-    step: Optional[int] = 0,
+    params: Dict, dir_path: Optional[str] = "temp", step: Optional[int] = 0,
 ):
     """
     Dump the current params of model being trained to a .npy file.
@@ -126,8 +124,7 @@ def dump_params(
         # Save file
         fpath = iteration_path / fname
         onp.save(
-            fpath,
-            onp.array(val),
+            fpath, onp.array(val),
         )
     # iterate through and save dense params as npy files.
     dense_names = [
@@ -142,8 +139,7 @@ def dump_params(
         # Save file
         fpath = iteration_path / dense_names[i]
         onp.save(
-            fpath,
-            onp.array(val),
+            fpath, onp.array(val),
         )
 
 
@@ -206,36 +202,36 @@ Sequence length: number of sequences information in the dictionary below.
     return onp.stack(seq_embeddings, axis=0)
 
 
-def load_dense_1900(folderpath: Optional[str] = None) -> Tuple:
+def load_dense_params(folderpath: Optional[str] = None) -> Tuple:
     """
-    Load pre-trained dense layer weights from the UniRep paper.
+    Load dense layer weights. Defaults to mLSTM1900 weights from the paper.
 
     The dense layer weights are used to predict next character
     from the output of the mLSTM.
     """
-    weights_1900_dir = get_weights_dir(folderpath=folderpath)
+    weights_dir = get_weights_dir(folderpath=folderpath)
 
-    w = np.load(weights_1900_dir / "fully_connected_weights:0.npy")
-    b = np.load(weights_1900_dir / "fully_connected_biases:0.npy")
+    w = np.load(weights_dir / "fully_connected_weights:0.npy")
+    b = np.load(weights_dir / "fully_connected_biases:0.npy")
     return w, b
 
 
-def load_params_1900(folderpath: Optional[str] = None) -> Dict:
-    """Load pre-trained mLSTM weights from the UniRep paper."""
-    weights_1900_dir = get_weights_dir(folderpath=folderpath)
+def load_mlstm_params(folderpath: Optional[str] = None) -> Dict:
+    """Load mLSTM weights. Defaults to mLSTM1900 weights from the paper."""
+    weights_dir = get_weights_dir(folderpath=folderpath)
 
     params = dict()
-    params["gh"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_gh:0.npy")
-    params["gmh"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_gmh:0.npy")
-    params["gmx"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_gmx:0.npy")
-    params["gx"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_gx:0.npy")
+    params["gh"] = np.load(weights_dir / "rnn_mlstm_mlstm_gh:0.npy")
+    params["gmh"] = np.load(weights_dir / "rnn_mlstm_mlstm_gmh:0.npy")
+    params["gmx"] = np.load(weights_dir / "rnn_mlstm_mlstm_gmx:0.npy")
+    params["gx"] = np.load(weights_dir / "rnn_mlstm_mlstm_gx:0.npy")
 
-    params["wh"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_wh:0.npy")
-    params["wmh"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_wmh:0.npy")
-    params["wmx"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_wmx:0.npy")
-    params["wx"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_wx:0.npy")
+    params["wh"] = np.load(weights_dir / "rnn_mlstm_mlstm_wh:0.npy")
+    params["wmh"] = np.load(weights_dir / "rnn_mlstm_mlstm_wmh:0.npy")
+    params["wmx"] = np.load(weights_dir / "rnn_mlstm_mlstm_wmx:0.npy")
+    params["wx"] = np.load(weights_dir / "rnn_mlstm_mlstm_wx:0.npy")
 
-    params["b"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_b:0.npy")
+    params["b"] = np.load(weights_dir / "rnn_mlstm_mlstm_b:0.npy")
 
     return params
 
@@ -271,9 +267,9 @@ def validate_mLSTM_params(params: Dict, n_outputs):
 def load_params(folderpath: Optional[str] = None):
     """Load params for passing to evotuning stax model."""
     return (
-        load_params_1900(folderpath=folderpath),
+        load_mlstm_params(folderpath=folderpath),
         (),
-        load_dense_1900(folderpath=folderpath),
+        load_dense_params(folderpath=folderpath),
         (),
     )
 
@@ -454,9 +450,7 @@ def evotuning_pairs(s: str) -> Tuple[np.ndarray, np.ndarray]:
     return x, y
 
 
-def input_output_pairs(
-    sequences: List[str],
-) -> Tuple[np.ndarray, np.ndarray]:
+def input_output_pairs(sequences: List[str],) -> Tuple[np.ndarray, np.ndarray]:
     """
     Generate input-output tensor pairs for evo-tuning.
     We check that lengths of sequences are identical,

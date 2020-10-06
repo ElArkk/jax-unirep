@@ -13,10 +13,10 @@ from jax_unirep.utils import (
     input_output_pairs,
     l2_normalize,
     length_batch_input_outputs,
-    load_dense_1900,
+    load_dense_params,
     load_embedding_1900,
     load_params,
-    load_params_1900,
+    load_mlstm_params,
     right_pad,
     validate_mLSTM_params,
     one_hots,
@@ -58,22 +58,22 @@ def test_batch_sequences(seqs, expected):
 #     assert np.all(batch_lengths == np.array([2, 2, 2]))
 
 
-def test_load_dense_1900():
+def test_load_dense_params():
     """
     Make sure that parameters to be passed to
     the dense layer of the evotuning stax model have the right shapes.
     """
-    dense = load_dense_1900()
+    dense = load_dense_params()
     assert dense[0].shape == (1900, 25)
     assert dense[1].shape == (25,)
 
 
-def test_load_params_1900():
+def test_load_mlstm_params():
     """
     Make sure that parameters to be passed to
     the mLSTM have the right shapes.
     """
-    params = load_params_1900()
+    params = load_mlstm_params()
     validate_mLSTM_params(params, n_outputs=1900)
 
 

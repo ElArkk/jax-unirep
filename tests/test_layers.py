@@ -10,7 +10,7 @@ from jax_unirep.layers import mLSTM, mLSTMAvgHidden, mLSTMFusion
 from jax_unirep.utils import (
     get_embedding,
     load_embedding_1900,
-    load_params_1900,
+    load_mlstm_params,
     validate_mLSTM_params,
 )
 
@@ -53,8 +53,7 @@ def test_mLSTMAvgHidden(data):
     x = get_embedding(sequence, embedding)
     output_dim = 256
     init_fun, apply_fun = stax.serial(
-        mLSTM(output_dim=output_dim),
-        mLSTMAvgHidden(),
+        mLSTM(output_dim=output_dim), mLSTMAvgHidden(),
     )
     output_shape, params = init_fun(rng, (length, 10))
     h_avg = apply_fun(params=params, inputs=x)
@@ -67,7 +66,7 @@ def test_mLSTMAvgHidden(data):
 @given(st.data())
 @settings(deadline=None, max_examples=20)
 def test_mLSTMFusion(data):
-    params = load_params_1900()
+    params = load_mlstm_params()
     length = data.draw(st.integers(min_value=1, max_value=10))
     sequence = data.draw(
         st.text(
@@ -80,8 +79,7 @@ def test_mLSTMFusion(data):
     x = get_embedding(sequence, embedding)
     output_dim = 256
     init_fun, apply_fun = stax.serial(
-        mLSTM(output_dim=output_dim),
-        mLSTMFusion(),
+        mLSTM(output_dim=output_dim), mLSTMFusion(),
     )
     output_shape, params = init_fun(rng, (length, 10))
     h_avg = apply_fun(params=params, inputs=x)
