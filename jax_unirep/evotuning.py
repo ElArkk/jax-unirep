@@ -13,6 +13,7 @@ from jax import grad, jit
 from jax import numpy as np
 from jax import vmap
 from jax.experimental.stax import Dense, Softmax, serial
+from jax.random import PRNGKey
 from jax_unirep.losses import _neg_cross_entropy_loss
 
 from .layers import mLSTM, mLSTMHiddenStates
@@ -118,11 +119,11 @@ def avg_loss(
 
 
 def fit(
-    mlstm_size: int,
-    rng: jax.interpreters.xla.DeviceArray,
     sequences: Set[str],
     n_epochs: int,
+    mlstm_size: int = 1900,
     params: Optional[Dict] = None,
+    rng: jax.interpreters.xla.DeviceArray = PRNGKey(42),
     batch_method: Optional[str] = "random",
     batch_size: Optional[int] = 25,
     step_size: float = 0.0001,
@@ -194,9 +195,10 @@ def fit(
     - `params`: Optionally pass in the params you want to use.
         These params must yield a correctly-sized mLSTM,
         otherwise you will get cryptic shape errors!
-        We recommend leaving this one as None,
-        so that you can get automatically-generated
-        random parameters.
+        If None, params will be randomly generated,
+        except for mlstm_size of 1900,
+        where the pre-trained weights from
+        the original publication are used.
     - `batch_method`: One of "length" or "random".
     - `batch_size`: If random batching is used,
         number of sequences per batch.
@@ -249,7 +251,10 @@ def fit(
 
     # Load and check that params have correct keys and shapes
     if params is None:
-        _, params = init_func(rng=rng, input_shape=(-1, 10))
+        if mlstm_size == 1900:
+            params = load_params()
+        else:
+            _, params = init_func(rng=rng, input_shape=(-1, 10))
 
     # Defensive programming checks
     if len(params) != len(model_layers):
@@ -485,20 +490,27 @@ def evotune(
     defaults to 20, but can be configured.
 
     By default, mLSTM and Dense weights from the paper are used
-    by passing in `params=None`,
+    by setting `mlstm_size=1900` and `params=None`
+    in the partially-evaluated fit function (`fit_func`),
     but if you want to use randomly intialized weights:
 
-        from jax_unirep.evotuning import evotuning_funcs
+        from jax_unirep.evotuning import evotuning_funcs, fit
         from jax.random import PRNGKey
 
-        init_func, _ = evotuning_funcs(mlstm_size=256)
+        init_func, _ = evotuning_funcs(mlstm_size=256) # works for any size
         _, params = init_func(PRNGKey(0), input_shape=(-1, 10))
+        fit_func = partial(fit, mlstm_size=256, params=params)
 
     or dumped weights:
-
+        from jax_unirep.evotuning import fit
         from jax_unirep.utils import load_params
 
         params = load_params(folderpath="path/to/params/folder")
+        fit_func = partial(fit, mlstm_size=256, params=params)
+
+    The examples above use mLSTM sizes of 256, but any size works in theory!
+    Just make sure that the mLSTM size of your randomly initialized or dumped
+    `params` matches the one you set in the partially-evaluated fit function.
 
     This function is intended as an automagic way of identifying
     the best model and training routine hyperparameters.
@@ -511,7 +523,8 @@ def evotune(
 
     - `sequences`: Sequences to evotune against.
     - `fit_func`: A partially-evaluated `fit` function,
-        such that the arguments `mlstm_size`, `rng`, are set.
+        such that the arguments `mlstm_size`, `rng`, `params` are set.
+        For sane defaults, see the `fit` function docstring.
     - `n_trials: The number of trials Optuna should attempt.
     - `n_epochs_config`: A dictionary of kwargs
         to `trial.suggest_discrete_uniform`,
