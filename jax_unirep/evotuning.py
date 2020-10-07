@@ -496,6 +496,7 @@ def evotune(
 
         from jax_unirep.evotuning import evotuning_funcs, fit
         from jax.random import PRNGKey
+        from functools import partial
 
         init_func, _ = evotuning_funcs(mlstm_size=256) # works for any size
         _, params = init_func(PRNGKey(0), input_shape=(-1, 10))
