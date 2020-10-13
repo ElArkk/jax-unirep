@@ -490,7 +490,7 @@ Please ensure that they are all of the same length before passing them in.
 
 def length_batch_input_outputs(
     sequences: Iterable[str],
-) -> Tuple[List[str], List[int]]:
+) -> Tuple[List[List[str]], List[int]]:
     """
     Return sequences, batched by their length, plus a list of unique lengths.
 
