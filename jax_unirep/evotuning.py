@@ -120,7 +120,7 @@ def avg_loss(
 
 def generate_one_length_batch(
     sequences: Iterable[str], holdout_seqs: Optional[Iterable[str]] = None
-):
+) -> Tuple[int, List[str], Optional[List[str]]]:
     """
     Generates a single-length batch.
 
@@ -141,7 +141,23 @@ def generate_one_length_batch(
     return max_len, sequences, holdout_seqs
 
 
-def generate_batching_funcs(sequences, batch_size):
+def generate_batching_funcs(
+    sequences: Iterable[str], batch_size: int
+) -> Tuple[Dict[int, Callable], List[List[str]], List[int]]:
+    """
+    Generate a batching function for each sequence length
+
+    Given a set of sequences and a batch size,
+    this function generates a dictionary,
+    where each key value pair consists of a
+    unique sequence length and a batching function for that length
+    respectively.
+    It also returns the batched sequences,
+    as well as the unique sequence lenghts.
+
+    :param sequences: Sequences to generate batching functions for
+    :param batch_size: batch size for all batching functions
+    """
     seqs_batched, seq_lens = length_batch_input_outputs(sequences)
     len_batching_funcs = {
         sl: get_batching_func(seq_batch, batch_size)
