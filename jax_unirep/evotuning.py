@@ -330,7 +330,7 @@ def fit(
         log_epoch_func = partial(
             log_epoch,
             current_epoch=current_epoch,
-            get_params=get_params,
+            get_params_func=get_params,
             state=state,
             avg_loss_func=avg_loss_func,
         )
