@@ -1,10 +1,12 @@
-"""Evotuning two ways."""
 from functools import partial
 
 from jax.random import PRNGKey
 
 from jax_unirep import evotune, fit
 from jax_unirep.utils import dump_params
+
+"""Evotuning two ways."""
+
 
 # Test sequences:
 sequences = ["HASTA", "VISTA", "ALAVA", "LIMED", "HAST", "HAS", "HASVASTA"] * 5
