@@ -1,6 +1,3 @@
-"""Tests for neural network layers."""
-
-
 from hypothesis import given, settings
 from hypothesis import strategies as st
 from jax import random
@@ -13,6 +10,9 @@ from jax_unirep.utils import (
     load_mlstm_params,
     validate_mLSTM_params,
 )
+
+"""Tests for neural network layers."""
+
 
 rng = random.PRNGKey(0)
 

@@ -118,19 +118,52 @@ def avg_loss(
     return sum_loss / num_seqs
 
 
+def generate_one_length_batch(
+    sequences: Iterable[str], holdout_seqs: Optional[Iterable[str]] = None
+):
+    """
+    Generates a single-length batch.
+
+    This function is refactored out of the ``fit`` function
+    to make it easier to read.
+
+    :param sequences: Sequences to generate one length batch for.
+    :param holdout_seqs: Holdout sequences.
+    """
+    # First pad to the same length, effectively giving us one length batch.
+    all_sequences = set(sequences)
+    if holdout_seqs is not None:
+        all_sequences = all_sequences.union(set(holdout_seqs))
+    max_len = max([len(seq) for seq in all_sequences])
+    sequences = right_pad(sequences, max_len)
+    if holdout_seqs is not None:
+        holdout_seqs = right_pad(holdout_seqs, max_len)
+    return max_len, sequences, holdout_seqs
+
+
+def generate_batching_funcs(sequences, batch_size):
+    seqs_batched, seq_lens = length_batch_input_outputs(sequences)
+    len_batching_funcs = {
+        sl: get_batching_func(seq_batch, batch_size)
+        for (sl, seq_batch) in zip(seq_lens, seqs_batched)
+    }
+
+    return len_batching_funcs, seqs_batched, seq_lens
+
+
 def fit(
     sequences: Set[str],
     n_epochs: int,
     mlstm_size: int = 1900,
     params: Optional[Dict] = None,
     rng: jax.interpreters.xla.DeviceArray = PRNGKey(42),
-    batch_method: Optional[str] = "random",
-    batch_size: Optional[int] = 25,
+    batch_method: str = "random",
+    batch_size: int = 25,
     step_size: float = 0.0001,
     holdout_seqs: Optional[Set[str]] = None,
-    proj_name: Optional[str] = "temp",
-    epochs_per_print: Optional[int] = 1,
-    backend="cpu",
+    proj_name: str = "temp",
+    epochs_per_print: int = 1,
+    backend: str = "cpu",
 ) -> Dict:
     """
     Return mLSTM weights fitted to predict the next letter in each AA sequence.
@@ -251,10 +284,7 @@ def fit(
 
     # Load and check that params have correct keys and shapes
     if params is None:
-        if mlstm_size == 1900:
-            params = load_params()
-        else:
-            _, params = init_func(rng=rng, input_shape=(-1, 10))
+        _, params = init_func(rng=rng, input_shape=(-1, 10))
 
     # Defensive programming checks
     if len(params) != len(model_layers):
@@ -275,34 +305,24 @@ def fit(
         )
 
     if batch_method == "random":
-        # First pad to the same length, effectively giving us one length batch.
-        all_sequences = set(sequences)
-        if holdout_seqs is not None:
-            all_sequences = all_sequences.union(set(holdout_seqs))
-        max_len = max([len(seq) for seq in all_sequences])
-        sequences = right_pad(sequences, max_len)
-        if holdout_seqs is not None:
-            holdout_seqs = right_pad(holdout_seqs, max_len)
+        _, sequences, holdout_seqs = generate_one_length_batch(
+            sequences, holdout_seqs
+        )
 
     # batch sequences by length
-    seqs_batched, seq_lens = length_batch_input_outputs(sequences)
-    len_batching_funcs = {
-        sl: get_batching_func(seq_batch, batch_size)
-        for (sl, seq_batch) in zip(seq_lens, seqs_batched)
-    }
-
+    (
+        training_len_batching_funcs,
+        training_seqs_batched,
+        training_seq_lens,
+    ) = generate_batching_funcs(sequences, batch_size)
     if holdout_seqs is not None:
-        holdout_seqs_batched, holdout_seq_lens = length_batch_input_outputs(
-            holdout_seqs
-        )
-        holdout_len_batching_funcs = {
-            sl: get_batching_func(holdout_seq_batch, batch_size)
-            for (sl, holdout_seq_batch) in zip(
-                holdout_seq_lens, holdout_seqs_batched
-            )
-        }
+        (
+            holdout_len_batching_funcs,
+            holdout_seqs_batched,
+            holdout_seq_lens,
+        ) = generate_batching_funcs(holdout_seqs, batch_size)
 
-    batch_lens = [len(batch) for batch in seqs_batched]
+    batch_lens = [len(batch) for batch in training_seqs_batched]
     logger.info(
         f"Length-batching done: "
         f"{len(batch_lens)} unique sequence lengths, "
@@ -326,48 +346,75 @@ def fit(
             i % (epochs_per_print * epoch_len) == 0
         )
         # Choose a sequence length at random for this iteration
-        l = choice(seq_lens)
+        length = choice(training_seq_lens)
+        avg_loss_func = partial(
+            avg_loss, predict_func=predict_func, backend=backend
+        )
+        log_epoch_func = partial(
+            log_epoch,
+            current_epoch=current_epoch,
+            get_params_func=get_params,
+            state=state,
+            avg_loss_func=avg_loss_func,
+        )
 
         if is_starting_new_printing_epoch:
-            logger.info(f"Starting epoch {current_epoch}")
-            params = get_params(state)
-            x, y = len_batching_funcs[l]()
-            loss = avg_loss(
-                [x], [y], params, predict_func=predict_func, backend=backend
-            )
-            logger.info(
-                f"Epoch {current_epoch - 1}: "
-                f"Estimated average training-set loss: {loss}. "
-                "Weights dumped."
+            log_epoch_func(
+                length=length,
+                len_batching_funcs=training_len_batching_funcs,
             )
 
             if holdout_seqs is not None:
-                # calculate and print loss for out-domain holdout set
-                hl = choice(holdout_seq_lens)
-                x, y = holdout_len_batching_funcs[hl]()
-                loss = avg_loss(
-                    [x],
-                    [y],
-                    params,
-                    predict_func=predict_func,
-                    backend=backend,
+                holdout_length = choice(holdout_seq_lens)
+                log_epoch_func(
+                    length=holdout_length,
+                    len_batching_funcs=holdout_len_batching_funcs,
+                    is_holdout_set=True,
                 )
-                logger.info(
-                    f"Epoch {current_epoch - 1}: "
-                    + f"Estimaged average holdout-set loss: {loss}"
-                )
-
-            # dump current params in case run crashes or loss increases
             dump_params(get_params(state), proj_name, current_epoch - 1)
 
         logger.debug("Getting batches")
-        x, y = len_batching_funcs[l]()
+        x, y = training_len_batching_funcs[length]()
 
         # actual forward & backwrd pass happens here
         logger.debug("Getting state")
         state = step(i, x, y, state)
 
     return get_params(state)
+
+
+def log_epoch(
+    current_epoch: int,
+    state,
+    length: int,
+    len_batching_funcs: Dict[int, Callable],
+    get_params_func: Callable,
+    avg_loss_func: Callable,
+    is_holdout_set: bool = False,
+):
+    """
+    Log relevant information from one epoch.
+
+    :param current_epoch: The current epoch that is being logged.
+    :param state: Parameters wrapped in a jax optimizer's state.
+    :param length: The length chosen.
+    :param len_batching_funcs: A dictionary of length-batching functions,
+        each of which accepts no arguments and returns an x, y matrix pair.
+    :param get_params_func: A `get_params` function returned from
+        the JAX optimizer triplet.
+    :param avg_loss_func: A function that calculates the average loss
+        over all of the data points x, y (returned from the len_batching_funcs)
+        which accepts elements ([x], [y], and state_params)
+    :param is_holdout_set: Whether or not we are using the holdout set.
+        Affects the logging text only.
+    """
+    state_params = get_params_func(state)
+    x, y = len_batching_funcs[length]()
+    loss = avg_loss_func([x], [y], state_params)
+    data_set = "holdout" if is_holdout_set else "training"
+    logger.info(f"Calculations for {data_set} set:")
+    logger.info(f"Epoch {current_epoch - 1}: Estimated average loss: {loss}. ")
+    return None
 
 
 def objective(

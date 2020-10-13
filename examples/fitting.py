@@ -81,7 +81,7 @@ def main(
         step_size=LEARN_RATE,
         holdout_seqs=holdout_sequences,
         batch_size=batch_size,
-        batch_method="random",
+        batch_method=batch_method,
         proj_name=PROJECT_NAME,
         epochs_per_print=1,
         backend=backend,  # default is "cpu", can be "gpu" if you have JAX-GPU installed.

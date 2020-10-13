@@ -1,4 +1,3 @@
-"""mLSTM cell layers."""
 from typing import Dict, Tuple
 
 import jax.numpy as np
@@ -7,6 +6,8 @@ from jax.nn.initializers import glorot_normal, normal
 
 from .activations import sigmoid, tanh
 from .utils import l2_normalize
+
+"""mLSTM cell layers."""
 
 
 def mLSTM(output_dim=1900, W_init=glorot_normal(), b_init=normal()):
