@@ -118,6 +118,39 @@ def avg_loss(
     return sum_loss / num_seqs
 
 
+def generate_one_length_batch(
+    sequences: Iterable[str], holdout_seqs: Optional[Iterable[str]] = None
+):
+    """
+    Generates a single-length batch.
+
+    This function is refactored out of the ``fit`` function
+    to make it easier to read.
+
+    :param sequences: Sequences to generate one length batch for.
+    :param holdout_seqs: Holdout sequences.
+    """
+    # First pad to the same length, effectively giving us one length batch.
+    all_sequences = set(sequences)
+    if holdout_seqs is not None:
+        all_sequences = all_sequences.union(set(holdout_seqs))
+    max_len = max([len(seq) for seq in all_sequences])
+    sequences = right_pad(sequences, max_len)
+    if holdout_seqs is not None:
+        holdout_seqs = right_pad(holdout_seqs, max_len)
+    return max_len, sequences, holdout_seqs
+
+
+def generate_batching_funcs(sequences, batch_size):
+    seqs_batched, seq_lens = length_batch_input_outputs(sequences)
+    len_batching_funcs = {
+        sl: get_batching_func(seq_batch, batch_size)
+        for (sl, seq_batch) in zip(seq_lens, seqs_batched)
+    }
+
+    return len_batching_funcs, seqs_batched, seq_lens
+
+
 def fit(
     sequences: Set[str],
     n_epochs: int,
@@ -272,34 +305,24 @@ def fit(
         )
 
     if batch_method == "random":
-        # First pad to the same length, effectively giving us one length batch.
-        all_sequences = set(sequences)
-        if holdout_seqs is not None:
-            all_sequences = all_sequences.union(set(holdout_seqs))
-        max_len = max(len(seq) for seq in all_sequences)
-        sequences = right_pad(sequences, max_len)
-        if holdout_seqs is not None:
-            holdout_seqs = right_pad(holdout_seqs, max_len)
+        _, sequences, holdout_seqs = generate_one_length_batch(
+            sequences, holdout_seqs
+        )
 
     # batch sequences by length
-    seqs_batched, seq_lens = length_batch_input_outputs(sequences)
-    len_batching_funcs = {
-        sl: get_batching_func(seq_batch, batch_size)
-        for (sl, seq_batch) in zip(seq_lens, seqs_batched)
-    }
-
+    (
+        training_len_batching_funcs,
+        training_seqs_batched,
+        training_seq_lens,
+    ) = generate_batching_funcs(sequences, batch_size)
     if holdout_seqs is not None:
-        holdout_seqs_batched, holdout_seq_lens = length_batch_input_outputs(
-            holdout_seqs
-        )
-        holdout_len_batching_funcs = {
-            sl: get_batching_func(holdout_seq_batch, batch_size)
-            for (sl, holdout_seq_batch) in zip(
-                holdout_seq_lens, holdout_seqs_batched
-            )
-        }
+        (
+            holdout_len_batching_funcs,
+            holdout_seqs_batched,
+            holdout_seq_lens,
+        ) = generate_batching_funcs(holdout_seqs, batch_size)
 
-    batch_lens = [len(batch) for batch in seqs_batched]
+    batch_lens = [len(batch) for batch in training_seqs_batched]
     logger.info(
         f"Length-batching done: "
         f"{len(batch_lens)} unique sequence lengths, "
@@ -323,7 +346,7 @@ def fit(
             i % (epochs_per_print * epoch_len) == 0
         )
         # Choose a sequence length at random for this iteration
-        length = choice(seq_lens)
+        length = choice(training_seq_lens)
         avg_loss_func = partial(
             avg_loss, predict_func=predict_func, backend=backend
         )
@@ -338,19 +361,20 @@ def fit(
         if is_starting_new_printing_epoch:
             log_epoch_func(
                 length=length,
-                len_batching_funcs=len_batching_funcs,
+                len_batching_funcs=training_len_batching_funcs,
             )
 
             if holdout_seqs is not None:
+                holdout_length = choice(holdout_seq_lens)
                 log_epoch_func(
-                    length=length,
+                    length=holdout_length,
                     len_batching_funcs=holdout_len_batching_funcs,
                     is_holdout_set=True,
                 )
             dump_params(get_params(state), proj_name, current_epoch - 1)
 
         logger.debug("Getting batches")
-        x, y = len_batching_funcs[length]()
+        x, y = training_len_batching_funcs[length]()
 
         # actual forward & backwrd pass happens here
         logger.debug("Getting state")
@@ -381,6 +405,8 @@ def log_epoch(
     :param avg_loss_func: A function that calculates the average loss
         over all of the data points x, y (returned from the len_batching_funcs)
         which accepts elements ([x], [y], and state_params)
+    :param is_holdout_set: Whether or not we are using the holdout set.
+        Affects the logging text only.
     """
     state_params = get_params_func(state)
     x, y = len_batching_funcs[length]()
