@@ -116,7 +116,8 @@ def mLSTMFusion(**kwargs):
     """
     Return the concatenation of all states of the mLSTM.
 
-    This means, it concatenates the average hidden, final hidden and final cell states.
+    This means, it concatenates the average hidden,
+    final hidden and final cell states.
 
     This is the canonical "UniRep fusion" representation from the paper.
     """
@@ -199,13 +200,13 @@ def mLSTMBatch(
         wmh = l2_normalize(params["wmh"], axis=0) * params["gmh"]
 
         # Shape annotation
-        # (:, 10) @ (10, n_outputs) * (:, n_outputs) @ (n_outputs, n_outputs) => (:, n_outputs)
+        # (:, 10) @ (10, n_outputs) * (:, n_outputs) @ (n_outputs, n_outputs) => (:, n_outputs)  # noqa: E501
         m = np.matmul(x_t, wmx) * np.matmul(h_t, wmh)
 
-        # (:, 10) @ (10, n_outputs * 4) * (:, n_outputs) @ (n_outputs, n_outputs * 4) + (n_outputs * 4, ) => (:, n_outputs * 4)
+        # (:, 10) @ (10, n_outputs * 4) * (:, n_outputs) @ (n_outputs, n_outputs * 4) + (n_outputs * 4, ) => (:, n_outputs * 4)  # noqa: E501
         z = np.matmul(x_t, wx) + np.matmul(m, wh) + params["b"]
 
-        # Splitting along axis 1, four-ways, gets us (:, n_outputs) as the shape
+        # Splitting along axis 1, four-ways, gets us (:, n_outputs) as the shape  # noqa: E501
         # for each of i, f, o and u
         i, f, o, u = np.split(z, 4, axis=-1)  # input, forget, output, update
 
@@ -216,7 +217,7 @@ def mLSTMBatch(
         o = sigmoid(o, version="exp")
         u = tanh(u)
 
-        # (:, n_outputs) * (:, n_outputs) + (:, n_outputs) * (:, n_outputs) => (:, n_outputs)
+        # (:, n_outputs) * (:, n_outputs) + (:, n_outputs) * (:, n_outputs) => (:, n_outputs)  # noqa: E501
         c_t = f * c_t + i * u
 
         # (:, n_outputs) * (:, n_outputs) => (:, n_outputs)
