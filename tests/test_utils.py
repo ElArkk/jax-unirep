@@ -166,7 +166,7 @@ def test_right_pad(seqs, max_len, expected):
     ],
 )
 def test_input_output_pairs(seqs, expected):
-
+    """Test that the generation of input-output pairs works as expected."""
     with expected:
         assert input_output_pairs(seqs) is not None
 
