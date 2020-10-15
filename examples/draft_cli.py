@@ -1,3 +1,5 @@
+"""Fitting mLSTM weights based on randomly initialized weights."""
+
 import logging
 from enum import Enum
 from random import choice, shuffle
@@ -12,8 +14,6 @@ from jax_unirep import fit
 from jax_unirep.utils import dump_params
 
 app = typer.Typer()
-
-"""Fitting mLSTM weights based on randomly initialized weights."""
 
 
 class DataType(str, Enum):
