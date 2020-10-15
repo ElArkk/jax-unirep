@@ -1,9 +1,12 @@
 from contextlib import suppress as does_not_raise
 from shutil import rmtree
+from typing import Any, Callable
 
 import numpy as np
 import pytest
 
+import pickle as pkl
+from jax_unirep.evotuning_models import mlstm1900, mlstm64
 from jax_unirep.utils import (
     aa_seq_to_int,
     arr_to_letter,
@@ -22,9 +25,50 @@ from jax_unirep.utils import (
     right_pad,
     validate_mLSTM_params,
 )
+from jax.random import normal, PRNGKey
+from jax import vmap
+from functools import partial
+import warnings
+
+
+@pytest.fixture
+def model():
+    """Dummy mLSTM64 model."""
+    init_fun, apply_fun = mlstm64()
+    return init_fun, apply_fun
+
+
+def validate_params(model_func: Callable, params: Any):
+    """
+    Validate mLSTM parameters against a model.
+
+    In here, we generate dummy embeddings
+    and feed them through the model with the mLSTM parameters passed in.
+
+    :param model_func: The model ``apply_func``.
+        Should accept (params, input).
+    :param params: Model parameters to validate.
+    :raises: A generic exception if anything goes wrong,
+        alongside a generic warning
+        that parameter shape issues may be the problem.
+    """
+    dummy_embedding = normal(
+        PRNGKey(42), shape=(2, 3, 10)  # n_samps, n_letters, n_embed_dims
+    )
+    try:
+        vmap(partial(model_func, params))(dummy_embedding)
+    except Exception as e:
+        warnings.warn(
+            "You may have shape issues! "
+            "Check that your params are of the correct shapes "
+            "for the specified model. "
+            "Here's the original warning below:"
+        )
+        raise e
 
 
 def test_l2_normalize():
+    """Test for L2 normalization."""
     x = np.array([[3, -3, 5, 4], [4, 5, 3, -3]])
 
     expected = np.array(
@@ -49,13 +93,6 @@ def test_l2_normalize():
 )
 def test_batch_sequences(seqs, expected):
     assert batch_sequences(seqs) == expected
-
-
-# def test_get_batch_len():
-#     batched_seqs = [["ABC", "ACD"], ["AABC", "EKQJ"], ["QWLRJK", "QJEFLK"]]
-#     mean_batch_length, batch_lengths = get_batch_len(batched_seqs)
-#     assert mean_batch_length == 2
-#     assert np.all(batch_lengths == np.array([2, 2, 2]))
 
 
 def test_load_dense_params():
@@ -86,33 +123,28 @@ def test_load_embedding_1900():
     assert emb.shape == (26, 10)
 
 
-def validate_params(params):
-    validate_mLSTM_params(params[0], 1900)
-    assert params[1] == ()
-    assert params[2][0].shape == (1900, 25)
-    assert params[2][1].shape == (25,)
-    assert params[3] == ()
-
-
 def test_load_params():
     """
     Make sure that all parameters needed for the evotuning stax model
     get loaded with the correct shapes.
     """
+    _, apply_fun = mlstm1900()
     params = load_params()
-    validate_params(params)
+    validate_params(model_func=apply_fun, params=params)
 
 
-def test_dump_params():
+def test_dump_params(model):
     """
     Make sure that the parameter dumping function used in evotuning
     conserves all parameter shapes correctly.
     """
-    params = load_params()
+    init_fun, apply_fun = model
+    _, params = init_fun(PRNGKey(42), input_shape=(-1, 10))
     dump_params(params, "tmp")
-    dumped_params = load_params("tmp/iter_0")
+    with open("tmp/iter_0/model_weights.pkl", "rb") as f:
+        dumped_params = pkl.load(f)
     rmtree("tmp")
-    validate_params(dumped_params)
+    validate_params(model_func=apply_fun, params=dumped_params)
 
 
 @pytest.mark.parametrize(

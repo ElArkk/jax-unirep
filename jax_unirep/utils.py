@@ -1,25 +1,19 @@
+"""Utility functions for jax-unirep."""
 import logging
 import os
+import pickle as pkl
 from collections import Counter
 from functools import lru_cache
 from pathlib import Path
-from random import choice, sample
-from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple
+from random import sample
+from typing import Callable, Dict, Iterable, List, Optional, Tuple
 
 import jax.numpy as np
 import numpy as onp
 import pkg_resources
-from jax.nn.initializers import glorot_normal
-from jax.random import PRNGKey
-from jax.tree_util import tree_map
 from tqdm.autonotebook import tqdm
 
 from .errors import SequenceLengthsError
-
-"""Utility functions for jax-unirep."""
-
-
-"""jax-unirep utils."""
 
 
 aa_to_int = {
@@ -74,30 +68,25 @@ def get_weights_dir(folderpath: Optional[str] = None):
 
 def dump_params(
     params: Dict,
-    dir_path: Optional[str] = "temp",
+    dir_path: Path = Path("temp"),
     step: Optional[int] = 0,
 ):
     """
-    Dump the current params of model being trained to a .npy file.
+    Dump the current params of model being trained to a .pkl file.
+
+    Note: We used to dump to a `.npy` file for each weight.
+    This was tied to a previously strong assumption
+    that the weights were from an mLSTM1900 model.
+
+    With the change from a single model architecture assumption
+    to one that allows for more flexibility,
+    we can no longer assume that the weights match up.
+    Hence, we now simply do a Python pickle dump instead.
+    As with before,
+    the embedding weights are not dumped.
 
     The directory is specified by dir_path,
     and will be created, if it does not exist yet.
-
-    The weights that will be dumped are the mLSTM weights as well
-    as the dense layer weights. The embedding matrix weights are
-    not dumped, as they never get modified.
-    The weights will have the same naming convention as the original:
-        dir_path/iter_x/fully_connected_biases:0.npy
-        dir_path/iter_x/fully_connected_weights:0.npy
-        dir_path/iter_x/rnn_mlstm_mlstm_b:0.npy
-        dir_path/iter_x/rnn_mlstm_mlstm_gh:0.npy
-        dir_path/iter_x/rnn_mlstm_mlstm_gmh:0.npy
-        dir_path/iter_x/rnn_mlstm_mlstm_gmx:0.npy
-        dir_path/iter_x/rnn_mlstm_mlstm_gx:0.npy
-        dir_path/iter_x/rnn_mlstm_mlstm_wh:0.npy
-        dir_path/iter_x/rnn_mlstm_mlstm_wmh:0.npy
-        dir_path/iter_x/rnn_mlstm_mlstm_wmx:0.npy
-        dir_path/iter_x/rnn_mlstm_mlstm_wx:0.npy
 
     `dir_path`, by convention, should be relative to
     the current working directory
@@ -113,37 +102,11 @@ def dump_params(
         os.makedirs(dir_path)
         print(f"created directory at {dir_path}")
 
-    # iterate through and save mlstm params as npy files.
-    for name, val in params[0].items():
-        # Construct filename
-        fname = f"rnn_mlstm_mlstm_{name}:0.npy"
+    iteration_path = Path(dir_path) / f"iter_{step}"
+    iteration_path.mkdir(exist_ok=True)
 
-        # Construct directory for dumping.
-        iteration_path = Path(dir_path) / f"iter_{step}"
-        iteration_path.mkdir(exist_ok=True)
-
-        # Save file
-        fpath = iteration_path / fname
-        onp.save(
-            fpath,
-            onp.array(val),
-        )
-    # iterate through and save dense params as npy files.
-    dense_names = [
-        "fully_connected_weights:0.npy",
-        "fully_connected_biases:0.npy",
-    ]
-    for i, val in enumerate(params[2]):
-        # Construct directory for dumping.
-        iteration_path = Path(dir_path) / f"iter_{step}"
-        iteration_path.mkdir(exist_ok=True)
-
-        # Save file
-        fpath = iteration_path / dense_names[i]
-        onp.save(
-            fpath,
-            onp.array(val),
-        )
+    with open(iteration_path / "model_weights.pkl", "wb") as f:
+        pkl.dump(params, f)
 
 
 def aa_seq_to_int(s: str) -> List[int]:

@@ -9,14 +9,14 @@ import optuna
 from jax import grad, jit
 from jax import numpy as np
 from jax import vmap
-from jax.experimental.stax import Dense, Softmax, serial
+from jax.experimental.stax import serial
 from jax.random import PRNGKey
 from sklearn.model_selection import KFold
 from tqdm.autonotebook import tqdm
 
 from jax_unirep.losses import _neg_cross_entropy_loss
 
-from .layers import mLSTM, mLSTMHiddenStates
+from .evotuning_models import mlstm1900_apply_fun
 from .optimizers import adamW
 from .utils import (
     dump_params,
@@ -32,17 +32,6 @@ from .utils import (
 
 
 logger = logging.getLogger("evotuning")
-
-
-def evotuning_layers(mlstm_size: int = 1900):
-    """Return model layers for the mLSTM1900 model."""
-    model_layers = (mLSTM(mlstm_size), mLSTMHiddenStates(), Dense(25), Softmax)
-    return model_layers
-
-
-def evotuning_funcs(mlstm_size: int = 1900):
-    init_func, apply_func = serial(*evotuning_layers(mlstm_size))
-    return init_func, apply_func
 
 
 def setup_evotuning_log():
@@ -68,7 +57,7 @@ def avg_loss(
     xs: List[np.ndarray],
     ys: List[np.ndarray],
     params: Tuple,
-    predict_func: Callable,
+    model_func: Callable,
     backend: str = "cpu",
     batch_size: int = 50,
 ) -> float:
@@ -93,7 +82,7 @@ def avg_loss(
     num_seqs = 0
     global evotune_loss  # this is necessary for JIT to reference evotune_loss
     evotune_loss_jit = jit(
-        partial(evotune_loss, predict=predict_func), backend=backend
+        partial(evotune_loss, predict=model_func), backend=backend
     )
 
     def batch_iter(
@@ -120,7 +109,7 @@ def avg_loss(
 
 def generate_one_length_batch(
     sequences: Iterable[str], holdout_seqs: Optional[Iterable[str]] = None
-) -> Tuple[int, List[str], Optional[List[str]]]:
+) -> Tuple[int, Iterable[str], Optional[Iterable[str]]]:
     """
     Generates a single-length batch.
 
@@ -168,15 +157,14 @@ def generate_batching_funcs(
 
 
 def fit(
-    sequences: Set[str],
+    sequences: Iterable[str],
     n_epochs: int,
-    mlstm_size: int = 1900,
-    params: Optional[Dict] = None,
-    rng: jax.interpreters.xla.DeviceArray = PRNGKey(42),
+    model_func: Callable = mlstm1900_apply_fun,
+    params: Dict = load_params(),
     batch_method: str = "random",
     batch_size: int = 25,
     step_size: float = 0.0001,
-    holdout_seqs: Optional[Set[str]] = None,
+    holdout_seqs: Optional[Iterable[str]] = None,
     proj_name: str = "temp",
     epochs_per_print: int = 1,
     backend: str = "cpu",
@@ -237,10 +225,10 @@ def fit(
 
     ### Parameters
 
-    - `mlstm_size`: The number of units in the mLSTM layer.
-    - `rng`: A JAX PRNGKey, for reproducibility.
     - `sequences`: List of sequences to evotune on.
     - `n_epochs`: The number of iterations to evotune on.
+    - `model_func`: A function that accepts (params, x).
+        Defaults to the mLSTM1900 model function.
     - `params`: Optionally pass in the params you want to use.
         These params must yield a correctly-sized mLSTM,
         otherwise you will get cryptic shape errors!
@@ -271,9 +259,7 @@ def fit(
 
     setup_evotuning_log()
     # setup model
-    model_layers = evotuning_layers(mlstm_size)
-    init_func, predict_func = serial(*model_layers)
-    predict_func = jit(predict_func)
+    model_func = jit(model_func)
 
     @jit
     def step(i, x, y, state):
@@ -291,24 +277,12 @@ def fit(
         :param state: Current state of parameters from jax.
         """
         params = get_params(state)
-        g = grad(partial(evotune_loss, predict=predict_func))(
+        g = grad(partial(evotune_loss, predict=model_func))(
             params, inputs=x, targets=y
         )
         state = update(i, g, state)
 
         return state
-
-    # Load and check that params have correct keys and shapes
-    if params is None:
-        _, params = init_func(rng=rng, input_shape=(-1, 10))
-
-    # Defensive programming checks
-    if len(params) != len(model_layers):
-        raise ValueError(
-            "The number of parameters specified must "
-            "match the number of stax.serial layers"
-        )
-    validate_mLSTM_params(params[0], n_outputs=mlstm_size)
 
     # Defensive programming checks
     if batch_method not in ["length", "random"]:
@@ -364,7 +338,7 @@ def fit(
         # Choose a sequence length at random for this iteration
         length = choice(training_seq_lens)
         avg_loss_func = partial(
-            avg_loss, predict_func=predict_func, backend=backend
+            avg_loss, model_func=model_func, backend=backend
         )
         log_epoch_func = partial(
             log_epoch,
@@ -437,6 +411,7 @@ def objective(
     trial,
     sequences: Iterable[str],
     fit_func: Callable,
+    model_func: Callable,
     n_epochs_config: Dict = None,
     learning_rate_config: Dict = None,
     n_splits: Optional[int] = 5,
@@ -452,11 +427,8 @@ def objective(
     :param trial: An Optuna trial object.
     :param sequences: A list of strings corresponding to the sequences
         that we want to evotune against.
-    :param params: A dictionary of parameters.
-        Should have the keys `mLSTM` and `dense`,
-        which correspond to the mLSTM weights and dense layer weights
-        (output dimensions = 25)
-        to predict the next character in the sequence.
+    :param fit_func: A function which accepts sequences, n_epochs, and step_size
+    :param model_func: A model forward pass function that accepts (params, x).
     :param n_epochs_config: A dictionary of kwargs
         to `trial.suggest_discrete_uniform`,
         which are: `name`, `low`, `high`, `q`.
@@ -467,9 +439,6 @@ def objective(
 
     :returns: Average of 5-fold test loss.
     """
-    _, predict_func = evotuning_funcs(
-        mlstm_size=fit_func.keywords["mlstm_size"]
-    )
     # Default settings for n_epochs_kwargs
     n_epochs_kwargs = {
         "name": "n_epochs",
@@ -521,7 +490,7 @@ def objective(
             ys.append(y)
 
         avg_test_losses.append(
-            avg_loss(xs, ys, evotuned_params, predict_func=predict_func)
+            avg_loss(xs, ys, evotuned_params, model_func=model_func)
         )
 
     return sum(avg_test_losses) / len(avg_test_losses)
@@ -530,6 +499,7 @@ def objective(
 def evotune(
     sequences: Iterable[str],
     fit_func: Callable,
+    model_func: Callable,
     n_trials: Optional[int] = 20,
     n_epochs_config: Dict = None,
     learning_rate_config: Dict = None,
@@ -587,7 +557,7 @@ def evotune(
 
     - `sequences`: Sequences to evotune against.
     - `fit_func`: A partially-evaluated `fit` function,
-        such that the arguments `mlstm_size`, `rng`, `params` are set.
+        such that the arguments `model_func` and `params` are set.
         For sane defaults, see the `fit` function docstring.
     - `n_trials: The number of trials Optuna should attempt.
     - `n_epochs_config`: A dictionary of kwargs
@@ -614,14 +584,17 @@ def evotune(
     """
     study = optuna.create_study()
 
-    objective_func = lambda trial: objective(
-        trial,
-        sequences=sequences,
-        fit_func=fit_func,
-        n_epochs_config=n_epochs_config,
-        learning_rate_config=learning_rate_config,
-        n_splits=n_splits,
-    )
+    def objective_func(trial):
+        return objective(
+            trial,
+            sequences=sequences,
+            fit_func=fit_func,
+            model_func=model_func,
+            n_epochs_config=n_epochs_config,
+            learning_rate_config=learning_rate_config,
+            n_splits=n_splits,
+        )
+
     study.optimize(objective_func, n_trials=n_trials)
     n_epochs = int(study.best_params["n_epochs"])
     learning_rate = float(study.best_params["learning_rate"])

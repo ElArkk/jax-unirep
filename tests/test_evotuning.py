@@ -4,7 +4,8 @@ import pytest
 from jax.experimental import stax
 from jax.random import PRNGKey
 
-from jax_unirep.evotuning import evotune, evotuning_layers, fit
+from jax_unirep.evotuning import evotune, fit
+from jax_unirep.evotuning_models import mlstm64
 
 from .test_layers import validate_mLSTM_params
 
@@ -14,9 +15,8 @@ from .test_layers import validate_mLSTM_params
 @pytest.fixture
 def params():
     """Return randomly initialized params."""
-    model_layers = evotuning_layers(mlstm_size=64)
-    init_fun, _ = stax.serial(*model_layers)
-    _, parameters = init_fun(PRNGKey(0), (-1, 10))
+    init_fun, _ = mlstm64()
+    _, parameters = init_fun(key=PRNGKey(0), input_shape=(-1, 10))
     return parameters
 
 
@@ -24,10 +24,13 @@ def test_evotune():
     """Simple execution test for evotune."""
     seqs = ["MTN", "BDD"] * 5
     n_epochs_config = {"high": 1}
-    fit_func = partial(fit, mlstm_size=256, rng=PRNGKey(0))
+    init_func, model_func = mlstm64()
+    _, params = init_func(PRNGKey(42), (-1, 10))
+    fit_func = partial(fit, model_func=model_func, params=params)
     _, _ = evotune(
         sequences=seqs,
         fit_func=fit_func,
+        model_func=model_func,
         n_trials=1,
         n_epochs_config=n_epochs_config,
     )
@@ -41,9 +44,12 @@ def test_fit(holdout_seqs, batch_method):
 
     key = PRNGKey(42)
 
-    params = fit(
-        mlstm_size=64,
-        rng=key,
+    init_func, model_func = mlstm64()
+    _, params = init_func(key, input_shape=(-1, 10))
+
+    tuned_params = fit(
+        model_func=model_func,
+        params=params,
         sequences=sequences,
         n_epochs=1,
         batch_method=batch_method,
@@ -51,4 +57,4 @@ def test_fit(holdout_seqs, batch_method):
         holdout_seqs=holdout_seqs,
     )
 
-    validate_mLSTM_params(params[0], 64)
+    validate_mLSTM_params(tuned_params[0], 64)

@@ -39,7 +39,7 @@ def mLSTM(output_dim=1900, W_init=glorot_normal(), b_init=normal()):
         output_shape:
             one sequence in 1900 dims -> (n_letters, 1900)
         """
-        input_dim = input_shape[1]
+        input_dim = input_shape[-1]
 
         k1, k2, k3, k4 = random.split(rng, num=4)
         wmx, wmh, wx, wh = (
@@ -88,11 +88,11 @@ def mLSTMAvgHidden(**kwargs):
     """
 
     def init_fun(rng, input_shape):
-        output_shape = (input_shape[1],)
+        output_shape = (input_shape[-1],)
         return output_shape, ()
 
     def apply_fun(params, inputs, **kwargs):
-        return inputs[2].mean(axis=0)
+        return np.mean(inputs[2], axis=0)
 
     return init_fun, apply_fun
 
