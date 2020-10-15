@@ -1,7 +1,7 @@
 import logging
 from functools import partial
 from random import choice
-from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple
+from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple, Any
 
 import jax
 import numpy as onp
@@ -160,7 +160,7 @@ def fit(
     sequences: Iterable[str],
     n_epochs: int,
     model_func: Callable = mlstm1900_apply_fun,
-    params: Dict = load_params(),
+    params: Any = load_params(),
     batch_method: str = "random",
     batch_size: int = 25,
     step_size: float = 0.0001,
@@ -410,8 +410,8 @@ def log_epoch(
 def objective(
     trial,
     sequences: Iterable[str],
-    fit_func: Callable,
     model_func: Callable,
+    params: Any,
     n_epochs_config: Dict = None,
     learning_rate_config: Dict = None,
     n_splits: Optional[int] = 5,
@@ -427,8 +427,8 @@ def objective(
     :param trial: An Optuna trial object.
     :param sequences: A list of strings corresponding to the sequences
         that we want to evotune against.
-    :param fit_func: A function which accepts sequences, n_epochs, and step_size
     :param model_func: A model forward pass function that accepts (params, x).
+    :param params: Model parameters that are compatible with the model_func.
     :param n_epochs_config: A dictionary of kwargs
         to `trial.suggest_discrete_uniform`,
         which are: `name`, `low`, `high`, `q`.
@@ -476,8 +476,10 @@ def objective(
             sequences[test_index],
         )
 
-        evotuned_params = fit_func(
+        evotuned_params = fit(
             sequences=train_sequences,
+            model_func=model_func,
+            params=params,
             n_epochs=int(n_epochs),
             step_size=learning_rate,
         )
@@ -498,8 +500,8 @@ def objective(
 
 def evotune(
     sequences: Iterable[str],
-    fit_func: Callable,
-    model_func: Callable,
+    model_func: mlstm1900_apply_fun,
+    params: Any = load_params(),
     n_trials: Optional[int] = 20,
     n_epochs_config: Dict = None,
     learning_rate_config: Dict = None,
@@ -556,9 +558,10 @@ def evotune(
     ### Parameters
 
     - `sequences`: Sequences to evotune against.
-    - `fit_func`: A partially-evaluated `fit` function,
-        such that the arguments `model_func` and `params` are set.
-        For sane defaults, see the `fit` function docstring.
+    - `model_func`: Model apply func.
+        Defaults to the mLSTM1900 apply function.
+    - `params`: Model params that are compatible with model apply func.
+        Defaults to the mLSTM1900 params.
     - `n_trials: The number of trials Optuna should attempt.
     - `n_epochs_config`: A dictionary of kwargs
         to `trial.suggest_discrete_uniform`,
@@ -588,8 +591,8 @@ def evotune(
         return objective(
             trial,
             sequences=sequences,
-            fit_func=fit_func,
             model_func=model_func,
+            params=params,
             n_epochs_config=n_epochs_config,
             learning_rate_config=learning_rate_config,
             n_splits=n_splits,
@@ -603,8 +606,10 @@ def evotune(
         f"Optuna done, starting tuning with learning rate={learning_rate}, "
     )
 
-    evotuned_params = fit_func(
+    evotuned_params = fit(
         sequences=sequences,
+        model_func=model_func,
+        params=params,
         n_epochs=n_epochs,
         step_size=learning_rate,
         holdout_seqs=out_dom_seqs,

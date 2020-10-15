@@ -5,9 +5,11 @@ Read on to learn how to use them.
 
 ## Evotuning
 
-In the original paper the concept of 'evolutionary finetuning' is introduced,
-where the pre-trained mLSTM weights get fine-tuned through weight-updates
+In the original UniRep paper,
+the authors introduced the concept of 'evolutionary finetuning'.
+Here the pre-trained mLSTM weights get fine-tuned through weight-updates
 using homolog protein sequences of a given protein of interest as input.
+
 This feature is available as well in `jax-unirep`.
 Given a set of starter weights for the mLSTM (defaults to
 the weights from the paper) as well as a set of sequences,

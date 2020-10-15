@@ -1,11 +1,10 @@
+"""Evotuning two ways!"""
 from functools import partial
 
 from jax.random import PRNGKey
 
 from jax_unirep import evotune, fit
 from jax_unirep.utils import dump_params
-
-"""Evotuning two ways."""
 
 
 # Test sequences:
@@ -19,14 +18,12 @@ holdout_sequences = [
     "HASVALTA",
 ] * 5
 PROJECT_NAME = "evotuning_temp"
+fit()
 fit_func = partial(
     fit,
-    mlstm_size=256,
-    rng=PRNGKey(42),
-    epochs_per_print=1,
 )
 
-## 1. Evotuning with Optuna
+# 1. Evotuning with Optuna
 n_epochs_config = {"low": 1, "high": 1}
 lr_config = {"low": 1e-5, "high": 1e-3}
 study, evotuned_params = evotune(

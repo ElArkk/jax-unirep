@@ -26,11 +26,10 @@ def test_evotune():
     n_epochs_config = {"high": 1}
     init_func, model_func = mlstm64()
     _, params = init_func(PRNGKey(42), (-1, 10))
-    fit_func = partial(fit, model_func=model_func, params=params)
     _, _ = evotune(
         sequences=seqs,
-        fit_func=fit_func,
         model_func=model_func,
+        params=params,
         n_trials=1,
         n_epochs_config=n_epochs_config,
     )
