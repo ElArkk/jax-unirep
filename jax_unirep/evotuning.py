@@ -500,7 +500,7 @@ def objective(
 
 def evotune(
     sequences: Iterable[str],
-    model_func: mlstm1900_apply_fun,
+    model_func: Callable = mlstm1900_apply_fun,
     params: Any = load_params(),
     n_trials: Optional[int] = 20,
     n_epochs_config: Dict = None,

@@ -18,17 +18,13 @@ holdout_sequences = [
     "HASVALTA",
 ] * 5
 PROJECT_NAME = "evotuning_temp"
-fit()
-fit_func = partial(
-    fit,
-)
+
 
 # 1. Evotuning with Optuna
 n_epochs_config = {"low": 1, "high": 1}
 lr_config = {"low": 1e-5, "high": 1e-3}
 study, evotuned_params = evotune(
     sequences=sequences,
-    fit_func=fit_func,
     out_dom_seqs=holdout_sequences,
     n_trials=2,
     n_splits=2,

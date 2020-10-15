@@ -1,4 +1,4 @@
-"""Three ways to use the `fit` function."""
+"""Two ways to use the `fit` function."""
 from jax_unirep import fit
 from jax_unirep.evotuning_models import mlstm64
 from jax.random import PRNGKey
