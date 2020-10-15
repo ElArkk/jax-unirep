@@ -9,7 +9,6 @@ import pickle as pkl
 from jax_unirep.evotuning_models import mlstm1900, mlstm64
 from jax_unirep.utils import (
     aa_seq_to_int,
-    arr_to_letter,
     batch_sequences,
     dump_params,
     evotuning_pairs,
