@@ -6,12 +6,11 @@ from hypothesis import strategies as st
 from jax import random
 from jax.experimental import stax
 
-from jax_unirep.layers import (
+from jax_unirep.layers import (  # mLSTM1900_step,
     mLSTM1900,
     mLSTM1900_AvgHidden,
     mLSTM1900_batch,
     mLSTM1900_Fusion,
-    # mLSTM1900_step,
 )
 from jax_unirep.utils import (
     get_embedding,
@@ -32,9 +31,11 @@ def test_mLSTM1900_batch():
     x = get_embedding("TEST", emb)
 
     params = load_params_1900()
+    original_params = params.copy()
 
     h_final, c_final, h = mLSTM1900_batch(params, x)
     assert h.shape == (x.shape[0], 1900)
+    np.testing.assert_array_equal(original_params, params)
 
 
 def validate_mLSTM1900_params(params):
