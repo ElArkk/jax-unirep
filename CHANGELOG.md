@@ -4,6 +4,7 @@ In the changelog, @ElArkk and @ericmjl would like to acknowledge contributors wh
 
 <Please add your contribution to the top>
 
+- 22 October 2020: Fixed erroneous `params` mutation during `l2_normalize` calls
 - 29 August 2020: Fixed setup.py so that PEP 517 calls such as `pip install .` work, by @konstin.
 - 29 August 2020: Require python 3.6 instead 3.7, by @konstin.
 - 20 April 2020: Code fixes for major bug with negative and NaN losses due to Softmax issue by @ivanjayapurna,
