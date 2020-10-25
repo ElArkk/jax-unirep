@@ -21,8 +21,9 @@ tuned_params = fit(
 )
 ```
 """
-from .layers import mLSTM, mLSTMHiddenStates
 from jax.experimental.stax import Dense, Softmax, serial
+
+from .layers import mLSTM, mLSTMHiddenStates
 
 
 def mlstm1900():

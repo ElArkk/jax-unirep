@@ -1,7 +1,8 @@
 """Two ways to use the `fit` function."""
+from jax.random import PRNGKey
+
 from jax_unirep import fit
 from jax_unirep.evotuning_models import mlstm64
-from jax.random import PRNGKey
 
 sequences = ["HASTA", "VISTA", "ALAVA", "LIMED", "HAST", "HAS", "HASVASTA"] * 5
 holdout_sequences = [

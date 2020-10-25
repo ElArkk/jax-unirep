@@ -1,12 +1,12 @@
 """Evotuning two ways!"""
 
+from pathlib import Path
+
 from jax.random import PRNGKey
 
 from jax_unirep import evotune
 from jax_unirep.evotuning_models import mlstm64
 from jax_unirep.utils import dump_params
-from pathlib import Path
-
 
 # Test sequences:
 sequences = ["HASTA", "VISTA", "ALAVA", "LIMED", "HAST", "HAS", "HASVASTA"] * 5

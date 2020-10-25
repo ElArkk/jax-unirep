@@ -1,12 +1,16 @@
+import pickle as pkl
+import warnings
 from contextlib import suppress as does_not_raise
+from functools import partial
 from shutil import rmtree
 from typing import Any, Callable
 
 import numpy as np
 import pytest
+from jax import vmap
+from jax.random import PRNGKey, normal
 
-import pickle as pkl
-from jax_unirep.evotuning_models import mlstm1900, mlstm64
+from jax_unirep.evotuning_models import mlstm64, mlstm1900
 from jax_unirep.utils import (
     aa_seq_to_int,
     batch_sequences,
@@ -24,10 +28,6 @@ from jax_unirep.utils import (
     right_pad,
     validate_mLSTM_params,
 )
-from jax.random import normal, PRNGKey
-from jax import vmap
-from functools import partial
-import warnings
 
 
 @pytest.fixture

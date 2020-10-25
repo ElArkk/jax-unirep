@@ -15,7 +15,6 @@ from tqdm.autonotebook import tqdm
 
 from .errors import SequenceLengthsError
 
-
 aa_to_int = {
     "-": 0,
     "M": 1,
