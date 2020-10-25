@@ -1,7 +1,7 @@
 import logging
 from functools import partial
 from random import choice
-from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple, Any
+from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple
 
 import jax
 import numpy as onp
@@ -85,19 +85,12 @@ def avg_loss(
         partial(evotune_loss, predict=model_func), backend=backend
     )
 
-    def batch_iter(
-        xs: np.ndarray, ys: np.ndarray, batch_size: int = batch_size
-    ):
-        i = 0
-        for i in tqdm(
-            range(0, len(xs), batch_size),
-            desc=f"Avg loss on dataset length {len(xs)}",
-        ):
+    def batch_iter(xs: np.ndarray, ys: np.ndarray, batch_size: int):
+        for i in range(0, len(xs), batch_size):
             yield xs[i : i + batch_size], ys[i : i + batch_size]
-            i += batch_size
 
     for xmat, ymat in zip(xs, ys):
-        # Send x and y in small batches of 100 to control memory usage.
+        # Send x and y in small batches to control memory usage.
         for x, y in batch_iter(xmat, ymat, batch_size=batch_size):
             sum_loss += evotune_loss_jit(
                 params=params, inputs=x, targets=y
