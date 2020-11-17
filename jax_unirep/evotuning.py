@@ -153,7 +153,7 @@ def fit(
     sequences: Iterable[str],
     n_epochs: int,
     model_func: Callable = mlstm1900_apply_fun,
-    params: Any = load_params(),
+    params: Any = None,
     batch_method: str = "random",
     batch_size: int = 25,
     step_size: float = 0.0001,
@@ -251,7 +251,6 @@ def fit(
     """
 
     setup_evotuning_log()
-    # setup model
     model_func = jit(model_func)
 
     @jit
@@ -276,6 +275,9 @@ def fit(
         state = update(i, g, state)
 
         return state
+
+    if params is None:
+        params = load_params()
 
     # Defensive programming checks
     if batch_method not in ["length", "random"]:
