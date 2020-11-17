@@ -12,3 +12,7 @@ repos:
     rev: 20.8b1
     hooks:
     -   id: black
+-   repo: https://github.com/kynan/nbstripout
+    rev: master
+    hooks:
+    -   id: nbstripout
