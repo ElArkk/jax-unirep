@@ -524,20 +524,25 @@ def evotune(
     in the partially-evaluated fit function (`fit_func`),
     but if you want to use randomly intialized weights:
 
-        from jax_unirep.evotuning import evotuning_funcs, fit
-        from jax.random import PRNGKey
-        from functools import partial
+    ```python
+    from jax_unirep.evotuning import evotuning_funcs, fit
+    from jax.random import PRNGKey
+    from functools import partial
 
-        init_func, _ = evotuning_funcs(mlstm_size=256) # works for any size
-        _, params = init_func(PRNGKey(0), input_shape=(-1, 10))
-        fit_func = partial(fit, mlstm_size=256, params=params)
+    init_func, _ = evotuning_funcs(mlstm_size=256) # works for any size
+    _, params = init_func(PRNGKey(0), input_shape=(-1, 10))
+    fit_func = partial(fit, mlstm_size=256, params=params)
+    ```
 
     or dumped weights:
-        from jax_unirep.evotuning import fit
-        from jax_unirep.utils import load_params
 
-        params = load_params(folderpath="path/to/params/folder")
-        fit_func = partial(fit, mlstm_size=256, params=params)
+    ```python
+    from jax_unirep.evotuning import fit
+    from jax_unirep.utils import load_params
+
+    params = load_params(folderpath="path/to/params/folder")
+    fit_func = partial(fit, mlstm_size=256, params=params)
+    ```
 
     The examples above use mLSTM sizes of 256, but any size works in theory!
     Just make sure that the mLSTM size of your randomly initialized or dumped
