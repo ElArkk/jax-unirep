@@ -290,7 +290,7 @@ def fit(
         )
 
     if batch_method == "random":
-        _, sequences, holdout_seqs = generate_one_length_batch(
+        _, sequences, holdout_seqs = generate_single_length_batch(
             sequences, holdout_seqs
         )
 
