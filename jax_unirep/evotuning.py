@@ -308,13 +308,19 @@ def fit(
         ) = generate_batching_funcs(holdout_seqs, batch_size)
 
     batch_lens = [len(batch) for batch in training_seqs_batched]
-    logger.info(
-        f"Length-batching done: "
-        f"{len(batch_lens)} unique sequence lengths, "
-        f"with average batch length {onp.mean(batch_lens)}, "
-        f"max batch length {max(batch_lens)} "
-        f"and min batch length {min(batch_lens)}."
-    )
+    if batch_method == "length":
+        logger.info(
+            f"Length-batching done: "
+            f"{len(batch_lens)} unique sequence lengths, "
+            f"with average batch length {onp.mean(batch_lens)}, "
+            f"max batch length {max(batch_lens)} "
+            f"and min batch length {min(batch_lens)}."
+        )
+    elif batch_method == "random":
+        logger.info(
+            f"Random batching done: "
+            f"All sequences padded to max sequence length of {max(batch_lens)}"
+        )
 
     init, update, get_params = adamW(step_size=step_size)
     get_params = jit(get_params)
