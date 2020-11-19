@@ -40,6 +40,8 @@ dependencies:
     - pandoc-eqnos
     - pandoc-tablenos
     - pandoc-secnos
+    - Pygments
     - mkdocs
     - mkdocs-material
     - mkautodoc
+    - mknotebooks
