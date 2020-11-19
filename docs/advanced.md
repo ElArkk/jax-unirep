@@ -51,7 +51,7 @@ Please see the function docstring [here][fitdoc] for more information.
     on the dataset after every epoch, you can decide
     if the CPU or GPU `backend` should be used (default is CPU).
 
-You can find an example usage of the evotuing function [here][evotuneex].
+You can find an example usage of the evotuning function [here][evotuneex].
 For an example workflow using `fit`, have a look at the notebook
 in [the next section][fitex].
 
