@@ -51,55 +51,15 @@ Please see the function docstring [here][fitdoc] for more information.
     on the dataset after every epoch, you can decide
     if the CPU or GPU `backend` should be used (default is CPU).
 
-You can find an example usages of both `evotune` and `fit` [here][examples],
-but for convenience, here's a code block that you can copy/paste
-to get kickstarted.
+You can find an example usage of the evotuing function [here][evotuneex].
+For an example workflow using `fit`, have a look at the notebook
+in [the next section][fitex].
 
 !!! warning "Read the docs!"
 
     Can't emphasize this enough:
     Be sure to read the [API docs for the `fit` function][fitdoc]
     to learn about what's going on underneath the hood!
-
-```python
-from jax_unirep.utils import load_random_evotuning_params
-from random import shuffle
-from jax_unirep.evotuning import fit, dump_params
-# Prepare your sequences as a list of strings,
-# using whatever parsers you need.
-# This is a pre-requisite step that will likely be project-specific.
-seqs = [...]
-
-# You can optionally split the dataset so that you have a holdout set.
-shuffle(seqs)
-break_point = int(len(seqs) * 0.7)
-sequences = seqs[0:break_point]
-holdout_sequences = seqs[break_point:]
-
-# Set some evotuning parameters.
-N_EPOCHS = 20  # probably want this to be quite high, like in the hundreds.
-LEARN_RATE = 1e-5  # this is a very sane default to start with.
-PROJECT_NAME = "temp"  # where the weights will be dumped
-
-# Pre-load some evotuning params that are randomly initialized.
-params = load_random_evotuning_params()
-
-# Now to evotuning
-evotuned_params = fit(
-    params=params,  # you can also set this to None if you want to use the published weights as the starting point.
-    sequences=sequences,
-    n_epochs=N_EPOCHS,
-    step_size=LEARN_RATE,
-    holdout_seqs=holdout_sequences,
-    batch_method="random",
-    proj_name=PROJECT_NAME,
-    epochs_per_print=1,  # also controls how often weights are dumped.
-    backend="cpu",  # default is "cpu", can also set to "gpu" if you have it.
-)
-
-dump_params(evotuned_params, PROJECT_NAME)
-print("Evotuning done! Find output weights in", PROJECT_NAME)
-```
 
 If you want to pass a set of mLSTM and dense weights
 that were dumped in an earlier run,
@@ -125,7 +85,8 @@ always default to the weights from the paper,
 since they do not get updated during evotuning.
 
 [fitdoc]: https://elarkk.github.io/jax-unirep/api/#evotuning
-[examples]: https://github.com/ElArkk/jax-unirep/blob/master/examples
+[evotuneex]: https://github.com/ElArkk/jax-unirep/blob/master/examples/evotuning.py
+[fitex]: https://elarkk.github.io/jax-unirep/fitting
 
 ## End-to-end differentiable models
 
