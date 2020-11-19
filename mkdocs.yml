@@ -13,8 +13,9 @@ nav:
   - Home: index.md
   - Getting Started: getting-started.md
   - Improvements: improvements.md
-  - Advanced Usage: advanced.md
-  - Example evotune workflow: fitting.ipynb
+  - Advanced Usage:
+    - General: advanced.md
+    - Example workflow using fit: fitting.ipynb
   - Contributing: contributing.md
   - Development: development.md
   - API Docs: api.md
