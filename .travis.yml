@@ -27,7 +27,11 @@ install:
   - python setup.py install
   - pip install codecov
   # Ensure that the kernel is installed into the compute environment.
-  # - python -m ipykernel install --user --name jax-unirep
+  - python -m ipykernel install --user --name jax-unirep
+  # Ensure that jupyterlab's ipywidgets are displayed correctly.
+  # This is important because we want progress bars to render correctly
+  # in the mkdocs notebooks.
+  - jupyter labextension install @jupyter-widgets/jupyterlab-manager
 
 script:
   # Check formatting with black
@@ -39,7 +43,6 @@ script:
   # because we want to guarantee that the notebooks run without error.
   # Hence, it is in the `script` section rather than `before_deploy` section.
   - mkdocs build
-
 
 after_success:
   - codecov
