@@ -100,7 +100,7 @@ def avg_loss(
     return sum_loss / num_seqs
 
 
-def generate_one_length_batch(
+def generate_single_length_batch(
     sequences: Iterable[str], holdout_seqs: Optional[Iterable[str]] = None
 ) -> Tuple[int, Iterable[str], Optional[Iterable[str]]]:
     """
