@@ -409,7 +409,7 @@ def evotuning_pairs(s: str) -> Tuple[np.ndarray, np.ndarray]:
     next_letters_int = aa_seq_to_int(s[1:])
 
     x = onp.vstack([one_hots[i] for i in seq_int])
-    y = onp.stack([one_hots[i] for i in next_letters_int])
+    y = onp.vstack([one_hots[i] for i in next_letters_int])
     return x, y
 
 
