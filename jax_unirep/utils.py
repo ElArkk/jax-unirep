@@ -119,12 +119,12 @@ def aa_seq_to_int(s: str) -> List[int]:
     return [24] + [aa_to_int[a] for a in s] + [25]
 
 
-@lru_cache(maxsize=128)
-def load_embedding_1900(folderpath: Optional[str] = None):
+def load_embedding(folderpath: Optional[str] = None):
     """Load pre-trained embedding weights for UniRep1900 model."""
-    weights_1900_dir = get_weights_dir(folderpath=folderpath)
-
-    return np.load(weights_1900_dir / "embed_matrix:0.npy")
+    weights_dir = get_weights_dir(folderpath=folderpath)
+    with open(weights_dir / "model_weights.pkl", "rb") as f:
+        params = pkl.load(f)
+    return params[0]
 
 
 def get_embedding(sequence: str, embeddings: np.ndarray) -> np.ndarray:
@@ -161,44 +161,44 @@ Sequence length: number of sequences information in the dictionary below.
 {seq_lengths}
 """
         raise SequenceLengthsError(error)
-    embeddings = load_embedding_1900()
+    embeddings = load_embedding()
 
     seq_embeddings = [get_embedding(s, embeddings) for s in sequences]
     return onp.stack(seq_embeddings, axis=0)
 
 
-def load_dense_params(folderpath: Optional[str] = None) -> Tuple:
-    """
-    Load dense layer weights. Defaults to mLSTM1900 weights from the paper.
+# def load_dense_params(folderpath: Optional[str] = None) -> Tuple:
+#     """
+#     Load dense layer weights. Defaults to mLSTM1900 weights from the paper.
 
-    The dense layer weights are used to predict next character
-    from the output of the mLSTM.
-    """
-    weights_dir = get_weights_dir(folderpath=folderpath)
+#     The dense layer weights are used to predict next character
+#     from the output of the mLSTM.
+#     """
+#     weights_dir = get_weights_dir(folderpath=folderpath)
 
-    w = np.load(weights_dir / "fully_connected_weights:0.npy")
-    b = np.load(weights_dir / "fully_connected_biases:0.npy")
-    return w, b
+#     w = np.load(weights_dir / "fully_connected_weights:0.npy")
+#     b = np.load(weights_dir / "fully_connected_biases:0.npy")
+#     return w, b
 
 
-def load_mlstm_params(folderpath: Optional[str] = None) -> Dict:
-    """Load mLSTM weights. Defaults to mLSTM1900 weights from the paper."""
-    weights_dir = get_weights_dir(folderpath=folderpath)
+# def load_mlstm_params(folderpath: Optional[str] = None) -> Dict:
+#     """Load mLSTM weights. Defaults to mLSTM1900 weights from the paper."""
+#     weights_dir = get_weights_dir(folderpath=folderpath)
 
-    params = dict()
-    params["gh"] = np.load(weights_dir / "rnn_mlstm_mlstm_gh:0.npy")
-    params["gmh"] = np.load(weights_dir / "rnn_mlstm_mlstm_gmh:0.npy")
-    params["gmx"] = np.load(weights_dir / "rnn_mlstm_mlstm_gmx:0.npy")
-    params["gx"] = np.load(weights_dir / "rnn_mlstm_mlstm_gx:0.npy")
+#     params = dict()
+#     params["gh"] = np.load(weights_dir / "rnn_mlstm_mlstm_gh:0.npy")
+#     params["gmh"] = np.load(weights_dir / "rnn_mlstm_mlstm_gmh:0.npy")
+#     params["gmx"] = np.load(weights_dir / "rnn_mlstm_mlstm_gmx:0.npy")
+#     params["gx"] = np.load(weights_dir / "rnn_mlstm_mlstm_gx:0.npy")
 
-    params["wh"] = np.load(weights_dir / "rnn_mlstm_mlstm_wh:0.npy")
-    params["wmh"] = np.load(weights_dir / "rnn_mlstm_mlstm_wmh:0.npy")
-    params["wmx"] = np.load(weights_dir / "rnn_mlstm_mlstm_wmx:0.npy")
-    params["wx"] = np.load(weights_dir / "rnn_mlstm_mlstm_wx:0.npy")
+#     params["wh"] = np.load(weights_dir / "rnn_mlstm_mlstm_wh:0.npy")
+#     params["wmh"] = np.load(weights_dir / "rnn_mlstm_mlstm_wmh:0.npy")
+#     params["wmx"] = np.load(weights_dir / "rnn_mlstm_mlstm_wmx:0.npy")
+#     params["wx"] = np.load(weights_dir / "rnn_mlstm_mlstm_wx:0.npy")
 
-    params["b"] = np.load(weights_dir / "rnn_mlstm_mlstm_b:0.npy")
+#     params["b"] = np.load(weights_dir / "rnn_mlstm_mlstm_b:0.npy")
 
-    return params
+#     return params
 
 
 def validate_mLSTM_params(params: Dict, n_outputs):
@@ -231,12 +231,10 @@ def validate_mLSTM_params(params: Dict, n_outputs):
 
 def load_params(folderpath: Optional[str] = None):
     """Load params for passing to evotuning stax model."""
-    return (
-        load_mlstm_params(folderpath=folderpath),
-        (),
-        load_dense_params(folderpath=folderpath),
-        (),
-    )
+    weights_dir = get_weights_dir(folderpath=folderpath)
+    with open(weights_dir / "model_weights.pkl", "rb") as f:
+        params = pkl.load(f)
+    return params
 
 
 def l2_normalize(arr, axis, epsilon=1e-12):
