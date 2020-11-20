@@ -59,7 +59,7 @@ def rep_arbitrary_lengths(
     for idxs in order:
         subset = [seqs[i] for i in idxs]
 
-        h_avg, h_final, c_final = rep_same_lengths(subset, params)
+        h_avg, h_final, c_final = rep_same_lengths(subset, params, apply_fun)
         ha_list.append(h_avg)
         hf_list.append(h_final)
         cf_list.append(c_final)
