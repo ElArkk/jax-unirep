@@ -23,12 +23,18 @@ tuned_params = fit(
 """
 from jax.experimental.stax import Dense, Softmax, serial
 
-from .layers import mLSTM, mLSTMHiddenStates
+from .layers import AAEmbedding, mLSTM, mLSTMHiddenStates
 
 
 def mlstm1900():
     """mLSTM1900 model functions."""
-    model_layers = (mLSTM(1900), mLSTMHiddenStates(), Dense(25), Softmax)
+    model_layers = (
+        AAEmbedding(10),
+        mLSTM(1900),
+        mLSTMHiddenStates(),
+        Dense(25),
+        Softmax,
+    )
     init_fun, apply_fun = serial(*model_layers)
     return init_fun, apply_fun
 
@@ -39,6 +45,7 @@ mlstm1900_init_fun, mlstm1900_apply_fun = mlstm1900()
 def mlstm256():
     """mLSTM256 model functions."""
     model_layers = (
+        AAEmbedding(10),
         mLSTM(256),
         mLSTMHiddenStates(),
         mLSTM(256),
@@ -57,6 +64,7 @@ def mlstm256():
 def mlstm64():
     """mLSTM64 model functions."""
     model_layers = (
+        AAEmbedding(10),
         mLSTM(64),
         mLSTMHiddenStates(),
         mLSTM(64),
