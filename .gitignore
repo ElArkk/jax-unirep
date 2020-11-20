@@ -143,3 +143,4 @@ temp/*
 *.out
 *.bbl
 *.blg
+model_weights.pkl

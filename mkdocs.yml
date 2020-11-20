@@ -13,7 +13,9 @@ nav:
   - Home: index.md
   - Getting Started: getting-started.md
   - Improvements: improvements.md
-  - Advanced Usage: advanced.md
+  - Advanced Usage:
+    - General: advanced.md
+    - Example workflow using fit: fitting.ipynb
   - Contributing: contributing.md
   - Development: development.md
   - API Docs: api.md
@@ -23,6 +25,9 @@ plugins:
       separator: '[\s\-\.]+'
       lang:
         - en
+  - mknotebooks:
+      execute: true
+      timeout: 300
 
 # Taken from here: https://squidfunk.github.io/mkdocs-material/extensions/codehilite/
 markdown_extensions:

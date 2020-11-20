@@ -27,27 +27,32 @@ install:
   - python setup.py install
   - pip install codecov
   # Ensure that the kernel is installed into the compute environment.
-  # - python -m ipykernel install --user --name jax-unirep
+  - python -m ipykernel install --user --name jax-unirep
 
 script:
   # Check formatting with black
   - make style
   # Run tests
   - make test
+  # Build docs.
+  # We want to build docs on every build,
+  # because we want to guarantee that the notebooks run without error.
+  # Hence, it is in the `script` section rather than `before_deploy` section.
+  - mkdocs build
 
 after_success:
   - codecov
 
 before_deploy:
-  # Build paper
-  - make paper
-  - mkdir -p docs/
-  - cp -r paper/* docs/.
-  # Diagnostic commands
-  - ls docs/
+  # # Build paper
+  # - make paper
+  # - mkdir -p docs/
+  # - cp -r paper/* docs/.
+  # # Diagnostic commands
+  # - ls docs/
 
-  # Build docs
-  - mkdocs build
+  # Diagnostic command
+  - ls site/
 
 # This is an example to deploy to a branch through Travis.
 deploy:
