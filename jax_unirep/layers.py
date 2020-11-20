@@ -28,6 +28,7 @@ def AAEmbedding(embedding_dims: int = 10, E_init=glorot_normal(), **kwargs):
 
     def apply_fun(params, inputs, **kwargs):
         emb_matrix = params
+        # (n_aa, n_unique_aa) * (n_unique_aa, embedding_dims) => (n_aa, embedding_dims) # noqa: E501
         return np.matmul(inputs, emb_matrix)
 
     return init_fun, apply_fun
