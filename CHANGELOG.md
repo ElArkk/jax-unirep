@@ -7,7 +7,7 @@ In the changelog, @ElArkk and @ericmjl would like to acknowledge contributors wh
 - 20 November 2020: Major rework of fitting API, plus bugfixes by @ericmjl
     1. Custom model architectures can now be passed to `fit`
     2. Refactored lots of utility functions in the evotuing process for better readability
-    2. Oscillating output bug of `get_reps` fixed (thank you @hhefzi, @tanggis and @hypostulate!)
+    2. Oscillating output bug of `get_reps` fixed (thank you @hhefzi, @tanggis and @hypostulate !)
 - 29 August 2020: Fixed setup.py so that PEP 517 calls such as `pip install .` work, by @konstin.
 - 29 August 2020: Require python 3.6 instead 3.7, by @konstin.
 - 20 April 2020: Code fixes for major bug with negative and NaN losses due to Softmax issue by @ivanjayapurna,
