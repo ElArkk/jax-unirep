@@ -315,13 +315,13 @@ def get_batching_func(seq_batch, batch_size: int = 25) -> Callable:
 
 
 # This block of code generates one-hot-encoded arrays.
-oh_arrs = np.eye(max(aa_to_int.values()))
+oh_arrs = np.eye(max(aa_to_int.values()) + 1)
 
 # one_hots maps from aa_to_int integers to an array
-one_hots = {v: oh_arrs[v - 1] for k, v in aa_to_int.items()}
+one_hots = {v: oh_arrs[v] for k, v in aa_to_int.items()}
 
 # oh_idx_to_aa maps from oh_arrs index to aa_to_int letter.
-oh_idx_to_aa = {v - 1: k for k, v in aa_to_int.items()}
+oh_idx_to_aa = {v: k for k, v in aa_to_int.items()}
 oh_idx_to_aa[22] = "[XZBJ]"
 
 
@@ -407,8 +407,8 @@ def evotuning_pairs(s: str) -> Tuple[np.ndarray, np.ndarray]:
     """
     seq_int = aa_seq_to_int(s[:-1])
     next_letters_int = aa_seq_to_int(s[1:])
-    embeddings = load_embedding_1900()
-    x = onp.stack([embeddings[i] for i in seq_int])
+
+    x = onp.vstack([one_hots[i] for i in seq_int])
     y = onp.stack([one_hots[i] for i in next_letters_int])
     return x, y
 
