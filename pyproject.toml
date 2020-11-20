@@ -6,9 +6,6 @@
 # character.
 
 [tool.black]
-line-length = 79
-target-version = ['py37', 'py38']
-include = '\.pyi?$'
 exclude = '''
 /(
     \.eggs
@@ -28,18 +25,19 @@ exclude = '''
   | profiling
 )/
 '''
-
+include = '\.pyi?$'
+line-length = 79
+target-version = ['py37', 'py38']
 
 # Build system information below.
 # NOTE: You don't need this in your own Black configuration.
 
 [build-system]
-requires = ["setuptools>=41.0", "setuptools-scm", "wheel"]
 build-backend = "setuptools.build_meta"
-
+requires = ["setuptools>=41.0", "setuptools-scm", "wheel"]
 
 [tool.isort]
-src_paths = ["jax_unirep", "test"]
 float_to_top = true
-profile = "black"
 line_length = 79
+profile = "black"
+src_paths = ["jax_unirep", "test"]

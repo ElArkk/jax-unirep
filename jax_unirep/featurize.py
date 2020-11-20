@@ -5,16 +5,16 @@ import numpy as np
 from jax import vmap
 
 from .errors import SequenceLengthsError
-from .layers import mLSTM1900
+from .layers import mLSTM
 from .utils import (
     batch_sequences,
     get_embeddings,
-    load_params_1900,
-    validate_mLSTM1900_params,
+    load_mlstm_params,
+    validate_mLSTM_params,
 )
 
 # instantiate the mLSTM
-_, apply_fun = mLSTM1900()
+_, apply_fun = mLSTM()
 
 
 def rep_same_lengths(
@@ -100,7 +100,7 @@ def get_reps(
     You should not use this function
     if you want to do further JAX-based computations
     on the output vectors!
-    In that case, the `DeviceArray` futures returned by `mLSTM1900`
+    In that case, the `DeviceArray` futures returned by `mLSTM`
     should be passed directly into the next step
     instead of converting them to `np.array`s.
     The conversion to `np.array`s is done
@@ -115,7 +115,7 @@ def get_reps(
     ### Parameters
 
     - `seqs`: A list of sequences as strings or a single string.
-    - `params`: A dictionary of mLSTM1900 weights.
+    - `params`: A dictionary of mLSTM weights.
 
     ### Returns
 
@@ -124,9 +124,9 @@ def get_reps(
     Each `np.array` has shape (n_sequences, 1900).
     """
     if params is None:
-        params = load_params_1900()
+        params = load_mlstm_params()
     # Check that params have correct keys and shapes
-    validate_mLSTM1900_params(params)
+    validate_mLSTM_params(params, n_outputs=1900)
     # If single string sequence is passed, package it into a list
     if isinstance(seqs, str):
         seqs = [seqs]

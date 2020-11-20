@@ -1,23 +1,19 @@
+"""Utility functions for jax-unirep."""
 import logging
 import os
+import pickle as pkl
 from collections import Counter
 from functools import lru_cache
 from pathlib import Path
-from random import choice, sample
-from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple
+from random import sample
+from typing import Callable, Dict, Iterable, List, Optional, Tuple
 
 import jax.numpy as np
 import numpy as onp
 import pkg_resources
-from jax.nn.initializers import glorot_normal
-from jax.random import PRNGKey
-from jax.tree_util import tree_map
 from tqdm.autonotebook import tqdm
 
 from .errors import SequenceLengthsError
-
-"""jax-unirep utils."""
-
 
 aa_to_int = {
     "-": 0,
@@ -55,7 +51,9 @@ proposal_valid_letters = "ACDEFGHIKLMNPQRSTVWY"
 
 def get_weights_dir(folderpath: Optional[str] = None):
     """
-    Fetch the paper weights per default, or from a specified folderpath
+    Fetch model weights.
+
+    If `folderpath` is None, retrieve the mLSTM1900 weights.
     """
     if folderpath:
         return Path(folderpath)
@@ -69,30 +67,25 @@ def get_weights_dir(folderpath: Optional[str] = None):
 
 def dump_params(
     params: Dict,
-    dir_path: Optional[str] = "temp",
+    dir_path: Path = Path("temp"),
     step: Optional[int] = 0,
 ):
     """
-    Dumps the current params of model being trained to a .npy file.
+    Dump the current params of model being trained to a .pkl file.
+
+    Note: We used to dump to a `.npy` file for each weight.
+    This was tied to a previously strong assumption
+    that the weights were from an mLSTM1900 model.
+
+    With the change from a single model architecture assumption
+    to one that allows for more flexibility,
+    we can no longer assume that the weights match up.
+    Hence, we now simply do a Python pickle dump instead.
+    As with before,
+    the embedding weights are not dumped.
 
     The directory is specified by dir_path,
     and will be created, if it does not exist yet.
-
-    The weights that will be dumped are the mLSTM weights as well
-    as the dense layer weights. The embedding matrix weights are
-    not dumped, as they never get modified.
-    The weights will have the same naming convention as the original:
-        dir_path/iter_x/fully_connected_biases:0.npy
-        dir_path/iter_x/fully_connected_weights:0.npy
-        dir_path/iter_x/rnn_mlstm_mlstm_b:0.npy
-        dir_path/iter_x/rnn_mlstm_mlstm_gh:0.npy
-        dir_path/iter_x/rnn_mlstm_mlstm_gmh:0.npy
-        dir_path/iter_x/rnn_mlstm_mlstm_gmx:0.npy
-        dir_path/iter_x/rnn_mlstm_mlstm_gx:0.npy
-        dir_path/iter_x/rnn_mlstm_mlstm_wh:0.npy
-        dir_path/iter_x/rnn_mlstm_mlstm_wmh:0.npy
-        dir_path/iter_x/rnn_mlstm_mlstm_wmx:0.npy
-        dir_path/iter_x/rnn_mlstm_mlstm_wx:0.npy
 
     `dir_path`, by convention, should be relative to
     the current working directory
@@ -103,43 +96,16 @@ def dump_params(
     :param step: the number of training steps to get to this state.
     :param dir_name: path of directory params will save to.
     """
-
     # create directory if it doesn't already exist:
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
         print(f"created directory at {dir_path}")
 
-    # iterate through and save mlstm params as npy files.
-    for name, val in params[0].items():
-        # Construct filename
-        fname = f"rnn_mlstm_mlstm_{name}:0.npy"
+    iteration_path = Path(dir_path) / f"iter_{step}"
+    iteration_path.mkdir(exist_ok=True)
 
-        # Construct directory for dumping.
-        iteration_path = Path(dir_path) / f"iter_{step}"
-        iteration_path.mkdir(exist_ok=True)
-
-        # Save file
-        fpath = iteration_path / fname
-        onp.save(
-            fpath,
-            onp.array(val),
-        )
-    # iterate through and save dense params as npy files.
-    dense_names = [
-        "fully_connected_weights:0.npy",
-        "fully_connected_biases:0.npy",
-    ]
-    for i, val in enumerate(params[2]):
-        # Construct directory for dumping.
-        iteration_path = Path(dir_path) / f"iter_{step}"
-        iteration_path.mkdir(exist_ok=True)
-
-        # Save file
-        fpath = iteration_path / dense_names[i]
-        onp.save(
-            fpath,
-            onp.array(val),
-        )
+    with open(iteration_path / "model_weights.pkl", "wb") as f:
+        pkl.dump(params, f)
 
 
 def aa_seq_to_int(s: str) -> List[int]:
@@ -155,7 +121,7 @@ def aa_seq_to_int(s: str) -> List[int]:
 
 @lru_cache(maxsize=128)
 def load_embedding_1900(folderpath: Optional[str] = None):
-    """Load pre-trained embedding weights for uniref50 model."""
+    """Load pre-trained embedding weights for UniRep1900 model."""
     weights_1900_dir = get_weights_dir(folderpath=folderpath)
 
     return np.load(weights_1900_dir / "embed_matrix:0.npy")
@@ -201,74 +167,74 @@ Sequence length: number of sequences information in the dictionary below.
     return onp.stack(seq_embeddings, axis=0)
 
 
-def load_dense_1900(folderpath: Optional[str] = None) -> Tuple:
+def load_dense_params(folderpath: Optional[str] = None) -> Tuple:
     """
-    Load pre-trained dense layer weights from the UniRep paper.
+    Load dense layer weights. Defaults to mLSTM1900 weights from the paper.
 
     The dense layer weights are used to predict next character
-    from the output of the mLSTM1900.
+    from the output of the mLSTM.
     """
-    weights_1900_dir = get_weights_dir(folderpath=folderpath)
+    weights_dir = get_weights_dir(folderpath=folderpath)
 
-    w = np.load(weights_1900_dir / "fully_connected_weights:0.npy")
-    b = np.load(weights_1900_dir / "fully_connected_biases:0.npy")
+    w = np.load(weights_dir / "fully_connected_weights:0.npy")
+    b = np.load(weights_dir / "fully_connected_biases:0.npy")
     return w, b
 
 
-def load_params_1900(folderpath: Optional[str] = None) -> Dict:
-    """Load pre-trained mLSTM1900 weights from the UniRep paper."""
-    weights_1900_dir = get_weights_dir(folderpath=folderpath)
+def load_mlstm_params(folderpath: Optional[str] = None) -> Dict:
+    """Load mLSTM weights. Defaults to mLSTM1900 weights from the paper."""
+    weights_dir = get_weights_dir(folderpath=folderpath)
 
     params = dict()
-    params["gh"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_gh:0.npy")
-    params["gmh"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_gmh:0.npy")
-    params["gmx"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_gmx:0.npy")
-    params["gx"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_gx:0.npy")
+    params["gh"] = np.load(weights_dir / "rnn_mlstm_mlstm_gh:0.npy")
+    params["gmh"] = np.load(weights_dir / "rnn_mlstm_mlstm_gmh:0.npy")
+    params["gmx"] = np.load(weights_dir / "rnn_mlstm_mlstm_gmx:0.npy")
+    params["gx"] = np.load(weights_dir / "rnn_mlstm_mlstm_gx:0.npy")
 
-    params["wh"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_wh:0.npy")
-    params["wmh"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_wmh:0.npy")
-    params["wmx"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_wmx:0.npy")
-    params["wx"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_wx:0.npy")
+    params["wh"] = np.load(weights_dir / "rnn_mlstm_mlstm_wh:0.npy")
+    params["wmh"] = np.load(weights_dir / "rnn_mlstm_mlstm_wmh:0.npy")
+    params["wmx"] = np.load(weights_dir / "rnn_mlstm_mlstm_wmx:0.npy")
+    params["wx"] = np.load(weights_dir / "rnn_mlstm_mlstm_wx:0.npy")
 
-    params["b"] = np.load(weights_1900_dir / "rnn_mlstm_mlstm_b:0.npy")
+    params["b"] = np.load(weights_dir / "rnn_mlstm_mlstm_b:0.npy")
 
     return params
 
 
-def validate_mLSTM1900_params(params: Dict):
+def validate_mLSTM_params(params: Dict, n_outputs):
     """
-    Validate shapes of mLSTM1900 parameter dictionary.
+    Validate shapes of mLSTM parameter dictionary.
 
-    Check that mLSTM1900 params dictionary contains the correct set of keys
+    Check that mLSTM params dictionary contains the correct set of keys
     and that the shapes of the params are correct.
 
-    :param params: A dictionary of mLSTM1900 weights.
+    :param params: A dictionary of mLSTM weights.
     """
     expected = {
-        "gh": (7600,),
-        "gmh": (1900,),
-        "gmx": (1900,),
-        "gx": (7600,),
-        "wh": (1900, 7600),
-        "wmh": (1900, 1900),
-        "wmx": (10, 1900),
-        "wx": (10, 7600),
-        "b": (7600,),
+        "gh": (n_outputs * 4,),
+        "gmh": (n_outputs,),
+        "gmx": (n_outputs,),
+        "gx": (n_outputs * 4,),
+        "wh": (n_outputs, n_outputs * 4),
+        "wmh": (n_outputs, n_outputs),
+        "wmx": (10, n_outputs),
+        "wx": (10, n_outputs * 4),
+        "b": (n_outputs * 4,),
     }
 
     for key, value in params.items():
-        if value.shape != expected[key]:
+        if hasattr(value, "shape") and value.shape != expected[key]:
             raise ValueError(
                 f"Param {key} does not have the right shape. Expected: {expected[key]}, got: {value.shape} instead."
             )
 
 
 def load_params(folderpath: Optional[str] = None):
-    """load params for passing to evotuning stax model"""
+    """Load params for passing to evotuning stax model."""
     return (
-        load_params_1900(folderpath=folderpath),
+        load_mlstm_params(folderpath=folderpath),
         (),
-        load_dense_1900(folderpath=folderpath),
+        load_dense_params(folderpath=folderpath),
         (),
     )
 
@@ -304,9 +270,11 @@ def batch_sequences(seqs: Iterable[str]) -> List[List]:
     where each sub-list contains the positions of same-length sequences
     in the original list.
 
-    Example:
+    For example:
 
-        ['MTN', 'MT', 'MDN', 'M'] -> [[3], [1], [0, 2]]
+    ```
+    ['MTN', 'MT', 'MDN', 'M'] -> [[3], [1], [0, 2]]
+    ```
 
     :param seqs: List of sequences as strings.
     :returns: List of lists, where each sub-list contains the positions of
@@ -332,7 +300,7 @@ def right_pad(seqs: Iterable[str], max_len: int):
 
 def get_batching_func(seq_batch, batch_size: int = 25) -> Callable:
     """
-    Create a function which returns batches of embedded sequences
+    Create a function which returns batches of embedded sequences.
 
     :param xs: array of embedded same-length sequences
     :param ys: array of one-hot encoded groud truth next-AA labels
@@ -403,19 +371,6 @@ def letter_seq(arr: np.array) -> str:
     for letter in arr:
         sequence += arr_to_letter(np.round(letter))
     return sequence.strip("start").strip("stop")
-
-
-def random_like(param):
-    key = PRNGKey(39)
-    return glorot_normal(key, param.shape)
-
-
-def load_random_evotuning_params():
-    params_1900 = load_params_1900()
-    random_params_1900 = tree_map(random_like, params_1900)
-    params_dense = load_dense_1900()
-    random_dense_1900 = tree_map(random_like, params_dense)
-    return (params_1900, (), params_dense, ())
 
 
 def evotuning_pairs(s: str) -> Tuple[np.ndarray, np.ndarray]:
@@ -497,7 +452,7 @@ Please ensure that they are all of the same length before passing them in.
 
 def length_batch_input_outputs(
     sequences: Iterable[str],
-) -> Tuple[List[str], int]:
+) -> Tuple[List[List[str]], List[int]]:
     """
     Return sequences, batched by their length, plus a list of unique lengths.
 

@@ -3,7 +3,7 @@
 
 format:
 	@printf "Automatically formatting code...\n"
-	isort .
+	isort -rc .
 	black .
 	@printf "\033[1;34mAuto-formatting complete!\033[0m\n\n"
 
