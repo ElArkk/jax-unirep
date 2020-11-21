@@ -7,6 +7,8 @@ from typing import Any, Callable
 
 import numpy as np
 import pytest
+from hypothesis import given, settings
+from hypothesis import strategies as st
 from jax import vmap
 from jax.random import PRNGKey, normal
 
@@ -24,6 +26,7 @@ from jax_unirep.utils import (
     load_params,
     one_hots,
     right_pad,
+    seq_to_oh,
     validate_mLSTM_params,
 )
 
@@ -196,3 +199,19 @@ def test_letter_seq():
     ints = aa_seq_to_int(seq)
     one_hot = np.stack([one_hots[i] for i in ints])
     assert letter_seq(one_hot) == seq
+
+
+@given(st.data())
+@settings(deadline=None, max_examples=20)
+def test_seq_to_oh(data):
+    length = data.draw(st.integers(min_value=1, max_value=10))
+    sequence = data.draw(
+        st.text(
+            alphabet="MRHKDESTNQCUGPAVIFYWLOXZBJ",
+            min_size=length,
+            max_size=length,
+        ),
+    )
+
+    oh_seq = seq_to_oh(sequence)
+    assert oh_seq.shape == (length + 2, 26)
