@@ -20,9 +20,7 @@ from jax_unirep.utils import (
     l2_normalize,
     length_batch_input_outputs,
     letter_seq,
-    load_dense_params,
-    load_embedding_1900,
-    load_mlstm_params,
+    load_embedding,
     load_params,
     one_hots,
     right_pad,
@@ -94,31 +92,31 @@ def test_batch_sequences(seqs, expected):
     assert batch_sequences(seqs) == expected
 
 
-def test_load_dense_params():
-    """
-    Make sure that parameters to be passed to
-    the dense layer of the evotuning stax model have the right shapes.
-    """
-    dense = load_dense_params()
-    assert dense[0].shape == (1900, 25)
-    assert dense[1].shape == (25,)
+# def test_load_dense_params():
+#     """
+#     Make sure that parameters to be passed to
+#     the dense layer of the evotuning stax model have the right shapes.
+#     """
+#     dense = load_dense_params()
+#     assert dense[0].shape == (1900, 25)
+#     assert dense[1].shape == (25,)
 
 
-def test_load_mlstm_params():
-    """
-    Make sure that parameters to be passed to
-    the mLSTM have the right shapes.
-    """
-    params = load_mlstm_params()
-    validate_mLSTM_params(params, n_outputs=1900)
+# def test_load_mlstm_params():
+#     """
+#     Make sure that parameters to be passed to
+#     the mLSTM have the right shapes.
+#     """
+#     params = load_mlstm_params()
+#     validate_mLSTM_params(params, n_outputs=1900)
 
 
-def test_load_embedding_1900():
+def test_load_embedding():
     """
     Make sure that the inital 10 dimensional aa embedding vectors
     have the right shapes.
     """
-    emb = load_embedding_1900()
+    emb = load_embedding()
     assert emb.shape == (26, 10)
 
 
@@ -188,8 +186,8 @@ def test_evotuning_pairs():
     """Unit test for evotuning_pairs function."""
     sequence = "ACGHJKL"
     x, y = evotuning_pairs(sequence)
-    assert x.shape == (len(sequence) + 1, 10)  # embeddings ("x") are width 10
-    assert y.shape == (len(sequence) + 1, 25)  # output is one of 25 chars
+    assert x.shape == (len(sequence) + 1, 26)  # embeddings ("x") are width 10
+    assert y.shape == (len(sequence) + 1, 26)  # output is one of 25 chars
 
 
 def test_letter_seq():
