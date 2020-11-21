@@ -325,6 +325,14 @@ oh_idx_to_aa = {v: k for k, v in aa_to_int.items()}
 oh_idx_to_aa[22] = "[XZBJ]"
 
 
+def seq_to_oh(seq: str):
+    """
+    One-hot encode a single AA sequence
+    """
+    seq_int = aa_seq_to_int(seq)
+    return onp.vstack([one_hots[i] for i in seq_int])
+
+
 def boolean_true_idxs(mask: np.ndarray, arr: np.ndarray) -> np.ndarray:
     """
     Return the index where the mask equals the array.
