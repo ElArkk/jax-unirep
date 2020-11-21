@@ -88,11 +88,11 @@ def get_reps(
     Get reps of proteins.
 
     This function generates representations of protein sequences
-    using the 1900 hidden-unit mLSTM model with pre-trained weights
-    from the [UniRep paper](https://github.com/churchlab/UniRep).
+    using the mLSTM model from the
+    [UniRep paper](https://github.com/churchlab/UniRep).
 
     Each element of the output 3-tuple is a `np.array`
-    of shape (n_input_sequences, 1900):
+    of shape (n_input_sequences, mlstm_size):
 
     - `h_avg`: Average hidden state of the mLSTM over the whole sequence.
     - `h_final`: Final hidden state of the mLSTM
@@ -123,7 +123,7 @@ def get_reps(
 
     A 3-tuple of `np.array`s containing the reps,
     in the order `h_avg`, `h_final`, and `c_final`.
-    Each `np.array` has shape (n_sequences, 1900).
+    Each `np.array` has shape (n_sequences, mlstm_size).
     """
     _, apply_fun = mLSTM(output_dim=mlstm_size)
     if params is None:
