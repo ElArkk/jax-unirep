@@ -4,7 +4,7 @@ from jax.random import PRNGKey, normal, split
 
 key = PRNGKey(42)
 
-
+# TODO: This whole module seems deprecated, maybe remove?
 def add_dense_params(
     params: Dict, name: str, input_dim: int, output_dim: int
 ) -> Dict:
