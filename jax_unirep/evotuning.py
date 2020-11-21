@@ -3,14 +3,15 @@ from functools import partial
 from random import choice
 from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple
 
-import jax
+# import jax
 import numpy as onp
 import optuna
 from jax import grad, jit
 from jax import numpy as np
 from jax import vmap
-from jax.experimental.stax import serial
-from jax.random import PRNGKey
+
+# from jax.experimental.stax import serial
+# from jax.random import PRNGKey
 from sklearn.model_selection import KFold
 from tqdm.autonotebook import tqdm
 
@@ -35,7 +36,7 @@ logger = logging.getLogger("evotuning")
 
 
 def setup_evotuning_log():
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.DEBUG)
     fh = logging.FileHandler("evotuning.log")
     fh.setLevel(logging.INFO)
     formatter = logging.Formatter(
@@ -278,7 +279,6 @@ def fit(
 
     if params is None:
         params = load_params()
-
     # Defensive programming checks
     if batch_method not in ["length", "random"]:
         raise ValueError("batch_method must be one of 'length' or 'random'")
