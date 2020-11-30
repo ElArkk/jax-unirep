@@ -32,7 +32,7 @@ def mlstm1900():
         AAEmbedding(10),
         mLSTM(1900),
         mLSTMHiddenStates(),
-        Dense(26),
+        Dense(25),
         Softmax,
     )
     init_fun, apply_fun = serial(*model_layers)
@@ -54,7 +54,7 @@ def mlstm256():
         mLSTMHiddenStates(),
         mLSTM(256),
         mLSTMHiddenStates(),
-        Dense(26),
+        Dense(25),
         Softmax,
     )
     init_fun, apply_fun = serial(*model_layers)
@@ -73,7 +73,7 @@ def mlstm64():
         mLSTMHiddenStates(),
         mLSTM(64),
         mLSTMHiddenStates(),
-        Dense(26),
+        Dense(25),
         Softmax,
     )
     init_fun, apply_fun = serial(*model_layers)
