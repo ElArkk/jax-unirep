@@ -53,7 +53,7 @@ def validate_params(model_func: Callable, params: Any):
         that parameter shape issues may be the problem.
     """
     dummy_embedding = normal(
-        PRNGKey(42), shape=(2, 3, 10)  # n_samps, n_letters, n_embed_dims
+        PRNGKey(42), shape=(2, 3, 26)  # n_samps, n_letters, n_embed_dims
     )
     try:
         vmap(partial(model_func, params))(dummy_embedding)
@@ -139,7 +139,7 @@ def test_dump_params(model):
     conserves all parameter shapes correctly.
     """
     init_fun, apply_fun = model
-    _, params = init_fun(PRNGKey(42), input_shape=(-1, 10))
+    _, params = init_fun(PRNGKey(42), input_shape=(-1, 26))
     dump_params(params, "tmp")
     with open("tmp/iter_0/model_weights.pkl", "rb") as f:
         dumped_params = pkl.load(f)
@@ -189,8 +189,11 @@ def test_evotuning_pairs():
     """Unit test for evotuning_pairs function."""
     sequence = "ACGHJKL"
     x, y = evotuning_pairs(sequence)
-    assert x.shape == (len(sequence) + 1, 26)  # embeddings ("x") are width 10
-    assert y.shape == (len(sequence) + 1, 26)  # output is one of 25 chars
+    assert x.shape == (len(sequence) + 1, 26)  # input is one of 26 chars
+    assert y.shape == (
+        len(sequence) + 1,
+        25,
+    )  # output is one of 25 chars (no "start")
 
 
 def test_letter_seq():
