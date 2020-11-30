@@ -417,7 +417,9 @@ def evotuning_pairs(s: str) -> Tuple[np.ndarray, np.ndarray]:
     next_letters_int = aa_seq_to_int(s[1:])
 
     x = onp.vstack([one_hots[i] for i in seq_int])
-    y = onp.vstack([one_hots[i] for i in next_letters_int])
+    # We delete the 24th one-hot position in the y vector,
+    # since we never need to predict the "start" token.
+    y = onp.vstack([onp.delete(one_hots[i], 24) for i in next_letters_int])
     return x, y
 
 
