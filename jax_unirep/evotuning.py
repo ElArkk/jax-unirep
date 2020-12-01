@@ -8,7 +8,6 @@ import optuna
 from jax import grad, jit
 from jax import numpy as np
 from jax import vmap
-
 from sklearn.model_selection import KFold
 from tqdm.autonotebook import tqdm
 
