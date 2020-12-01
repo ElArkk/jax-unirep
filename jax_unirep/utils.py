@@ -230,7 +230,30 @@ def validate_mLSTM_params(params: Dict, n_outputs):
 
 
 def load_params(folderpath: Optional[str] = None):
-    """Load params for passing to evotuning stax model."""
+    """
+    Load params for passing to evotuning stax model.
+
+    The weights are saved as a single pickle file.
+    We did this in version 1.1 to unify how weights are stored and dumped.
+    When loaded into memory, the weights object `params`
+    will be a nested tuple of arrays and dictionaries. In order, they are:
+
+    - embedding params
+    - mLSMT1900 params (with gating weights `g*`, matrix multiplication weights `w*`, and bias `b` as keys)
+    - etc.
+
+    Loading a Pickle file can pose a security issue,
+    so if you wish to verify the MD5 of the pickles before loading them,
+    you can do so using the following block of code:
+
+    ```python
+    from jax_unirep.utils import get_weights_dir
+
+    weights_dir = get_weights_dir(folderpath=None)
+    # shell out to the system by calling on md5.
+    os.system("md5 /path/to/weights")
+    ```
+    """
     weights_dir = get_weights_dir(folderpath=folderpath)
     with open(weights_dir / "model_weights.pkl", "rb") as f:
         params = pkl.load(f)
