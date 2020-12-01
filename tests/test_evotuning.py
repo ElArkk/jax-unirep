@@ -32,6 +32,12 @@ def test_evotune(model):
         n_trials=1,
         n_epochs_config=n_epochs_config,
     )
+    # now test using all defaults
+    _, _ = evotune(
+        sequences=seqs,
+        n_trials=1,
+        n_epochs_config=n_epochs_config,
+    )
 
 
 @pytest.mark.parametrize("holdout_seqs", (["ASDV", None]))
@@ -43,6 +49,17 @@ def test_fit(model, holdout_seqs, batch_method):
     tuned_params = fit(
         model_func=model[0],
         params=model[1],
+        sequences=sequences,
+        n_epochs=1,
+        batch_method=batch_method,
+        batch_size=2,
+        holdout_seqs=holdout_seqs,
+    )
+
+    validate_mLSTM_params(tuned_params[1], 64)
+
+    # now test using all defaults
+    tuned_params = fit(
         sequences=sequences,
         n_epochs=1,
         batch_method=batch_method,
