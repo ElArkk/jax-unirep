@@ -67,4 +67,4 @@ def test_fit(model, holdout_seqs, batch_method):
         holdout_seqs=holdout_seqs,
     )
 
-    validate_mLSTM_params(tuned_params[1], 64)
+    validate_mLSTM_params(tuned_params[1], 1900)
