@@ -3,15 +3,12 @@ from functools import partial
 from random import choice
 from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple
 
-# import jax
 import numpy as onp
 import optuna
 from jax import grad, jit
 from jax import numpy as np
 from jax import vmap
 
-# from jax.experimental.stax import serial
-# from jax.random import PRNGKey
 from sklearn.model_selection import KFold
 from tqdm.autonotebook import tqdm
 
@@ -36,7 +33,7 @@ logger = logging.getLogger("evotuning")
 
 
 def setup_evotuning_log():
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.INFO)
     fh = logging.FileHandler("evotuning.log")
     fh.setLevel(logging.INFO)
     formatter = logging.Formatter(

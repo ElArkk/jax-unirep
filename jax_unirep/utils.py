@@ -167,40 +167,6 @@ Sequence length: number of sequences information in the dictionary below.
     return onp.stack(seq_embeddings, axis=0)
 
 
-# def load_dense_params(folderpath: Optional[str] = None) -> Tuple:
-#     """
-#     Load dense layer weights. Defaults to mLSTM1900 weights from the paper.
-
-#     The dense layer weights are used to predict next character
-#     from the output of the mLSTM.
-#     """
-#     weights_dir = get_weights_dir(folderpath=folderpath)
-
-#     w = np.load(weights_dir / "fully_connected_weights:0.npy")
-#     b = np.load(weights_dir / "fully_connected_biases:0.npy")
-#     return w, b
-
-
-# def load_mlstm_params(folderpath: Optional[str] = None) -> Dict:
-#     """Load mLSTM weights. Defaults to mLSTM1900 weights from the paper."""
-#     weights_dir = get_weights_dir(folderpath=folderpath)
-
-#     params = dict()
-#     params["gh"] = np.load(weights_dir / "rnn_mlstm_mlstm_gh:0.npy")
-#     params["gmh"] = np.load(weights_dir / "rnn_mlstm_mlstm_gmh:0.npy")
-#     params["gmx"] = np.load(weights_dir / "rnn_mlstm_mlstm_gmx:0.npy")
-#     params["gx"] = np.load(weights_dir / "rnn_mlstm_mlstm_gx:0.npy")
-
-#     params["wh"] = np.load(weights_dir / "rnn_mlstm_mlstm_wh:0.npy")
-#     params["wmh"] = np.load(weights_dir / "rnn_mlstm_mlstm_wmh:0.npy")
-#     params["wmx"] = np.load(weights_dir / "rnn_mlstm_mlstm_wmx:0.npy")
-#     params["wx"] = np.load(weights_dir / "rnn_mlstm_mlstm_wx:0.npy")
-
-#     params["b"] = np.load(weights_dir / "rnn_mlstm_mlstm_b:0.npy")
-
-#     return params
-
-
 def validate_mLSTM_params(params: Dict, n_outputs):
     """
     Validate shapes of mLSTM parameter dictionary.
