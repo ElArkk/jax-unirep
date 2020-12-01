@@ -502,7 +502,7 @@ def objective(
 def evotune(
     sequences: Iterable[str],
     model_func: Callable = mlstm1900_apply_fun,
-    params: Any = load_params(),
+    params: Any = None,
     n_trials: Optional[int] = 20,
     n_epochs_config: Dict = None,
     learning_rate_config: Dict = None,
@@ -592,6 +592,8 @@ def evotune(
     - `evotuned_params`: A dictionary of the final, optimized weights.
     """
     study = optuna.create_study()
+    if params is None:
+        params = load_params()
 
     def objective_func(trial):
         return objective(
