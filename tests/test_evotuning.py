@@ -25,10 +25,11 @@ def test_evotune(model):
     seqs = ["MTN", "BDD"] * 5
     n_epochs_config = {"high": 1}
 
+    model_func, params = model
     _, _ = evotune(
         sequences=seqs,
-        model_func=model[0],
-        params=model[1],
+        model_func=model_func,
+        params=params,
         n_trials=1,
         n_epochs_config=n_epochs_config,
     )
@@ -46,9 +47,10 @@ def test_fit(model, holdout_seqs, batch_method):
     """Execution test for ``jax_unirep.evotuning.fit``."""
     sequences = ["ASDFGHJKL", "ASDYGHTKW", "HSKS", "HSGL", "ER"]
 
+    model_func, params = model
     tuned_params = fit(
-        model_func=model[0],
-        params=model[1],
+        model_func=model_func,
+        params=params,
         sequences=sequences,
         n_epochs=1,
         batch_method=batch_method,
