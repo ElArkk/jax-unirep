@@ -216,9 +216,14 @@ def load_params(folderpath: Optional[str] = None):
     from jax_unirep.utils import get_weights_dir
 
     weights_dir = get_weights_dir(folderpath=None)
+    weights_path = weights_dir / "model_weights.pkl"
     # shell out to the system by calling on md5.
-    os.system("md5 /path/to/weights")
+    os.system(f"md5 {str(weights_path)}")
     ```
+
+    The return should be identical to the following:
+    
+        MD5 (model_weights.pkl) = 87c89ab62929485e43474c8b24cda5c8
     """
     weights_dir = get_weights_dir(folderpath=folderpath)
     with open(weights_dir / "model_weights.pkl", "rb") as f:
