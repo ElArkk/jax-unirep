@@ -206,7 +206,7 @@ def load_params(folderpath: Optional[str] = None):
 
     - embedding params
     - mLSMT1900 params (with gating weights `g*`, matrix multiplication weights `w*`, and bias `b` as keys)
-    - etc.
+    - dense params to predict one-hot encoded next letter.
 
     Loading a Pickle file can pose a security issue,
     so if you wish to verify the MD5 of the pickles before loading them,
