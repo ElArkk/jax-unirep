@@ -17,7 +17,7 @@ from .utils import (
 
 
 def rep_same_lengths(
-    seqs: Iterable[str], params: Dict, apply_fun
+    seqs: Iterable[str], params: Dict, apply_fun: Callable
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     This function generates representations of protein sequences that have the same length,
