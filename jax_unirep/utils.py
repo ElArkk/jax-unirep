@@ -222,7 +222,7 @@ def load_params(folderpath: Optional[str] = None):
     ```
 
     The return should be identical to the following:
-    
+
         MD5 (model_weights.pkl) = 87c89ab62929485e43474c8b24cda5c8
     """
     weights_dir = get_weights_dir(folderpath=folderpath)
