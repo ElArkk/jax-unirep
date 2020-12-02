@@ -95,25 +95,6 @@ def test_batch_sequences(seqs, expected):
     assert batch_sequences(seqs) == expected
 
 
-# def test_load_dense_params():
-#     """
-#     Make sure that parameters to be passed to
-#     the dense layer of the evotuning stax model have the right shapes.
-#     """
-#     dense = load_dense_params()
-#     assert dense[0].shape == (1900, 25)
-#     assert dense[1].shape == (25,)
-
-
-# def test_load_mlstm_params():
-#     """
-#     Make sure that parameters to be passed to
-#     the mLSTM have the right shapes.
-#     """
-#     params = load_mlstm_params()
-#     validate_mLSTM_params(params, n_outputs=1900)
-
-
 def test_load_embedding():
     """
     Make sure that the inital 10 dimensional aa embedding vectors
