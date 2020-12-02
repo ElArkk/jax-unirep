@@ -10,6 +10,39 @@ from .utils import l2_normalize
 """mLSTM cell layers."""
 
 
+def AAEmbedding(embedding_dims: int = 10, E_init=glorot_normal(), **kwargs):
+    """
+    Initial n-dimensional embedding of each amino-acid
+    """
+
+    def init_fun(rng, input_shape):
+        """
+        Generates the inital AA embedding matrix.
+
+        `input_shape`:
+            one-hot encoded AA sequence -> (n_aa, n_unique_aa)
+        `output_dims`:
+            embedded sequence -> (n_aa, embedding_dims)
+        `emb_matrix`:
+            embedding matrix -> (n_unique_aa, embedding_dims)
+        """
+        k1, _ = random.split(rng)
+        emb_matrix = E_init(k1, (input_shape[1], embedding_dims))
+        output_dims = (-1, embedding_dims)
+
+        return output_dims, emb_matrix
+
+    def apply_fun(params, inputs, **kwargs):
+        """
+        Embed a single AA sequence
+        """
+        emb_matrix = params
+        # (n_aa, n_unique_aa) * (n_unique_aa, embedding_dims) => (n_aa, embedding_dims) # noqa: E501
+        return np.matmul(inputs, emb_matrix)
+
+    return init_fun, apply_fun
+
+
 def mLSTM(output_dim=1900, W_init=glorot_normal(), b_init=normal()):
     """
     Return stax-compatible mLSTM layer from the UniRep paper.

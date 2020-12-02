@@ -3,14 +3,11 @@ from functools import partial
 from random import choice
 from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple
 
-import jax
 import numpy as onp
 import optuna
 from jax import grad, jit
 from jax import numpy as np
 from jax import vmap
-from jax.experimental.stax import serial
-from jax.random import PRNGKey
 from sklearn.model_selection import KFold
 from tqdm.autonotebook import tqdm
 
@@ -278,7 +275,6 @@ def fit(
 
     if params is None:
         params = load_params()
-
     # Defensive programming checks
     if batch_method not in ["length", "random"]:
         raise ValueError("batch_method must be one of 'length' or 'random'")
@@ -502,7 +498,7 @@ def objective(
 def evotune(
     sequences: Iterable[str],
     model_func: Callable = mlstm1900_apply_fun,
-    params: Any = load_params(),
+    params: Any = None,
     n_trials: Optional[int] = 20,
     n_epochs_config: Dict = None,
     learning_rate_config: Dict = None,
@@ -592,6 +588,8 @@ def evotune(
     - `evotuned_params`: A dictionary of the final, optimized weights.
     """
     study = optuna.create_study()
+    if params is None:
+        params = load_params()
 
     def objective_func(trial):
         return objective(

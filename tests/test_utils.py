@@ -7,6 +7,8 @@ from typing import Any, Callable
 
 import numpy as np
 import pytest
+from hypothesis import given, settings
+from hypothesis import strategies as st
 from jax import vmap
 from jax.random import PRNGKey, normal
 
@@ -20,12 +22,11 @@ from jax_unirep.utils import (
     l2_normalize,
     length_batch_input_outputs,
     letter_seq,
-    load_dense_params,
-    load_embedding_1900,
-    load_mlstm_params,
+    load_embedding,
     load_params,
     one_hots,
     right_pad,
+    seq_to_oh,
     validate_mLSTM_params,
 )
 
@@ -52,7 +53,7 @@ def validate_params(model_func: Callable, params: Any):
         that parameter shape issues may be the problem.
     """
     dummy_embedding = normal(
-        PRNGKey(42), shape=(2, 3, 10)  # n_samps, n_letters, n_embed_dims
+        PRNGKey(42), shape=(2, 3, 26)  # n_samps, n_letters, n_embed_dims
     )
     try:
         vmap(partial(model_func, params))(dummy_embedding)
@@ -91,34 +92,16 @@ def test_l2_normalize():
     ],
 )
 def test_batch_sequences(seqs, expected):
+    """Make sure sequences get batched together in the right way."""
     assert batch_sequences(seqs) == expected
 
 
-def test_load_dense_params():
-    """
-    Make sure that parameters to be passed to
-    the dense layer of the evotuning stax model have the right shapes.
-    """
-    dense = load_dense_params()
-    assert dense[0].shape == (1900, 25)
-    assert dense[1].shape == (25,)
-
-
-def test_load_mlstm_params():
-    """
-    Make sure that parameters to be passed to
-    the mLSTM have the right shapes.
-    """
-    params = load_mlstm_params()
-    validate_mLSTM_params(params, n_outputs=1900)
-
-
-def test_load_embedding_1900():
+def test_load_embedding():
     """
     Make sure that the inital 10 dimensional aa embedding vectors
     have the right shapes.
     """
-    emb = load_embedding_1900()
+    emb = load_embedding()
     assert emb.shape == (26, 10)
 
 
@@ -138,7 +121,7 @@ def test_dump_params(model):
     conserves all parameter shapes correctly.
     """
     init_fun, apply_fun = model
-    _, params = init_fun(PRNGKey(42), input_shape=(-1, 10))
+    _, params = init_fun(PRNGKey(42), input_shape=(-1, 26))
     dump_params(params, "tmp")
     with open("tmp/iter_0/model_weights.pkl", "rb") as f:
         dumped_params = pkl.load(f)
@@ -154,6 +137,10 @@ def test_dump_params(model):
     ],
 )
 def test_right_pad(seqs, max_len, expected):
+    """
+    Make sure right padding sequences to same length
+    works as expected.
+    """
     assert right_pad(seqs, max_len) == expected
 
 
@@ -188,8 +175,11 @@ def test_evotuning_pairs():
     """Unit test for evotuning_pairs function."""
     sequence = "ACGHJKL"
     x, y = evotuning_pairs(sequence)
-    assert x.shape == (len(sequence) + 1, 10)  # embeddings ("x") are width 10
-    assert y.shape == (len(sequence) + 1, 25)  # output is one of 25 chars
+    assert x.shape == (len(sequence) + 1, 26)  # input is one of 26 chars
+    assert y.shape == (
+        len(sequence) + 1,
+        25,
+    )  # output is one of 25 chars (no "start")
 
 
 def test_letter_seq():
@@ -198,3 +188,20 @@ def test_letter_seq():
     ints = aa_seq_to_int(seq)
     one_hot = np.stack([one_hots[i] for i in ints])
     assert letter_seq(one_hot) == seq
+
+
+@given(st.data())
+@settings(deadline=None, max_examples=20)
+def test_seq_to_oh(data):
+    """Make sure the one-hot encoding returns properly shaped matrices."""
+    length = data.draw(st.integers(min_value=1, max_value=10))
+    sequence = data.draw(
+        st.text(
+            alphabet="MRHKDESTNQCUGPAVIFYWLOXZBJ",
+            min_size=length,
+            max_size=length,
+        ),
+    )
+
+    oh_seq = seq_to_oh(sequence)
+    assert oh_seq.shape == (length + 2, 26)

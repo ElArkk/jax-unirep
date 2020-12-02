@@ -1,5 +1,5 @@
 from functools import partial
-from typing import Dict, Iterable, List, Optional, Tuple, Union
+from typing import Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 import numpy as np
 from jax import vmap
@@ -9,16 +9,15 @@ from .layers import mLSTM
 from .utils import (
     batch_sequences,
     get_embeddings,
-    load_mlstm_params,
+    load_params,
     validate_mLSTM_params,
 )
 
 # instantiate the mLSTM
-_, apply_fun = mLSTM()
 
 
 def rep_same_lengths(
-    seqs: Iterable[str], params: Dict
+    seqs: Iterable[str], params: Dict, apply_fun: Callable
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     This function generates representations of protein sequences that have the same length,
@@ -26,8 +25,9 @@ def rep_same_lengths(
 
     :param seqs: A list of same length sequences as strings.
         If passing only a single sequence, it also needs to be passed inside a list.
+    :param apply_fun: Model forward pass function.
     :returns: A tuple of np.arrays containing the reps.
-        Each `np.array` has shape (n_sequences, 1900).
+        Each `np.array` has shape (n_sequences, mlstm_size).
     """
 
     embedded_seqs = get_embeddings(seqs)
@@ -39,17 +39,28 @@ def rep_same_lengths(
 
 
 def rep_arbitrary_lengths(
-    seqs: Iterable[str], params: Dict
+    seqs: Iterable[str], params: Dict, apply_fun: Callable, mlstm_size: int
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     This function generates representations of protein sequences of arbitrary length,
     by batching together all sequences of the same length and passing them through
     the mLSTM. Original order of sequences is restored in the final output.
 
+    This function exists to speed up the original published workflow
+    of "repping one sequence at a time", through repping of all sequences
+    of the same length at once.
+    Repping one sequence length at a time avoids generating noise
+    in the reps from adding padding characters.
+
     :param seqs: A list of sequences as strings.
         If passing only a single sequence, it also needs to be passed inside a list.
+    :param apply_fun: Model forward pass function.
+    :param mlstm_size: Integer specifying the number of nodes in the mLSTM layer.
+        Though the model architecture space is practically infinite,
+        we assume that you are using the same number of nodes per mLSTM layer.
+        (This is a common simplification used in the design of neural networks.)
     :returns: A 3-tuple of `np.array`s containing the reps.
-        Each `np.array` has shape (n_sequences, 1900).
+        Each `np.array` has shape (n_sequences, mlstm_size).
         Return order: (h_avg, h_final, c_final).
     """
     order = batch_sequences(seqs)
@@ -60,15 +71,15 @@ def rep_arbitrary_lengths(
     for idxs in order:
         subset = [seqs[i] for i in idxs]
 
-        h_avg, h_final, c_final = rep_same_lengths(subset, params)
+        h_avg, h_final, c_final = rep_same_lengths(subset, params, apply_fun)
         ha_list.append(h_avg)
         hf_list.append(h_final)
         cf_list.append(c_final)
 
     h_avg, h_final, c_final = (
-        np.zeros((len(seqs), 1900)),
-        np.zeros((len(seqs), 1900)),
-        np.zeros((len(seqs), 1900)),
+        np.zeros((len(seqs), mlstm_size)),
+        np.zeros((len(seqs), mlstm_size)),
+        np.zeros((len(seqs), mlstm_size)),
     )
     # Re-order generated reps to match sequence order in the original list.
     for i, subset in enumerate(order):
@@ -81,17 +92,19 @@ def rep_arbitrary_lengths(
 
 
 def get_reps(
-    seqs: Union[str, Iterable[str]], params: Optional[Dict] = None
+    seqs: Union[str, Iterable[str]],
+    params: Optional[Dict] = None,
+    mlstm_size: Optional[str] = 1900,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Get reps of proteins.
 
     This function generates representations of protein sequences
-    using the 1900 hidden-unit mLSTM model with pre-trained weights
-    from the [UniRep paper](https://github.com/churchlab/UniRep).
+    using the mLSTM model from the
+    [UniRep paper](https://github.com/churchlab/UniRep).
 
     Each element of the output 3-tuple is a `np.array`
-    of shape (n_input_sequences, 1900):
+    of shape (n_input_sequences, mlstm_size):
 
     - `h_avg`: Average hidden state of the mLSTM over the whole sequence.
     - `h_final`: Final hidden state of the mLSTM
@@ -116,17 +129,22 @@ def get_reps(
 
     - `seqs`: A list of sequences as strings or a single string.
     - `params`: A dictionary of mLSTM weights.
+    - `mlstm_size`: Integer specifying the number of nodes in the mLSTM layer.
+        Though the model architecture space is practically infinite,
+        we assume that you are using the same number of nodes per mLSTM layer.
+        (This is a common simplification used in the design of neural networks.)
 
     ### Returns
 
     A 3-tuple of `np.array`s containing the reps,
     in the order `h_avg`, `h_final`, and `c_final`.
-    Each `np.array` has shape (n_sequences, 1900).
+    Each `np.array` has shape (n_sequences, mlstm_size).
     """
+    _, apply_fun = mLSTM(output_dim=mlstm_size)
     if params is None:
-        params = load_mlstm_params()
+        params = load_params()[1]
     # Check that params have correct keys and shapes
-    validate_mLSTM_params(params, n_outputs=1900)
+    validate_mLSTM_params(params, n_outputs=mlstm_size)
     # If single string sequence is passed, package it into a list
     if isinstance(seqs, str):
         seqs = [seqs]
@@ -138,8 +156,14 @@ def get_reps(
     # 1. All sequences in the list have the same length
     # 2. There are sequences of different lengths in the list
     if len(set([len(s) for s in seqs])) == 1:
-        h_avg, h_final, c_final = rep_same_lengths(seqs, params)
+        h_avg, h_final, c_final = rep_same_lengths(
+            seqs,
+            params,
+            apply_fun,
+        )
         return h_avg, h_final, c_final
     else:
-        h_avg, h_final, c_final = rep_arbitrary_lengths(seqs, params)
+        h_avg, h_final, c_final = rep_arbitrary_lengths(
+            seqs, params, apply_fun, mlstm_size
+        )
         return h_avg, h_final, c_final

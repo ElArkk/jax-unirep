@@ -61,7 +61,7 @@ in [the next section][fitex].
     Be sure to read the [API docs for the `fit` function][fitdoc]
     to learn about what's going on underneath the hood!
 
-If you want to pass a set of mLSTM and dense weights
+If you want to pass a set of embedding, mLSTM and dense weights
 that were dumped in an earlier run,
 create params as follows:
 
@@ -71,18 +71,19 @@ from jax_unirep.utils import load_params
 params = load_params(folderpath="path/to/params/folder")
 ```
 
-If you want to start from randomly initialized mLSTM and dense weights instead:
+Make sure that the params were created using the same
+model architecture that you want to use them with!
+
+If you want to start from randomly initialized embedding, mLSTM and dense weights instead:
 
 ```python
-from jax_unirep.evotuning import init_fun
+from jax_unirep.evotuning_models import mlstm1900
 from jax.random import PRNGKey
 
-_, params = init_fun(PRNGKey(0), input_shape=(-1, 10))
-```
+init_fun, apply_fun = mlstm1900()
 
-The weights used in the 10-dimensional embedding of the input sequences
-always default to the weights from the paper,
-since they do not get updated during evotuning.
+_, params = init_fun(PRNGKey(42), input_shape=(-1, 26))
+```
 
 [fitdoc]: https://elarkk.github.io/jax-unirep/api/#evotuning
 [evotuneex]: https://github.com/ElArkk/jax-unirep/blob/master/examples/evotuning.py
@@ -104,12 +105,13 @@ and a top-model at once:
 
 ```python
 from jax.experimental import stax
-from jax.experimental.stax import Dense, Relu
+from jax.experimental.stax import Dense, Relu, serial
 
-from jax_unirep.layers import mLSTM, mLSTMAvgHidden
+from jax_unirep.layers import AAEmbedding, mLSTM, mLSTMAvgHidden
 
-init_fun, apply_fun = stax.serial(
-    mLSTM(),
+init_fun, apply_fun = serial(
+    AAEmbedding(10)
+    mLSTM(1900),
     mLSTMAvgHidden(),
     # Add two layers, one dense layer that results in 512-dim activations
     Dense(512), Relu(),
