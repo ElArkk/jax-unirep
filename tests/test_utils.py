@@ -92,6 +92,7 @@ def test_l2_normalize():
     ],
 )
 def test_batch_sequences(seqs, expected):
+    """Make sure sequences get batched together in the right way."""
     assert batch_sequences(seqs) == expected
 
 
@@ -136,6 +137,10 @@ def test_dump_params(model):
     ],
 )
 def test_right_pad(seqs, max_len, expected):
+    """
+    Make sure right padding sequences to same length
+    works as expected.
+    """
     assert right_pad(seqs, max_len) == expected
 
 
@@ -188,6 +193,7 @@ def test_letter_seq():
 @given(st.data())
 @settings(deadline=None, max_examples=20)
 def test_seq_to_oh(data):
+    """Make sure the one-hot encoding returns properly shaped matrices."""
     length = data.draw(st.integers(min_value=1, max_value=10))
     sequence = data.draw(
         st.text(
