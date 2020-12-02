@@ -46,6 +46,12 @@ def rep_arbitrary_lengths(
     by batching together all sequences of the same length and passing them through
     the mLSTM. Original order of sequences is restored in the final output.
 
+    This function exists to speed up the original published workflow
+    of "repping one sequence at a time", through repping of all sequences
+    of the same length at once.
+    Repping one sequence length at a time avoids generating noise
+    in the reps from adding padding characters.
+
     :param seqs: A list of sequences as strings.
         If passing only a single sequence, it also needs to be passed inside a list.
     :param apply_fun: Model forward pass function.
