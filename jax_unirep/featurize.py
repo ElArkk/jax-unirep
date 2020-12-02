@@ -25,6 +25,7 @@ def rep_same_lengths(
 
     :param seqs: A list of same length sequences as strings.
         If passing only a single sequence, it also needs to be passed inside a list.
+    :param apply_fun: Model forward pass function.
     :returns: A tuple of np.arrays containing the reps.
         Each `np.array` has shape (n_sequences, mlstm_size).
     """
@@ -47,6 +48,11 @@ def rep_arbitrary_lengths(
 
     :param seqs: A list of sequences as strings.
         If passing only a single sequence, it also needs to be passed inside a list.
+    :param apply_fun: Model forward pass function.
+    :param mlstm_size: Integer specifying the number of nodes in the mLSTM layer.
+        Though the model architecture space is practically infinite,
+        we assume that you are using the same number of nodes per mLSTM layer.
+        (This is a common simplification used in the design of neural networks.)
     :returns: A 3-tuple of `np.array`s containing the reps.
         Each `np.array` has shape (n_sequences, mlstm_size).
         Return order: (h_avg, h_final, c_final).
@@ -117,7 +123,10 @@ def get_reps(
 
     - `seqs`: A list of sequences as strings or a single string.
     - `params`: A dictionary of mLSTM weights.
-    - `mlstm_size`: Size of the mLSTM
+    - `mlstm_size`: Integer specifying the number of nodes in the mLSTM layer.
+        Though the model architecture space is practically infinite,
+        we assume that you are using the same number of nodes per mLSTM layer.
+        (This is a common simplification used in the design of neural networks.)
 
     ### Returns
 
