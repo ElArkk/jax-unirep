@@ -14,7 +14,7 @@ from .test_layers import validate_mLSTM_params
 
 @pytest.fixture
 def model():
-    """Return mlstm with randomly init. params"""
+    """Return mlstm with randomly initialized parameters."""
     init_fun, apply_fun = mlstm64()
     _, params = init_fun(rng=PRNGKey(0), input_shape=(-1, 26))
     return apply_fun, params
