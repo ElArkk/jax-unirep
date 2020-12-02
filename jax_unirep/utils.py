@@ -119,12 +119,12 @@ def aa_seq_to_int(s: str) -> List[int]:
     return [24] + [aa_to_int[a] for a in s] + [25]
 
 
-@lru_cache(maxsize=128)
-def load_embedding_1900(folderpath: Optional[str] = None):
+def load_embedding(folderpath: Optional[str] = None):
     """Load pre-trained embedding weights for UniRep1900 model."""
-    weights_1900_dir = get_weights_dir(folderpath=folderpath)
-
-    return np.load(weights_1900_dir / "embed_matrix:0.npy")
+    weights_dir = get_weights_dir(folderpath=folderpath)
+    with open(weights_dir / "model_weights.pkl", "rb") as f:
+        params = pkl.load(f)
+    return params[0]
 
 
 def get_embedding(sequence: str, embeddings: np.ndarray) -> np.ndarray:
@@ -161,44 +161,10 @@ Sequence length: number of sequences information in the dictionary below.
 {seq_lengths}
 """
         raise SequenceLengthsError(error)
-    embeddings = load_embedding_1900()
+    embeddings = load_embedding()
 
     seq_embeddings = [get_embedding(s, embeddings) for s in sequences]
     return onp.stack(seq_embeddings, axis=0)
-
-
-def load_dense_params(folderpath: Optional[str] = None) -> Tuple:
-    """
-    Load dense layer weights. Defaults to mLSTM1900 weights from the paper.
-
-    The dense layer weights are used to predict next character
-    from the output of the mLSTM.
-    """
-    weights_dir = get_weights_dir(folderpath=folderpath)
-
-    w = np.load(weights_dir / "fully_connected_weights:0.npy")
-    b = np.load(weights_dir / "fully_connected_biases:0.npy")
-    return w, b
-
-
-def load_mlstm_params(folderpath: Optional[str] = None) -> Dict:
-    """Load mLSTM weights. Defaults to mLSTM1900 weights from the paper."""
-    weights_dir = get_weights_dir(folderpath=folderpath)
-
-    params = dict()
-    params["gh"] = np.load(weights_dir / "rnn_mlstm_mlstm_gh:0.npy")
-    params["gmh"] = np.load(weights_dir / "rnn_mlstm_mlstm_gmh:0.npy")
-    params["gmx"] = np.load(weights_dir / "rnn_mlstm_mlstm_gmx:0.npy")
-    params["gx"] = np.load(weights_dir / "rnn_mlstm_mlstm_gx:0.npy")
-
-    params["wh"] = np.load(weights_dir / "rnn_mlstm_mlstm_wh:0.npy")
-    params["wmh"] = np.load(weights_dir / "rnn_mlstm_mlstm_wmh:0.npy")
-    params["wmx"] = np.load(weights_dir / "rnn_mlstm_mlstm_wmx:0.npy")
-    params["wx"] = np.load(weights_dir / "rnn_mlstm_mlstm_wx:0.npy")
-
-    params["b"] = np.load(weights_dir / "rnn_mlstm_mlstm_b:0.npy")
-
-    return params
 
 
 def validate_mLSTM_params(params: Dict, n_outputs):
@@ -230,13 +196,39 @@ def validate_mLSTM_params(params: Dict, n_outputs):
 
 
 def load_params(folderpath: Optional[str] = None):
-    """Load params for passing to evotuning stax model."""
-    return (
-        load_mlstm_params(folderpath=folderpath),
-        (),
-        load_dense_params(folderpath=folderpath),
-        (),
-    )
+    """
+    Load params for passing to evotuning stax model.
+
+    The weights are saved as a single pickle file.
+    We did this in version 1.1 to unify how weights are stored and dumped.
+    When loaded into memory, the weights object `params`
+    will be a nested tuple of arrays and dictionaries. In order, they are:
+
+    - embedding params
+    - mLSMT1900 params (with gating weights `g*`, matrix multiplication weights `w*`, and bias `b` as keys)
+    - dense params to predict one-hot encoded next letter.
+
+    Loading a Pickle file can pose a security issue,
+    so if you wish to verify the MD5 of the pickles before loading them,
+    you can do so using the following block of code:
+
+    ```python
+    from jax_unirep.utils import get_weights_dir
+
+    weights_dir = get_weights_dir(folderpath=None)
+    weights_path = weights_dir / "model_weights.pkl"
+    # shell out to the system by calling on md5.
+    os.system(f"md5 {str(weights_path)}")
+    ```
+
+    The return should be identical to the following:
+
+        MD5 (model_weights.pkl) = 87c89ab62929485e43474c8b24cda5c8
+    """
+    weights_dir = get_weights_dir(folderpath=folderpath)
+    with open(weights_dir / "model_weights.pkl", "rb") as f:
+        params = pkl.load(f)
+    return params
 
 
 def l2_normalize(arr, axis, epsilon=1e-12):
@@ -317,14 +309,22 @@ def get_batching_func(seq_batch, batch_size: int = 25) -> Callable:
 
 
 # This block of code generates one-hot-encoded arrays.
-oh_arrs = np.eye(max(aa_to_int.values()))
+oh_arrs = np.eye(max(aa_to_int.values()) + 1)
 
 # one_hots maps from aa_to_int integers to an array
-one_hots = {v: oh_arrs[v - 1] for k, v in aa_to_int.items()}
+one_hots = {v: oh_arrs[v] for k, v in aa_to_int.items()}
 
 # oh_idx_to_aa maps from oh_arrs index to aa_to_int letter.
-oh_idx_to_aa = {v - 1: k for k, v in aa_to_int.items()}
+oh_idx_to_aa = {v: k for k, v in aa_to_int.items()}
 oh_idx_to_aa[22] = "[XZBJ]"
+
+
+def seq_to_oh(seq: str):
+    """
+    One-hot encode a single AA sequence
+    """
+    seq_int = aa_seq_to_int(seq)
+    return onp.vstack([one_hots[i] for i in seq_int])
 
 
 def boolean_true_idxs(mask: np.ndarray, arr: np.ndarray) -> np.ndarray:
@@ -409,9 +409,11 @@ def evotuning_pairs(s: str) -> Tuple[np.ndarray, np.ndarray]:
     """
     seq_int = aa_seq_to_int(s[:-1])
     next_letters_int = aa_seq_to_int(s[1:])
-    embeddings = load_embedding_1900()
-    x = onp.stack([embeddings[i] for i in seq_int])
-    y = onp.stack([one_hots[i] for i in next_letters_int])
+
+    x = onp.vstack([one_hots[i] for i in seq_int])
+    # We delete the 24th one-hot position in the y vector,
+    # since we never need to predict the "start" token.
+    y = onp.vstack([onp.delete(one_hots[i], 24) for i in next_letters_int])
     return x, y
 
 

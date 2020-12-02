@@ -13,19 +13,19 @@ from .test_layers import validate_mLSTM_params
 
 
 @pytest.fixture
-def params():
-    """Return randomly initialized params."""
-    init_fun, _ = mlstm64()
-    _, parameters = init_fun(key=PRNGKey(0), input_shape=(-1, 10))
-    return parameters
+def model():
+    """Return mlstm with randomly initialized parameters."""
+    init_fun, apply_fun = mlstm64()
+    _, params = init_fun(rng=PRNGKey(0), input_shape=(-1, 26))
+    return apply_fun, params
 
 
-def test_evotune():
+def test_evotune(model):
     """Simple execution test for evotune."""
     seqs = ["MTN", "BDD"] * 5
     n_epochs_config = {"high": 1}
-    init_func, model_func = mlstm64()
-    _, params = init_func(PRNGKey(42), (-1, 10))
+
+    model_func, params = model
     _, _ = evotune(
         sequences=seqs,
         model_func=model_func,
@@ -33,19 +33,21 @@ def test_evotune():
         n_trials=1,
         n_epochs_config=n_epochs_config,
     )
+    # now test using all defaults
+    _, _ = evotune(
+        sequences=seqs,
+        n_trials=1,
+        n_epochs_config=n_epochs_config,
+    )
 
 
 @pytest.mark.parametrize("holdout_seqs", (["ASDV", None]))
 @pytest.mark.parametrize("batch_method", (["length", "random"]))
-def test_fit(holdout_seqs, batch_method):
+def test_fit(model, holdout_seqs, batch_method):
     """Execution test for ``jax_unirep.evotuning.fit``."""
     sequences = ["ASDFGHJKL", "ASDYGHTKW", "HSKS", "HSGL", "ER"]
 
-    key = PRNGKey(42)
-
-    init_func, model_func = mlstm64()
-    _, params = init_func(key, input_shape=(-1, 10))
-
+    model_func, params = model
     tuned_params = fit(
         model_func=model_func,
         params=params,
@@ -56,4 +58,15 @@ def test_fit(holdout_seqs, batch_method):
         holdout_seqs=holdout_seqs,
     )
 
-    validate_mLSTM_params(tuned_params[0], 64)
+    validate_mLSTM_params(tuned_params[1], 64)
+
+    # now test using all defaults
+    tuned_params = fit(
+        sequences=sequences,
+        n_epochs=1,
+        batch_method=batch_method,
+        batch_size=2,
+        holdout_seqs=holdout_seqs,
+    )
+
+    validate_mLSTM_params(tuned_params[1], 1900)

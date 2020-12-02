@@ -3,11 +3,11 @@ from hypothesis import strategies as st
 from jax import random
 from jax.experimental import stax
 
-from jax_unirep.layers import mLSTM, mLSTMAvgHidden, mLSTMFusion
+from jax_unirep.layers import AAEmbedding, mLSTM, mLSTMAvgHidden, mLSTMFusion
 from jax_unirep.utils import (
     get_embedding,
-    load_embedding_1900,
-    load_mlstm_params,
+    load_embedding,
+    seq_to_oh,
     validate_mLSTM_params,
 )
 
@@ -15,6 +15,26 @@ from jax_unirep.utils import (
 
 
 rng = random.PRNGKey(0)
+
+
+@given(st.data())
+@settings(deadline=None, max_examples=20)
+def test_AAEmbedding(data):
+    length = data.draw(st.integers(min_value=1, max_value=10))
+    sequence = data.draw(
+        st.text(
+            alphabet="MRHKDESTNQCUGPAVIFYWLOXZBJ",
+            min_size=length,
+            max_size=length,
+        ),
+    )
+    oh_seq = seq_to_oh(sequence)
+    init_fun, apply_fun = AAEmbedding(embedding_dims=33)
+    output_shape, emb_matrix = init_fun(rng, (-1, 26))
+    emb_seq = apply_fun(params=emb_matrix, inputs=oh_seq)
+    assert output_shape == (-1, 33)
+    assert emb_matrix.shape == (26, 33)
+    assert emb_seq.shape == (length + 2, 33)
 
 
 @given(st.data())
@@ -28,7 +48,7 @@ def test_mLSTM(data):
             max_size=length,
         ),
     )
-    embedding = load_embedding_1900()
+    embedding = load_embedding()
     x = get_embedding(sequence, embedding)
     output_dim = 256
     init_fun, apply_fun = mLSTM(output_dim=output_dim)
@@ -49,7 +69,7 @@ def test_mLSTMAvgHidden(data):
             max_size=length,
         ),
     )
-    embedding = load_embedding_1900()
+    embedding = load_embedding()
     x = get_embedding(sequence, embedding)
     output_dim = 256
     init_fun, apply_fun = stax.serial(
@@ -67,7 +87,6 @@ def test_mLSTMAvgHidden(data):
 @given(st.data())
 @settings(deadline=None, max_examples=20)
 def test_mLSTMFusion(data):
-    params = load_mlstm_params()
     length = data.draw(st.integers(min_value=1, max_value=10))
     sequence = data.draw(
         st.text(
@@ -76,7 +95,7 @@ def test_mLSTMFusion(data):
             max_size=length,
         ),
     )
-    embedding = load_embedding_1900()
+    embedding = load_embedding()
     x = get_embedding(sequence, embedding)
     output_dim = 256
     init_fun, apply_fun = stax.serial(
