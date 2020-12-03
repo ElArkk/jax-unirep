@@ -532,7 +532,7 @@ def evotune(
     from functools import partial
 
     init_func, _ = evotuning_funcs(mlstm_size=256) # works for any size
-    _, params = init_func(PRNGKey(0), input_shape=(-1, 10))
+    _, params = init_func(PRNGKey(0), input_shape=(-1, 26))
     fit_func = partial(fit, mlstm_size=256, params=params)
     ```
 
