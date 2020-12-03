@@ -22,9 +22,9 @@ PROJECT_NAME = "evotuning_temp"
 
 init_fun, apply_fun = mlstm64()
 
-# The input_shape is always going to be (-1, 10),
-# because that is the shape of the input embeddings.
-_, inital_params = init_fun(PRNGKey(42), input_shape=(-1, 10))
+# The input_shape is always going to be (-1, 26),
+# because that is the number of unique AA, one-hot encoded.
+_, inital_params = init_fun(PRNGKey(42), input_shape=(-1, 26))
 
 # 1. Evotuning with Optuna
 n_epochs_config = {"low": 1, "high": 1}

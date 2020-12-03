@@ -3,7 +3,10 @@
 In the changelog, @ElArkk and @ericmjl would like to acknowledge contributors who have helped us with anything on the project, big or small.
 
 <Please add your contribution to the top>
-
+- 2 December 2020: Implementation of embedding layer by @ElArkk
+    1. Initial AA embedding layer is now trainable and of flexible size
+    2. Pre-existing and dumped weights get stored in pkl format
+    3. get_reps accepts variable size mLSTMs
 - 20 November 2020: Major rework of fitting API, plus bugfixes by @ericmjl
     1. Custom model architectures can now be passed to `fit`
     2. Refactored lots of utility functions in the evotuing process for better readability
@@ -24,10 +27,10 @@ In the changelog, @ElArkk and @ericmjl would like to acknowledge contributors wh
 - 30 March 2020: Code fixes for correctness and readability, and a parameter dumping function by @ivanjayapurna,
 - 28 June 2020: Improvements to evotuning ergonomics, by @ericmjl
     1. Adds a pre-commit configuration.
-    1. Adds an installation script that makes easy the installation of jax on GPU.
-    1. Provided backend specification of device (GPU/CPU).
-    1. Switched preparation of sequences as input-output pairs exclusively on CPU, for speed.
-    1. Added ergonomic UI features - progressbars! - that improve user experience.
-    1. Added docs on recommended batch size and its relationship to GPU RAM consumption.
-    1. Switched from exact calculation of train/holdout loss to estimated calculation.
+    2. Adds an installation script that makes easy the installation of jax on GPU.
+    3. Provided backend specification of device (GPU/CPU).
+    4. Switched preparation of sequences as input-output pairs exclusively on CPU, for speed.
+    5. Added ergonomic UI features - progressbars! - that improve user experience.
+    6. Added docs on recommended batch size and its relationship to GPU RAM consumption.
+    7. Switched from exact calculation of train/holdout loss to estimated calculation.
 - 9 July 2020: Add progress bar to sequence sampler, by @ericmjl
