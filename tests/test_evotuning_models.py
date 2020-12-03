@@ -1,5 +1,6 @@
-from jax_unirep.evotuning_models import mlstm1900, mlstm256, mlstm64
 from jax.random import PRNGKey
+
+from jax_unirep.evotuning_models import mlstm64, mlstm256, mlstm1900
 from jax_unirep.utils import seq_to_oh
 
 
