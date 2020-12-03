@@ -11,7 +11,7 @@ from jax_unirep.evotuning import fit
 from jax.random import PRNGKey
 
 init_func, model_func = mlstm256()
-_, params = init_func(PRNGKey(42), input_shape=(-1, 10))
+_, params = init_func(PRNGKey(42), input_shape=(-1, 26))
 
 tuned_params = fit(
     sequences,  # we assume you've got them prepped!
