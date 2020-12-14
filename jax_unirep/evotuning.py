@@ -34,7 +34,8 @@ logger = logging.getLogger("evotuning")
 
 def setup_evotuning_log():
     logger.setLevel(logging.INFO)
-    os.remove("evotuning.log")
+    if os.path.exists("evotuning.log"):
+        os.remove("evotuning.log")
     fh = logging.FileHandler("evotuning.log")
     fh.setLevel(logging.INFO)
     formatter = logging.Formatter(
