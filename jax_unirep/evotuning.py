@@ -1,4 +1,5 @@
 import logging
+import os
 from functools import partial
 from random import choice
 from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple
@@ -33,6 +34,8 @@ logger = logging.getLogger("evotuning")
 
 def setup_evotuning_log():
     logger.setLevel(logging.INFO)
+    if os.path.exists("evotuning.log"):
+        os.remove("evotuning.log")
     fh = logging.FileHandler("evotuning.log")
     fh.setLevel(logging.INFO)
     formatter = logging.Formatter(
@@ -337,15 +340,16 @@ def fit(
         avg_loss_func = partial(
             avg_loss, model_func=model_func, backend=backend
         )
-        log_epoch_func = partial(
-            log_epoch,
-            current_epoch=current_epoch,
-            get_params_func=get_params,
-            state=state,
-            avg_loss_func=avg_loss_func,
-        )
 
         if is_starting_new_printing_epoch:
+            log_epoch_func = partial(
+                log_epoch,
+                current_epoch=current_epoch,
+                get_params_func=get_params,
+                state=state,
+                avg_loss_func=avg_loss_func,
+            )
+
             log_epoch_func(
                 length=length,
                 len_batching_funcs=training_len_batching_funcs,
