@@ -3,6 +3,8 @@
 In the changelog, @ElArkk and @ericmjl would like to acknowledge contributors who have helped us with anything on the project, big or small.
 
 <Please add your contribution to the top>
+- 14 December 2020: Evotune log format bugfix by @ericmjl and @ElArkk
+    1. Reported by @jmahenriques in issue #93
 - 2 December 2020: Implementation of embedding layer by @ElArkk
     1. Initial AA embedding layer is now trainable and of flexible size
     2. Pre-existing and dumped weights get stored in pkl format
