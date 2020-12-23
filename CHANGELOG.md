@@ -4,6 +4,7 @@ In the changelog, @ElArkk and @ericmjl would like to acknowledge contributors wh
 
 <!-- Please add your contribution to the top -->
 
+- 23 December 2020: Snuck in a fix for incorrect logger info, by @ericmjl.
 - 23 December 2020: Fixed bug with NaN values in grad (issue #94), by @ericmjl
     1. h/t @r-karimi for discovering the bug.
 - 14 December 2020: Evotune log format bugfix by @ericmjl and @ElArkk
