@@ -2,7 +2,10 @@
 
 In the changelog, @ElArkk and @ericmjl would like to acknowledge contributors who have helped us with anything on the project, big or small.
 
-<Please add your contribution to the top>
+<!-- Please add your contribution to the top -->
+
+- 23 December 2020: Fixed bug with NaN values in grad (issue #94), by @ericmjl
+    1. h/t @r-karimi for discovering the bug.
 - 14 December 2020: Evotune log format bugfix by @ericmjl and @ElArkk
     1. Reported by @jmahenriques in issue #93
 - 2 December 2020: Implementation of embedding layer by @ElArkk
@@ -21,7 +24,6 @@ In the changelog, @ElArkk and @ericmjl would like to acknowledge contributors wh
     1. option to supply an out-domain holdout set and print params as training progresses,
     2. evotuning without Optuna by directly calling fit function,
     3. added avg_loss() function for calculation outputting of training and holdout set loss to a log file (number and length of batches are also calculated and printed to log file),
-
     4. introduction of "epochs_per_print" to periodically calculate losses and dump parameters
     5. Implemented adamW in JAX and switched optimizer to adamW,
     6. added option to change the number of folds in optuna KFolds,
