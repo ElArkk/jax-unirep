@@ -316,9 +316,10 @@ def fit(
             f"and min batch length {min(batch_lens)}."
         )
     elif batch_method == "random":
+        # Both training_seq_lens
         logger.info(
             f"Random batching done: "
-            f"All sequences padded to max sequence length of {max(batch_lens)}"
+            f"All sequences padded to max sequence length of {max(training_seq_lens)}"
         )
 
     init, update, get_params = adamW(step_size=step_size)
