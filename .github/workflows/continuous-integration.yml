@@ -85,4 +85,6 @@ jobs:
 
 
       - name: Run tests
-        run: make test
+        run: |
+          source /tmp/jax_unirep_env/bin/activate
+          make test
