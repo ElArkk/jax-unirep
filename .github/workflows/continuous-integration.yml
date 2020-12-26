@@ -41,7 +41,7 @@ jobs:
         with:
           conda-channels: "conda-forge"
 
-      # Build cache of environment
+      # Build cache of environment -- this can shave minutes off the CI.
       - name: Cache conda environment
         id: cache-environment
         uses: actions/cache@v2
@@ -50,6 +50,8 @@ jobs:
         # If the file changes, then its hash will change,
         # and the cache will be invalidated,
         # thus triggering a rebuild.
+        # (There is a strong assumption here that changing `build_environment.sh`
+        # will not change the environment definition, which it shouldn't.)
         with:
           path: |
             jax-unirep.tar.gz
