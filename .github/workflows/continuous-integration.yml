@@ -1,6 +1,6 @@
 name: JAX-UniRep CI pipeline
 
-on: [pull-request]
+on: [pull_request]
 
 jobs:
   # Code style checks
