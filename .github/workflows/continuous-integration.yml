@@ -105,7 +105,7 @@ jobs:
         run: bash scripts/ci/unpack_environment.sh
 
 
-      - name: Run fast tests
+      - name: Run slow tests
         run: |
           source /tmp/jax_unirep_env/bin/activate
           make slowtest
