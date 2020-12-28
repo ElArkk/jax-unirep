@@ -12,8 +12,21 @@ style:
 	black --check --diff --config pyproject.toml --verbose .
 	@printf "\033[1;34mCode style checks pass!\033[0m\n\n"
 
-test:  # Test code using pytest.
-	pytest -v . --cov=./jax_unirep --cov-report term-missing
+fasttest:  # Run fast tests using pytest.
+	pytest \
+		-v .\
+		--durations=0
+		--cov=./jax_unirep \
+		--cov-report term-missing \
+		-m "not slow"
+
+slowtest:  # Run fast tests using pytest.
+	pytest \
+		-v .\
+		--durations=0
+		--cov=./jax_unirep \
+		--cov-report term-missing \
+		-m "slow"
 
 paper:
 	cd paper && bash build.sh

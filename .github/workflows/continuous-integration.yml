@@ -68,7 +68,7 @@ jobs:
           name: jax-unirep-tarball
           path: jax-unirep.tar.gz
 
-  run-tests:
+  run-fast-tests:
     runs-on: ubuntu-18.04
     needs: build-environment
     steps:
@@ -84,7 +84,28 @@ jobs:
         run: bash scripts/ci/unpack_environment.sh
 
 
-      - name: Run tests
+      - name: Run fast tests
         run: |
           source /tmp/jax_unirep_env/bin/activate
-          make test
+          make fasttest
+
+  run-slow-tests:
+    runs-on: ubuntu-18.04
+    needs: build-environment
+    steps:
+      - uses: actions/checkout@v2
+
+      # https://github.com/actions/download-artifact
+      - name: Download environment tarball
+        uses: actions/download-artifact@v2
+        with:
+          name: jax-unirep-tarball
+
+      - name: Unpack environment and activate it
+        run: bash scripts/ci/unpack_environment.sh
+
+
+      - name: Run fast tests
+        run: |
+          source /tmp/jax_unirep_env/bin/activate
+          make slowtest

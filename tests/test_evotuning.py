@@ -20,6 +20,7 @@ def model():
     return apply_fun, params
 
 
+@pytest.mark.slow
 def test_evotune(model):
     """Simple execution test for evotune."""
     seqs = ["MTN", "BDD"] * 5
@@ -41,6 +42,7 @@ def test_evotune(model):
     )
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("holdout_seqs", (["ASDV", None]))
 @pytest.mark.parametrize("batch_method", (["length", "random"]))
 def test_fit(model, holdout_seqs, batch_method):
