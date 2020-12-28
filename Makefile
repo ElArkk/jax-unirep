@@ -14,17 +14,17 @@ style:
 
 fasttest:  # Run fast tests using pytest.
 	pytest \
-		-m "not slow"
+		-m "not slow" \
 		-v .\
 		--cov=./jax_unirep \
-		--cov-report term-missing \
+		--cov-report term-missing
 
 slowtest:  # Run fast tests using pytest.
 	pytest \
-		-m "slow"
+		-m "slow" \
 		-v .\
 		--cov=./jax_unirep \
-		--cov-report term-missing \
+		--cov-report term-missing
 
 paper:
 	cd paper && bash build.sh
