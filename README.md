@@ -11,8 +11,7 @@ see the original publication
 [here][arxiv] (bioRxiv) or [here][nature] (Nature Methods),
 as well as the [repository][repo] containing the original model.
 
-This repo is a self-contained version of the UniRep model
-(so far only the 1900 hidden-unit mLSTM),
+This repo is a self-contained and easily customizable version of the UniRep model,
 with additional utility APIs that support protein engineering workflows.
 
 ## Installation
