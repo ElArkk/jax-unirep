@@ -1,0 +1,47 @@
+# Publishes a new release of the package
+# whenever there is a new tagged commit to the master branch.
+#
+# The typical workflow for cutting a new release requires executing the following commands:
+# - git checkout master
+# - bumpversion [major/minor/patch] (pick one)
+# - python setup.py sdist bdist_wheel
+# - twine upload dist/*
+# - git push && git push --tags
+#
+# This action thus eliminates the latter two steps by automating them away,
+# as they are routine and always the same.
+# The `.bumpversion.cfg` file automatically configures git to tag the commit with a release tag
+# and put in a commit message.
+# As such, the new workflow becomes:
+# - git checkout master
+# - bumpversion [major/minor/patch] (pick one)
+# - git push && git push --tags
+# i.e. we save two commands that need to be remembered.
+name: Publish
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  publish:
+    name: Publish package
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Run setup script
+        run: |
+          python setup.py bdist_wheel sdist
+
+      - name: Publish package
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+        uses: pypa/gh-action-pypi-publish@master
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          verbose: true
+          # skip_existing: true  # leaving this in just in case.
