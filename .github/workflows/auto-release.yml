@@ -7,6 +7,8 @@
 # - python setup.py sdist bdist_wheel
 # - twine upload dist/*
 # - git push && git push --tags
+# - rm -rf dist
+# - rm -rf build
 #
 # This action thus eliminates the latter two steps by automating them away,
 # as they are routine and always the same.
