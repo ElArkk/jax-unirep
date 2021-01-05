@@ -17,7 +17,7 @@
 # - bumpversion [major/minor/patch] (pick one)
 # - git push && git push --tags
 # i.e. we save two commands that need to be remembered.
-name: Publish
+name: Publish on PyPI
 
 on:
   push:
