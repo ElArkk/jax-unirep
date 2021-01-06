@@ -25,6 +25,10 @@ on:
   push:
     branches:
       - master
+  # Executing on PRs just to make sure the first two steps run correctly.
+  pull_request:
+    branches: 
+      - master
 
 jobs:
   publish:
@@ -35,9 +39,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9' # Version range or exact version of a Python version to use, using SemVer's version range syntax
+          architecture: 'x64' # optional x64 or x86. Defaults to x64 if not specified
+
       - name: Run setup script
         run: |
-          python setup.py bdist_wheel sdist
+          pip install wheel
+          python setup.py sdist bdist_wheel
 
       - name: Publish package
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
