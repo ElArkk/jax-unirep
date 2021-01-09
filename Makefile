@@ -28,3 +28,6 @@ slowtest:  # Run fast tests using pytest.
 
 paper:
 	cd paper && bash build.sh
+
+docs:
+	mkdocs build
