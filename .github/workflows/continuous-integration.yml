@@ -92,14 +92,14 @@ jobs:
         run: |
           source /tmp/jax_unirep_env/bin/activate
           make fasttest
-        # bash <(curl -s https://codecov.io/bash) -cF python
+          bash <(curl -s https://codecov.io/bash) -cF python
 
-      - name: Upload fast-test coverage
-        uses: codecov/codecov-action@v1
-        with:
-          files: ./.coverage
-          name: codecov-fast-tests
-          fail_ci_if_error: true
+      # - name: Upload fast-test coverage
+      #   uses: codecov/codecov-action@v1
+      #   with:
+      #     files: ./.coverage
+      #     name: codecov-fast-tests
+      #     fail_ci_if_error: true
 
   run-slow-tests:
     runs-on: ubuntu-18.04
@@ -122,14 +122,14 @@ jobs:
         run: |
           source /tmp/jax_unirep_env/bin/activate
           make slowtest
-        # bash <(curl -s https://codecov.io/bash) -cF python
+          bash <(curl -s https://codecov.io/bash) -cF python
 
-      - name: Upload slow-test coverage
-        uses: codecov/codecov-action@v1
-        with:
-          files: ./.coverage
-          name: codecov-slow-tests
-          fail_ci_if_error: true
+      # - name: Upload slow-test coverage
+      #   uses: codecov/codecov-action@v1
+      #   with:
+      #     files: ./.coverage
+      #     name: codecov-slow-tests
+      #     fail_ci_if_error: true
 
   build-docs:
     runs-on: ubuntu-18.04
