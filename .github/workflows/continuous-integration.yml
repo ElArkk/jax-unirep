@@ -100,7 +100,7 @@ jobs:
           files: ./.coverage
           name: codecov-fast-tests
           fail_ci_if_error: true
-          verbose: true
+          verbose: false
 
   run-slow-tests:
     runs-on: ubuntu-18.04
@@ -131,7 +131,7 @@ jobs:
           files: ./.coverage
           name: codecov-slow-tests
           fail_ci_if_error: true
-          verbose: true
+          verbose: false
 
   build-docs:
     runs-on: ubuntu-18.04
