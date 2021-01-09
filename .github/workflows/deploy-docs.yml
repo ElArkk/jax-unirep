@@ -6,12 +6,61 @@ on:
       - master
 
 jobs:
+  build-environment:
+    runs-on: ubuntu-18.04
+    name: Build conda environment
+    steps:
+      - uses: actions/checkout@v2
+        name: Checkout repository
+
+      # See: https://github.com/marketplace/actions/setup-conda
+      - uses: s-weigand/setup-conda@v1
+        with:
+          conda-channels: "conda-forge"
+
+      # Build cache of environment -- this can shave minutes off the CI.
+      - name: Cache conda environment
+        id: cache-environment
+        uses: actions/cache@v2
+        # Conda environment build step depends on just environment.yml,
+        # so we ensure that the hash key contains its hash.
+        # If the file changes, then its hash will change,
+        # and the cache will be invalidated,
+        # thus triggering a rebuild.
+        # (There is a strong assumption here that changing `build_environment.sh`
+        # will not change the environment definition, which it shouldn't.)
+        with:
+          path: |
+            jax-unirep.tar.gz
+          key: ${{ runner.os }}-${{ hashFiles('environment.yml') }}
+
+      - name: Build and pack environment
+        if: steps.cache-environment.outputs.cache-hit != 'true'
+        run: bash scripts/ci/build_environment.sh
+
+      # See: https://github.com/actions/upload-artifact
+      - name: Upload environment
+        uses: actions/upload-artifact@v2
+        with:
+          name: jax-unirep-tarball
+          path: jax-unirep.tar.gz
+
   deploy:
     name: Deploy docs
-    runs-on: ubuntu-latest
+    needs: build-environment
+    runs-on: ubuntu-18.04
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
+
+      # https://github.com/actions/download-artifact
+      - name: Download environment tarball
+        uses: actions/download-artifact@v2
+        with:
+          name: jax-unirep-tarball
+
+      - name: Unpack environment and activate it
+        run: bash scripts/ci/unpack_environment.sh
 
       - name: Deploy docs
         uses: mhausenblas/mkdocs-deploy-gh-pages@master
