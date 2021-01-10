@@ -45,13 +45,13 @@ jobs:
           name: jax-unirep-tarball
           path: jax-unirep.tar.gz
 
-  deploy:
-    name: Deploy docs
-    needs: build-environment
+  build-and-deploy-docs:
     runs-on: ubuntu-18.04
+    needs: build-environment
+    name: Build and deploy docs
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v2
+        name: Checkout repository
 
       # https://github.com/actions/download-artifact
       - name: Download environment tarball
@@ -62,9 +62,20 @@ jobs:
       - name: Unpack environment and activate it
         run: bash scripts/ci/unpack_environment.sh
 
+      - name: Build Docs
+        run: |
+          source /tmp/jax_unirep_env/bin/activate
+          make docs
+
       - name: Deploy docs
-        uses: mhausenblas/mkdocs-deploy-gh-pages@master
-        # Or use mhausenblas/mkdocs-deploy-gh-pages@nomaterial to build without the mkdocs-material theme
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CONFIG_FILE: mkdocs.yml
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          # https://github.com/peaceiris/actions-gh-pages#%EF%B8%8F-set-personal-access-token-personal_token
+          personal_token: ${{ secrets.GHPAGES_TOKEN }}
+          publish_dir: ./site
+          publish_branch: gh-pages
+          allow_empty_commit: false
+          keep_files: false
+          force_orphan: true
+          enable_jekyll: false
+          disable_nojekyll: false
