@@ -1,4 +1,4 @@
-.PHONY: format style test paper
+.PHONY: format style test paper docs
 
 
 format:
