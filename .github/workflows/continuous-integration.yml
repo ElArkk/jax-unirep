@@ -151,26 +151,4 @@ jobs:
       - name: Build Docs
         run: |
           source /tmp/jax_unirep_env/bin/activate
-          make docs
-
-
-  # TODO: Build docs.
-  # hints for @ElArkk:
-  # - each job is indexed by a YAML key (e.g. "run-slow-tests").
-  #   you'll probably want a new job for docs building.
-  # - don't forget to make the new job dependent on "build-environment" like the others,
-  #   this will ensure it runs only _after_ "build-environment" has finished.
-  # - you'll need at least the following steps as a baseline inside the new job:
-  #    - "checkout"
-  #    - "download environment tarball"
-  #    - "unpack environment and activate it"
-  #   as the filesystem state is not preserved between jobs.
-  # - Then build the docs by inserting a new step.
-  #
-  # This workflow only executes on pull requests.
-  # You probably _don't_ want to include a github action step
-  # that deploys to GitHub Pages here,
-  # as the intent should be to make sure that the docs successfully build
-  # but don't get deployed.
-  # You can create another workflow that builds the environment
-  # and then deploys the docs in a separate YAML file.
+          bash scripts/ci/build_docs.sh
