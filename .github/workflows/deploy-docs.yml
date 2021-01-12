@@ -65,7 +65,8 @@ jobs:
       - name: Build Docs
         run: |
           source activate jax-unirep
-          make docs
+          bash scripts/ci/build_docs.sh
+
 
       - name: Deploy docs
         uses: peaceiris/actions-gh-pages@v3
