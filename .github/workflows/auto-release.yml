@@ -1,60 +1,104 @@
-# Publishes a new release of the package
-# whenever there is a new tagged commit to the master branch.
-#
-# The typical workflow for cutting a new release requires executing the following commands:
-# - git checkout master
-# - bumpversion [major/minor/patch] (pick one)
-# - python setup.py sdist bdist_wheel
-# - twine upload dist/*
-# - git push && git push --tags
-# - rm -rf dist
-# - rm -rf build
-#
-# This action thus eliminates the latter two steps by automating them away,
-# as they are routine and always the same.
-# The `.bumpversion.cfg` file automatically configures git to tag the commit with a release tag
-# and put in a commit message.
-# As such, the new workflow becomes:
-# - git checkout master
-# - bumpversion [major/minor/patch] (pick one)
-# - git push && git push --tags
-# i.e. we save two commands that need to be remembered.
-name: Publish on PyPI
+# Good example resources
+# https://riggaroo.dev/using-github-actions-to-automate-our-release-process/
+# https://blog.eizinger.io/12274/using-github-actions-to-automate-gitflow-style-releases
+
+name: Auto-release
 
 on:
-  push:
-    branches:
-      - master
-  # Executing on PRs just to make sure the first two steps run correctly.
-  pull_request:
-    branches: 
-      - master
+
+  # The below workflow_dispatch section is for a "manual" kick off of the
+  # auto-release script. To cut a new release, navigate to the Actions section
+  # of the repo and select this workflow (Auto-release) on the right hand side.
+  # Then, click "Run workflow" and you will be prompted to input the new
+  # version (which should be major, minor, or patch).
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: "One of major, minor, or patch"
+        required: true
 
 jobs:
-  publish:
-    name: Publish package
+  release:
+    name: Create a new release
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
 
+      - name: Pull latest commits of dev branch
+        run: |
+          git checkout dev
+          git pull
+
+      # See https://github.com/marketplace/actions/wait-on-check
+      # TODO: Fix this later (have every push to dev trigger a test suite run)
+      # - name: Ensure all tests are passing on dev
+      #   uses: lewagon/wait-on-check-action@v0.2
+      #   with:
+      #     ref: dev  # can be commit SHA or tag
+      #     check-name: pyjanitor tests
+      #     repo-token: ${{ secrets.GITHUB_TOKEN }}
+      #     wait-interval: 60  # seconds
+
       - name: Setup Python
         uses: actions/setup-python@v2
-        with:
-          python-version: '3.9' # Version range or exact version of a Python version to use, using SemVer's version range syntax
-          architecture: 'x64' # optional x64 or x86. Defaults to x64 if not specified
 
-      - name: Run setup script
+      - name: Install bump2version and wheel
+        run: python -m pip install bumpversion wheel # "bumpversion" installs bump2version
+
+      - name: Dry run bumpversion
         run: |
-          pip install wheel
+          bumpversion --dry-run ${{ github.event.inputs.version_name }} --allow-dirty --verbose
+
+      # This is lifted directly from the bump2version docs.
+      # Version number will be saved in `env` section of each consecutive stage
+      - name: Store new version number
+        run: echo "version_number=`bumpversion --dry-run --list ${{ github.event.inputs.version_name }} | grep new_version | sed -r s,"^.*=",,`" >> $GITHUB_ENV
+
+      - name: Display new version number
+        run: |
+          echo "version_name: ${{ github.event.inputs.version_name }}"
+          echo "version_number: v${{ env.version_number }}"
+
+      # # See https://github.com/thomaseizinger/keep-a-changelog-new-release
+      # - name: Update Changelog
+      #   uses: thomaseizinger/keep-a-changelog-new-release@v1
+      #   with:
+      #     version: v${{ env.version_number }}
+
+      # - name: Commit CHANGELOG updates
+      #   run: |
+      #     git config --global user.email "git@github.com"
+      #     git config --global user.name "GitHub Bot"
+      #     git add .
+      #     git commit -m "Update CHANGELOG for auto-release v${{ env.version_number }}"
+
+      - name: Ensure repo status is clean
+        run: git status
+
+      - name: Run bumpversion
+        run: bumpversion ${{ github.event.inputs.version_name }} --verbose
+
+      - name: Ensure tag creation
+        run: git tag | grep ${{ env.version_number }}
+
+      - name: Build package
+        run: |
+          rm -f dist/*
           python setup.py sdist bdist_wheel
 
       - name: Publish package
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
         uses: pypa/gh-action-pypi-publish@master
         with:
           user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}
-          verbose: true
-          # skip_existing: true  # leaving this in just in case.
+
+      - name: Push changes with tags
+        run: |
+          git config --global user.email "git@github.com"
+          git config --global user.name "GitHub Bot"
+          git push && git push --tags
+
+      - name: Ensure complete
+        run: echo "Auto-release complete!"
