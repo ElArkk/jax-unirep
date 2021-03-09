@@ -60,7 +60,7 @@ def get_weights_dir(folderpath: Optional[str] = None):
     else:
         return Path(
             pkg_resources.resource_filename(
-                "jax_unirep", "weights/1900_weights/uniref50"
+                "jax_unirep", "weights/uniref50/1900_weights"
             )
         )
 
