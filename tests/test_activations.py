@@ -2,11 +2,13 @@
 
 In particular, we are looking for tests that cause NaN errors in grads.
 """
-from hypothesis import strategies as st, given, settings
-from jax_unirep.activations import sigmoid
-import pytest
 import jax.numpy as np
+import pytest
+from hypothesis import given, settings
+from hypothesis import strategies as st
 from jax import grad
+
+from jax_unirep.activations import sigmoid
 
 
 @pytest.mark.parametrize("version", ["tanh", "exp"])
