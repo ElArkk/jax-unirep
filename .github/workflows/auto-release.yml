@@ -57,10 +57,10 @@ jobs:
       #   with:
       #     version: v${{ env.version_number }}
 
-      # - name: Commit CHANGELOG updates
-      #   run: |
-      #     git config --global user.email "git@github.com"
-      #     git config --global user.name "GitHub Bot"
+      - name: Config git.
+        run: |
+          git config --global user.email "git@github.com"
+          git config --global user.name "GitHub Bot"
       #     git add .
       #     git commit -m "Update CHANGELOG for auto-release v${{ env.version_number }}"
 
