@@ -49,18 +49,25 @@ aa_to_int = {
 proposal_valid_letters = "ACDEFGHIKLMNPQRSTVWY"
 
 
-def get_weights_dir(folderpath: Optional[str] = None):
+def get_weights_dir(
+    folderpath: Optional[str] = None, paper_weights: Optional[int] = 1900
+):
     """
     Fetch model weights.
 
-    If `folderpath` is None, retrieve the mLSTM1900 weights.
+    If `folderpath` and `paper_weights` is None, retrieve the mLSTM1900 weights.
+
+    :param folderpath: Path to the folder containing the model weights
+    :param paper_weights: If paper weights should be loaded (folderpath set to None),
+        specify from which model architecture. Possible values are 1900, 256 and 64.
+        Defaults to 1900 weights.
     """
     if folderpath:
         return Path(folderpath)
     else:
         return Path(
             pkg_resources.resource_filename(
-                "jax_unirep", "weights/uniref50/1900_weights"
+                "jax_unirep", f"weights/uniref50/{paper_weights}_weights"
             )
         )
 
@@ -119,9 +126,20 @@ def aa_seq_to_int(s: str) -> List[int]:
     return [24] + [aa_to_int[a] for a in s] + [25]
 
 
-def load_embedding(folderpath: Optional[str] = None):
-    """Load pre-trained embedding weights for UniRep1900 model."""
-    weights_dir = get_weights_dir(folderpath=folderpath)
+def load_embedding(
+    folderpath: Optional[str] = None, paper_weights: Optional[int] = 1900
+):
+    """
+    Load pre-trained embedding weights for UniRep paper models.
+
+    :param folderpath: Path to the folder containing the model weights
+    :param paper_weights: If paper weights should be loaded (folderpath set to None),
+        specify from which model architecture. Possible values are 1900, 256 and 64.
+        Defaults to 1900 weights.
+    """
+    weights_dir = get_weights_dir(
+        folderpath=folderpath, paper_weights=paper_weights
+    )
     with open(weights_dir / "model_weights.pkl", "rb") as f:
         params = pkl.load(f)
     return params[0]
@@ -195,7 +213,9 @@ def validate_mLSTM_params(params: Dict, n_outputs):
             )
 
 
-def load_params(folderpath: Optional[str] = None):
+def load_params(
+    folderpath: Optional[str] = None, paper_weights: Optional[int] = 1900
+):
     """
     Load params for passing to evotuning stax model.
 
@@ -224,8 +244,15 @@ def load_params(folderpath: Optional[str] = None):
     The return should be identical to the following:
 
         MD5 (model_weights.pkl) = 87c89ab62929485e43474c8b24cda5c8
+
+    :param folderpath: Path to the folder containing the model weights
+    :param paper_weights: If paper weights should be loaded (folderpath set to None),
+        specify from which model architecture. Possible values are 1900, 256 and 64.
+        Defaults to 1900 weights.
     """
-    weights_dir = get_weights_dir(folderpath=folderpath)
+    weights_dir = get_weights_dir(
+        folderpath=folderpath, paper_weights=paper_weights
+    )
     with open(weights_dir / "model_weights.pkl", "rb") as f:
         params = pkl.load(f)
     return params
