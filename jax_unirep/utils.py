@@ -134,7 +134,7 @@ def load_embedding(
 
     :param folderpath: Path to the folder containing the model weights
     :param paper_weights: If paper weights should be loaded (folderpath set to None),
-        specify from which model architecture. Possible values are 1900, 256 and 64.
+        specify from which model architecture. Possible values are `1900`, `256` and `64`.
         Defaults to 1900 weights.
     """
     weights_dir = get_weights_dir(
