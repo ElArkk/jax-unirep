@@ -1,7 +1,7 @@
 from hypothesis import given, settings
 from hypothesis import strategies as st
 from jax import random
-from jax.experimental import stax
+from jax.example_libraries import stax
 
 from jax_unirep.layers import AAEmbedding, mLSTM, mLSTMAvgHidden, mLSTMFusion
 from jax_unirep.utils import (

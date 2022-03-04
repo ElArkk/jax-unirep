@@ -1,7 +1,7 @@
 from functools import partial
 
 import pytest
-from jax.experimental import stax
+from jax.example_libraries import stax
 from jax.random import PRNGKey
 
 from jax_unirep.evotuning import evotune, fit

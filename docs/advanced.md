@@ -104,8 +104,8 @@ a `stax.serial` model, e.g. to train both the mLSTM
 and a top-model at once:
 
 ```python
-from jax.experimental import stax
-from jax.experimental.stax import Dense, Relu, serial
+from jax.example_libraries import stax
+from jax.example_libraries.stax import Dense, Relu, serial
 
 from jax_unirep.layers import AAEmbedding, mLSTM, mLSTMAvgHidden
 
