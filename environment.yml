@@ -6,22 +6,22 @@ dependencies:
   - python=3.9
   - bumpversion
   - conda>=4.8.2
-  - coverage>=5.0.3
-  - hypothesis>=5.2.0
-  - jax>=0.1.57
-  - jaxlib>=0.1.37
+  - coverage>=6.3.2
+  - hypothesis>=6.39.1
+  - jax>=0.3.1
+  - jaxlib>=0.3.0
   - jupyter
   - jupyterlab
   - multipledispatch>=0.6.0
-  - numpy>=1.17.5
+  - numpy>=1.22.2
   - pyprojroot>=0.2.0
-  - pytest>=6.0.1
-  - pandoc>=2.9.1.1
-  - pytest-cov>=2.8.1
+  - pytest>=7.0.1
+  - pandoc>=2.17.1.1
+  - pytest-cov>=3.0.0
   - pre-commit
-  - ipykernel>=5.1.4
-  - optuna>=1.1.0
-  - scikit-learn>=0.22.1
+  - ipykernel>=6.9.1
+  - optuna>=2.10.0
+  - scikit-learn>=1.0.2
   - twine
   - pip
   # mkdocs dependencies
@@ -29,8 +29,8 @@ dependencies:
   - regex
   - typed-ast
   # Code style
-  - black>=20.8b1
-  - isort>=4.3.21
+  - black>=22.1.0
+  - isort>=5.10.1
   - pylint
   - pydocstyle
   # Other things
