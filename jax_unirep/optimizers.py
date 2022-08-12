@@ -1,5 +1,5 @@
 import jax.numpy as np
-from jax.experimental.optimizers import make_schedule, optimizer
+from jax.example_libraries.optimizers import make_schedule, optimizer
 
 
 @optimizer

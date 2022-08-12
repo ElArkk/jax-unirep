@@ -62,7 +62,7 @@ is licensed under the terms of [GPL v3][gpl3].
 [evotunefunc]: https://github.com/ElArkk/jax-unirep/blob/master/jax_unirep/evotuning.py#L421
 [fitfunc]: https://github.com/ElArkk/jax-unirep/blob/master/jax_unirep/evotuning.py#L163
 [examples]: https://github.com/ElArkk/jax-unirep/blob/master/examples
-[stax]: https://jax.readthedocs.io/en/latest/jax.experimental.stax.html
+[stax]: https://jax.readthedocs.io/en/latest/jax.example_libraries.stax.html
 [staxex]: https://github.com/google/jax/tree/master/examples
 [docs]: https://elarkk.github.io/jax-unirep/
 [cont]: https://elarkk.github.io/jax-unirep/contributing/
