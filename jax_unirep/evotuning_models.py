@@ -21,7 +21,7 @@ tuned_params = fit(
 )
 ```
 """
-from jax.experimental.stax import Dense, Softmax, serial
+from jax.example_libraries.stax import Dense, Softmax, serial
 
 from .layers import AAEmbedding, mLSTM, mLSTMHiddenStates
 

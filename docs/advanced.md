@@ -98,14 +98,14 @@ with the top model reps.
 You're in luck!
 
 We implemented the mLSTM layers in such a way that
-they are compatible with `jax.experimental.stax`.
+they are compatible with `jax.example_libraries.stax`.
 This means that they can easily be plugged into
 a `stax.serial` model, e.g. to train both the mLSTM
 and a top-model at once:
 
 ```python
-from jax.experimental import stax
-from jax.experimental.stax import Dense, Relu, serial
+from jax.example_libraries import stax
+from jax.example_libraries.stax import Dense, Relu, serial
 
 from jax_unirep.layers import AAEmbedding, mLSTM, mLSTMAvgHidden
 
@@ -123,7 +123,7 @@ init_fun, apply_fun = serial(
 Have a look at the [documentation][stax] and [examples][staxex]
 for more information about how to implement a model in `jax`.
 
-[stax]: https://jax.readthedocs.io/en/latest/jax.experimental.stax.html
+[stax]: https://jax.readthedocs.io/en/latest/jax.example_libraries.stax.html
 [staxex]: https://github.com/google/jax/tree/master/examples
 
 ## Sampling new protein sequences
