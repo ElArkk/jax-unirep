@@ -33,7 +33,7 @@ def adamW(step_size, b1=0.9, b2=0.999, eps=1e-8, w=0.01):
     def update(i, g, state):
         x, m, v = state
         m = (1 - b1) * g + b1 * m  # First  moment estimate.
-        v = (1 - b2) * (g ** 2) + b2 * v  # Second moment estimate.
+        v = (1 - b2) * (g**2) + b2 * v  # Second moment estimate.
         mhat = m / (1 - b1 ** (i + 1))  # Bias correction.
         vhat = v / (1 - b2 ** (i + 1))
         x = x - step_size(i) * (mhat / (np.sqrt(vhat) + eps) + w * x)

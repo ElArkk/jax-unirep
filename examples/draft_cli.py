@@ -69,7 +69,7 @@ def main(
     logger.setLevel(logging.DEBUG)
     logger.info(f"There are {len(sequences)} sequences.")
 
-    LEARN_RATE = 10 ** learning_rate_power
+    LEARN_RATE = 10**learning_rate_power
     PROJECT_NAME = "temp"
 
     evotuned_params = fit(
