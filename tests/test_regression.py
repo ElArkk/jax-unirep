@@ -78,6 +78,35 @@ def test_hidden_states_match_original_unirep(sequence, size):
     np.testing.assert_allclose(ours, expected, **TOL)
 
 
+@pytest.mark.parametrize("size", SIZES)
+@pytest.mark.parametrize("sequence", SEQUENCES)
+def test_get_reps_matches_original_unirep(sequence, size):
+    """get_reps must be correct for all three published sizes (issue #111).
+
+    Previously it ran a single mLSTM layer with the 1900 embedding regardless
+    of the requested size, so 256/64 returned plausible but wrong values.
+    """
+    reference = np.load(DATA / f"original_unirep_{size}_hidden_states.npz")
+    expected = reference[sequence]
+
+    h_avg, h_final, _ = get_reps([sequence], mlstm_size=size)
+
+    np.testing.assert_allclose(
+        np.asarray(h_avg)[0], expected.mean(axis=0), **TOL
+    )
+    np.testing.assert_allclose(np.asarray(h_final)[0], expected[-1], **TOL)
+
+
+def test_get_reps_rejects_bare_param_dict():
+    """A bare mLSTM dict carries no embedding and cannot describe a stack.
+
+    Silently accepting one is what made the #111 failure invisible, so this
+    must stay a loud error rather than a warning.
+    """
+    with pytest.raises(TypeError, match="full parameter tree"):
+        get_reps(["PROTEIN"], params=load_params()[1])
+
+
 def test_reps_are_invocation_order_independent():
     """Guards the bug from issue #107.
 

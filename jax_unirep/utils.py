@@ -155,7 +155,9 @@ def get_embedding(sequence: str, embeddings: np.ndarray) -> np.ndarray:
     return x
 
 
-def get_embeddings(sequences: Iterable[str]) -> np.ndarray:
+def get_embeddings(
+    sequences: Iterable[str], embedding: Optional[np.ndarray] = None
+) -> np.ndarray:
     """
     Return embedding of a list of sequences.
 
@@ -166,6 +168,10 @@ def get_embeddings(sequences: Iterable[str]) -> np.ndarray:
     output shape is (n_sequences, sequence_length, 10).
 
     :param sequences: A list of sequences to obtain embeddings for.
+    :param embedding: The amino acid embedding matrix to use, of shape
+        (26, 10). Each pre-trained model carries its own, stored at
+        `load_params(paper_weights=size)[0]`. Defaults to the 1900 model's
+        embedding, which is *only* correct for the 1900 model.
     """
     # Defensive programming checks.
     # 1. Make sure list is not empty
@@ -180,9 +186,10 @@ Sequence length: number of sequences information in the dictionary below.
 {seq_lengths}
 """
         raise SequenceLengthsError(error)
-    embeddings = load_embedding()
+    if embedding is None:
+        embedding = load_embedding()
 
-    seq_embeddings = [get_embedding(s, embeddings) for s in sequences]
+    seq_embeddings = [get_embedding(s, embedding) for s in sequences]
     return onp.stack(seq_embeddings, axis=0)
 
 

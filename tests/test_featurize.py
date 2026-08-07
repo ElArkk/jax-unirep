@@ -5,11 +5,14 @@ import pytest
 
 from jax_unirep import get_reps
 from jax_unirep.errors import SequenceLengthsError
-from jax_unirep.featurize import rep_arbitrary_lengths, rep_same_lengths
-from jax_unirep.layers import mLSTM
+from jax_unirep.featurize import (
+    rep_arbitrary_lengths,
+    rep_same_lengths,
+    unpack_params,
+)
 from jax_unirep.utils import load_params
 
-_, apply_fun = mLSTM(output_dim=1900)
+EMBEDDING, RECURRENT_PARAMS = unpack_params(load_params())
 
 
 @pytest.mark.parametrize(
@@ -23,13 +26,13 @@ _, apply_fun = mLSTM(output_dim=1900)
     ],
 )
 def test_rep_same_lengths(seqs, expected):
-    params = load_params()[1]
+    args = (EMBEDDING, RECURRENT_PARAMS, 1900)
 
     with expected:
-        assert rep_same_lengths(seqs, params, apply_fun) is not None
+        assert rep_same_lengths(seqs, *args) is not None
 
     if expected == does_not_raise():
-        h_final, c_final, h_avg = rep_same_lengths(seqs, params, apply_fun)
+        h_final, c_final, h_avg = rep_same_lengths(seqs, *args)
         assert h_final.shape == (len(seqs), 1900)
         assert c_final.shape == (len(seqs), 1900)
         assert h_avg.shape == (len(seqs), 1900)
@@ -46,15 +49,13 @@ def test_rep_same_lengths(seqs, expected):
     ],
 )
 def test_rep_arbitrary_lengths(seqs, expected):
-    params = load_params()[1]
+    args = (EMBEDDING, RECURRENT_PARAMS, 1900)
 
     with expected:
-        assert rep_arbitrary_lengths(seqs, params, apply_fun, 1900) is not None
+        assert rep_arbitrary_lengths(seqs, *args) is not None
 
     if expected == does_not_raise():
-        h_final, c_final, h_avg = rep_arbitrary_lengths(
-            seqs, params, apply_fun, 1900
-        )
+        h_final, c_final, h_avg = rep_arbitrary_lengths(seqs, *args)
         assert h_final.shape == (len(seqs), 1900)
         assert c_final.shape == (len(seqs), 1900)
         assert h_avg.shape == (len(seqs), 1900)
