@@ -4,13 +4,13 @@ import os
 import pickle as pkl
 from collections import Counter
 from functools import lru_cache
+from importlib.resources import files
 from pathlib import Path
 from random import sample
 from typing import Callable, Dict, Iterable, List, Optional, Tuple
 
 import jax.numpy as np
 import numpy as onp
-import pkg_resources
 from tqdm.autonotebook import tqdm
 
 from .errors import SequenceLengthsError
@@ -66,8 +66,9 @@ def get_weights_dir(
         return Path(folderpath)
     else:
         return Path(
-            pkg_resources.resource_filename(
-                "jax_unirep", f"weights/uniref50/{paper_weights}_weights"
+            str(
+                files("jax_unirep")
+                / f"weights/uniref50/{paper_weights}_weights"
             )
         )
 
