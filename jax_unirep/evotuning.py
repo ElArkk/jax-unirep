@@ -12,7 +12,7 @@ from jax import vmap
 from sklearn.model_selection import KFold
 from tqdm.autonotebook import tqdm
 
-from jax_unirep.losses import _neg_cross_entropy_loss
+from jax_unirep.losses import cross_entropy_loss
 
 from .evotuning_models import mlstm1900_apply_fun
 from .optimizers import adamW
@@ -48,9 +48,11 @@ def setup_evotuning_log():
 def evotune_loss(params, predict, inputs, targets):
     logging.debug(f"Input shape: {inputs.shape}")
     logging.debug(f"Output shape: {targets.shape}")
-    predictions = vmap(partial(predict, params))(inputs)
+    # The model ends at Dense, so these are logits; the softmax is applied
+    # inside the loss, fused with the log.
+    logits = vmap(partial(predict, params))(inputs)
 
-    return _neg_cross_entropy_loss(targets, predictions)
+    return cross_entropy_loss(targets, logits)
 
 
 def avg_loss(

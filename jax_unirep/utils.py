@@ -118,7 +118,10 @@ def arrays_to_params(arrays: Dict[str, onp.ndarray]) -> Tuple:
 
     Inverse of `params_to_arrays`. The tree interleaves an empty tuple after
     every mLSTM layer, because stax gives the parameterless
-    `mLSTMHiddenStates` and `Softmax` layers empty params.
+    `mLSTMHiddenStates` layer empty params. Trees pickled by 2.x carry one
+    extra trailing empty tuple for the `Softmax` layer, which no longer
+    exists; stax's `serial` zips params against layers, so the surplus entry
+    is ignored and old weights still load.
 
     :param arrays: A flat dict of arrays, as read from a `.npz` file.
     :returns: A parameter tree matching the evotuning stax models.
@@ -136,7 +139,6 @@ def arrays_to_params(arrays: Dict[str, onp.ndarray]) -> Tuple:
 
     if "dense.w" in arrays:
         tree.append((arrays["dense.w"], arrays["dense.b"]))
-        tree.append(())
 
     return tuple(tree)
 

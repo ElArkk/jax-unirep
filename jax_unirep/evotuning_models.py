@@ -21,7 +21,7 @@ tuned_params = fit(
 )
 ```
 """
-from jax.example_libraries.stax import Dense, Softmax, serial
+from jax.example_libraries.stax import Dense, serial
 
 from .layers import AAEmbedding, mLSTM, mLSTMHiddenStates
 
@@ -37,6 +37,8 @@ def mlstm1900():
     one mLSTM layer with 1900 nodes,
     and a single dense layer to predict the next amino acid identity.
 
+    The dense layer outputs logits; the softmax is folded into the loss.
+
     This model is also the default used in `get_reps`.
     """
     model_layers = (
@@ -44,7 +46,6 @@ def mlstm1900():
         mLSTM(1900),
         mLSTMHiddenStates(),
         Dense(25),
-        Softmax,
     )
     init_fun, apply_fun = serial(*model_layers)
     return init_fun, apply_fun
@@ -64,6 +65,8 @@ def mlstm256():
     four consecutive mLSTM layers each with 256 nodes,
     and a single dense layer to predict the next amino acid identity.
 
+    The dense layer outputs logits; the softmax is folded into the loss.
+
     It's a simpler but nonetheless still complex version of the UniRep model
     that can be trained to generate protein representations.
     """
@@ -78,7 +81,6 @@ def mlstm256():
         mLSTM(256),
         mLSTMHiddenStates(),
         Dense(25),
-        Softmax,
     )
     init_fun, apply_fun = serial(*model_layers)
     return init_fun, apply_fun
@@ -95,6 +97,8 @@ def mlstm64():
     four consecutive mLSTM layers each with 64 nodes,
     and a single dense layer to predict the next amino acid identity.
 
+    The dense layer outputs logits; the softmax is folded into the loss.
+
     This is the simplest model published by the original UniRep authors.
     """
     model_layers = (
@@ -108,7 +112,6 @@ def mlstm64():
         mLSTM(64),
         mLSTMHiddenStates(),
         Dense(25),
-        Softmax,
     )
     init_fun, apply_fun = serial(*model_layers)
     return init_fun, apply_fun
