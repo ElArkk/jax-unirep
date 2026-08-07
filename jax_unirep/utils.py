@@ -73,24 +73,90 @@ def get_weights_dir(
         )
 
 
+MLSTM_PARAM_KEYS = ("b", "gh", "gmh", "gmx", "gx", "wh", "wmh", "wmx", "wx")
+
+WEIGHTS_NPZ = "model_weights.npz"
+WEIGHTS_PKL = "model_weights.pkl"
+
+
+def params_to_arrays(params) -> Dict[str, onp.ndarray]:
+    """Flatten a parameter tree into semantically named arrays.
+
+    Keys name what each array *is*, rather than where it sits in a stax
+    tuple::
+
+        embedding
+        mlstm.0.wx   mlstm.0.wh   ...
+        mlstm.1.wx   ...
+        dense.w      dense.b
+
+    Depth is the number of distinct `mlstm.N` prefixes and width is
+    `mlstm.0.wmh.shape[0]`, so the file stays self-describing without
+    encoding any particular framework's container layout.
+
+    :param params: A parameter tree from `load_params` or `fit`.
+    :returns: A flat dict of arrays, suitable for `np.savez`.
+    """
+    arrays = {"embedding": onp.asarray(params[0])}
+
+    layer = 0
+    for element in params[1:]:
+        if isinstance(element, dict):
+            for key in sorted(element):
+                arrays[f"mlstm.{layer}.{key}"] = onp.asarray(element[key])
+            layer += 1
+        elif isinstance(element, (tuple, list)) and len(element) == 2:
+            arrays["dense.w"] = onp.asarray(element[0])
+            arrays["dense.b"] = onp.asarray(element[1])
+
+    return arrays
+
+
+def arrays_to_params(arrays: Dict[str, onp.ndarray]) -> Tuple:
+    """Rebuild a stax parameter tree from named arrays.
+
+    Inverse of `params_to_arrays`. The tree interleaves an empty tuple after
+    every mLSTM layer, because stax gives the parameterless
+    `mLSTMHiddenStates` and `Softmax` layers empty params.
+
+    :param arrays: A flat dict of arrays, as read from a `.npz` file.
+    :returns: A parameter tree matching the evotuning stax models.
+    """
+    n_layers = 1 + max(
+        int(key.split(".")[1]) for key in arrays if key.startswith("mlstm.")
+    )
+
+    tree = [arrays["embedding"]]
+    for i in range(n_layers):
+        tree.append(
+            {key: arrays[f"mlstm.{i}.{key}"] for key in MLSTM_PARAM_KEYS}
+        )
+        tree.append(())
+
+    if "dense.w" in arrays:
+        tree.append((arrays["dense.w"], arrays["dense.b"]))
+        tree.append(())
+
+    return tuple(tree)
+
+
 def dump_params(
     params: Dict,
     dir_path: Path = Path("temp"),
     step: Optional[int] = 0,
 ):
     """
-    Dump the current params of model being trained to a .pkl file.
+    Dump the current params of model being trained to a `.npz` file.
 
-    Note: We used to dump to a `.npy` file for each weight.
-    This was tied to a previously strong assumption
-    that the weights were from an mLSTM1900 model.
+    Note: versions up to 2.x pickled the parameter tree. Pickle executes
+    arbitrary code on load, which is why the old docs told you to verify an
+    MD5 before loading. `.npz` with `allow_pickle=False` is pure data, so
+    that caveat goes away. `load_params` still reads the old `.pkl` files,
+    so weights dumped by earlier versions keep working.
 
-    With the change from a single model architecture assumption
-    to one that allows for more flexibility,
-    we can no longer assume that the weights match up.
-    Hence, we now simply do a Python pickle dump instead.
-    As with before,
-    the embedding weights are not dumped.
+    Arrays are stored under semantic names (`embedding`, `mlstm.0.wx`,
+    `dense.w`, ...) rather than positional indices, so the file does not
+    encode any particular framework's container layout.
 
     The directory is specified by dir_path,
     and will be created, if it does not exist yet.
@@ -112,8 +178,7 @@ def dump_params(
     iteration_path = Path(dir_path) / f"iter_{step}"
     iteration_path.mkdir(exist_ok=True)
 
-    with open(iteration_path / "model_weights.pkl", "wb") as f:
-        pkl.dump(params, f)
+    onp.savez(iteration_path / WEIGHTS_NPZ, **params_to_arrays(params))
 
 
 def aa_seq_to_int(s: str) -> List[int]:
@@ -133,6 +198,9 @@ def load_embedding(
     """
     Load pre-trained embedding weights for UniRep paper models.
 
+    Note that each pre-trained model carries its own embedding matrix, so the
+    1900 default is *only* correct for the 1900 model.
+
     :param folderpath: Path to the folder containing the model weights
     :param paper_weights: If paper weights should be loaded (folderpath set to None),
         specify from which model architecture. Possible values are `1900`, `256` and `64`.
@@ -141,7 +209,13 @@ def load_embedding(
     weights_dir = get_weights_dir(
         folderpath=folderpath, paper_weights=paper_weights
     )
-    with open(weights_dir / "model_weights.pkl", "rb") as f:
+    npz_path = weights_dir / WEIGHTS_NPZ
+    if npz_path.exists():
+        # Reads one array rather than the whole 73 MB tree.
+        with onp.load(npz_path, allow_pickle=False) as arrays:
+            return arrays["embedding"]
+
+    with open(weights_dir / WEIGHTS_PKL, "rb") as f:
         params = pkl.load(f)
     return params[0]
 
@@ -227,31 +301,20 @@ def load_params(
     """
     Load params for passing to evotuning stax model.
 
-    The weights are saved as a single pickle file.
-    We did this in version 1.1 to unify how weights are stored and dumped.
-    When loaded into memory, the weights object `params`
+    The weights are saved as a single `.npz` file of named arrays, read with
+    `allow_pickle=False`. When loaded into memory, the weights object `params`
     will be a nested tuple of arrays and dictionaries. In order, they are:
 
     - embedding params
-    - mLSMT1900 params (with gating weights `g*`, matrix multiplication weights `w*`, and bias `b` as keys)
+    - mLSTM params, one dict per layer (with gating weights `g*`, matrix
+      multiplication weights `w*`, and bias `b` as keys), each followed by an
+      empty tuple for the parameterless hidden-state layer
     - dense params to predict one-hot encoded next letter.
 
-    Loading a Pickle file can pose a security issue,
-    so if you wish to verify the MD5 of the pickles before loading them,
-    you can do so using the following block of code:
-
-    ```python
-    from jax_unirep.utils import get_weights_dir
-
-    weights_dir = get_weights_dir(folderpath=None)
-    weights_path = weights_dir / "model_weights.pkl"
-    # shell out to the system by calling on md5.
-    os.system(f"md5 {str(weights_path)}")
-    ```
-
-    The return should be identical to the following:
-
-        MD5 (model_weights.pkl) = 87c89ab62929485e43474c8b24cda5c8
+    Weights dumped by version 2.x and earlier are Python pickles. Those are
+    still read, so previously saved weights keep working, but note that
+    unpickling executes arbitrary code and is only as trustworthy as the file
+    itself. Re-dumping with `dump_params` converts to the safe format.
 
     :param folderpath: Path to the folder containing the model weights
     :param paper_weights: If paper weights should be loaded (folderpath set to None),
@@ -261,9 +324,14 @@ def load_params(
     weights_dir = get_weights_dir(
         folderpath=folderpath, paper_weights=paper_weights
     )
-    with open(weights_dir / "model_weights.pkl", "rb") as f:
-        params = pkl.load(f)
-    return params
+
+    npz_path = weights_dir / WEIGHTS_NPZ
+    if npz_path.exists():
+        with onp.load(npz_path, allow_pickle=False) as arrays:
+            return arrays_to_params({k: arrays[k] for k in arrays.files})
+
+    with open(weights_dir / WEIGHTS_PKL, "rb") as f:
+        return pkl.load(f)
 
 
 def l2_normalize(arr, axis, epsilon=1e-12):

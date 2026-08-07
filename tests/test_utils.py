@@ -126,14 +126,31 @@ def test_dump_params(model):
     """
     Make sure that the parameter dumping function used in evotuning
     conserves all parameter shapes correctly.
+
+    Round-trips through `load_params` rather than reading the file directly,
+    so this covers the flatten/rebuild pair rather than just the writer.
     """
     init_fun, apply_fun = model
     _, params = init_fun(PRNGKey(42), input_shape=(-1, 26))
     dump_params(params, "tmp")
-    with open("tmp/iter_0/model_weights.pkl", "rb") as f:
-        dumped_params = pkl.load(f)
+    dumped_params = load_params(folderpath="tmp/iter_0")
     rmtree("tmp")
     validate_params(model_func=apply_fun, params=dumped_params)
+
+
+def test_load_params_reads_legacy_pickle(model, tmp_path):
+    """Weights dumped by v2.x are pickles and must keep loading.
+
+    Nothing else exercises that branch, so without this it could rot
+    silently and only break for users with previously saved weights.
+    """
+    init_fun, apply_fun = model
+    _, params = init_fun(PRNGKey(42), input_shape=(-1, 26))
+    (tmp_path / "model_weights.pkl").write_bytes(pkl.dumps(params))
+
+    loaded = load_params(folderpath=str(tmp_path))
+
+    validate_params(model_func=apply_fun, params=loaded)
 
 
 @pytest.mark.parametrize(

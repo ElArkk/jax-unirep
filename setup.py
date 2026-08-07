@@ -17,7 +17,7 @@ setup(
     version=version,
     packages=["jax_unirep"],
     package_data={
-        "jax_unirep": ["weights/uniref50/*/*.pkl"],
+        "jax_unirep": ["weights/uniref50/*/*.npz"],
     },
     install_requires=[
         "jax",
