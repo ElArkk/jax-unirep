@@ -1,0 +1,101 @@
+"""Numerical regression tests against the original UniRep implementation.
+
+The rest of the suite asserts shapes only, so embedding values could change
+silently -- test_featurize.py checks `h_avg.shape == (len(seqs), 1900)` and
+never a single value. These tests pin the actual numbers against per-position
+hidden states captured from the original (churchlab/unirep) TensorFlow model,
+generated with `mLSTMCellStackNPY`. Inputs include the start token and exclude
+stop, matching both UniRep and jax-unirep inference.
+
+Reference data lives in tests/data/. It is ground truth, not a snapshot of our
+own output -- a failure here means we diverged from the original, so the fix
+belongs in the code, never in the fixture.
+"""
+
+from functools import partial
+from pathlib import Path
+
+import numpy as np
+import pytest
+from jax import vmap
+
+from jax_unirep import get_reps
+from jax_unirep.layers import mLSTM
+from jax_unirep.utils import aa_seq_to_int, load_params
+
+DATA = Path(__file__).parent / "data"
+
+SIZES = [1900, 256, 64]
+SEQUENCES = ["PROTEIN", "SEQWENCE"]
+
+# Agreement with the original is ~1e-6 across all three sizes, i.e. float32
+# accumulation noise through the recurrence. 1e-4 leaves headroom for op
+# reordering during a framework port while still catching anything structural.
+TOL = dict(rtol=1e-4, atol=1e-4)
+
+
+def hidden_states(sequence: str, size: int) -> np.ndarray:
+    """Per-position hidden states from the final mLSTM layer.
+
+    Two things here are easy to get wrong, and both produce plausible-looking
+    output rather than an error:
+
+    1. Each model carries its own embedding matrix. `get_embeddings()` defaults
+       to the 1900 one, so 256/64 must pass their own explicitly.
+    2. The 256 and 64 models stack *four* mLSTM layers, not one.
+
+    This is deliberately spelled out rather than calling `get_reps`, so the
+    reference path stays independent of the code under test.
+    """
+    packed = load_params(paper_weights=size)
+    embedding = packed[0]
+    recurrent_layers = [p for p in packed if isinstance(p, dict)]
+
+    # Drop the stop token; the original includes start and excludes stop.
+    indices = aa_seq_to_int(sequence)[:-1]
+    activations = np.vstack([embedding[i] for i in indices])[None, ...]
+
+    for params in recurrent_layers:
+        _, apply_fun = mLSTM(size)
+        _, _, activations = vmap(partial(apply_fun, params))(activations)
+
+    return np.asarray(activations)[0]
+
+
+@pytest.mark.parametrize("size", SIZES)
+@pytest.mark.parametrize("sequence", SEQUENCES)
+def test_hidden_states_match_original_unirep(sequence, size):
+    """Per-position hidden states must match the original model.
+
+    Comparing every timestep rather than the pooled representation means a
+    failure localises where the divergence starts.
+    """
+    reference = np.load(DATA / f"original_unirep_{size}_hidden_states.npz")
+    expected = reference[sequence]
+    ours = hidden_states(sequence, size)
+
+    assert ours.shape == expected.shape
+    np.testing.assert_allclose(ours, expected, **TOL)
+
+
+def test_reps_are_invocation_order_independent():
+    """Guards the bug from issue #107.
+
+    In v1, mLSTM params were mutated during inference, so a sequence's
+    representation depended on which sequences had been embedded before it.
+    Embedding a sequence alone must equal embedding it alongside others.
+    """
+    together, _, _ = get_reps(SEQUENCES)
+    separately = np.vstack([np.asarray(get_reps([s])[0]) for s in SEQUENCES])
+
+    np.testing.assert_allclose(np.asarray(together), separately, **TOL)
+
+
+def test_reps_unchanged_by_prior_calls():
+    """A sequence's representation must not depend on call history."""
+    first = np.asarray(get_reps(["SEQWENCE"])[0])
+    get_reps(["MKTVRQERLKSIVRILERSKEPVSGAQLAEELSVSRQ"])
+    get_reps(["PROTEIN", "MTN", "MD"])
+    second = np.asarray(get_reps(["SEQWENCE"])[0])
+
+    np.testing.assert_allclose(first, second, **TOL)
