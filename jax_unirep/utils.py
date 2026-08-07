@@ -2,6 +2,7 @@
 import logging
 import os
 import pickle as pkl
+import warnings
 from collections import Counter
 from functools import lru_cache
 from importlib.resources import files
@@ -330,7 +331,22 @@ def load_params(
         with onp.load(npz_path, allow_pickle=False) as arrays:
             return arrays_to_params({k: arrays[k] for k in arrays.files})
 
-    with open(weights_dir / WEIGHTS_PKL, "rb") as f:
+    pkl_path = weights_dir / WEIGHTS_PKL
+    if not pkl_path.exists():
+        raise FileNotFoundError(
+            f"No model weights found in {weights_dir}. Expected "
+            f"{WEIGHTS_NPZ}, or {WEIGHTS_PKL} if these were dumped by "
+            f"jax-unirep 2.x or earlier."
+        )
+
+    warnings.warn(
+        f"Loading legacy pickled weights from {pkl_path}. Unpickling "
+        f"executes arbitrary code, so only load files you trust. Re-dump "
+        f"them with dump_params to convert to {WEIGHTS_NPZ}.",
+        FutureWarning,
+        stacklevel=2,
+    )
+    with open(pkl_path, "rb") as f:
         return pkl.load(f)
 
 
