@@ -52,7 +52,12 @@ def evotune_loss(params, predict, inputs, targets):
     # inside the loss, fused with the log.
     logits = vmap(partial(predict, params))(inputs)
 
-    return cross_entropy_loss(targets, logits)
+    # Class 0 is the "-" character that right_pad adds. It is a real class, so
+    # an unmasked loss trains the model to predict gaps. With random batching
+    # that is most of the signal for any sequence shorter than the longest one.
+    mask = 1.0 - targets[..., 0]
+
+    return cross_entropy_loss(targets, logits, mask)
 
 
 def avg_loss(
