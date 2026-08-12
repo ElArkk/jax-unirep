@@ -1,33 +1,27 @@
+"""API for evolutionary tuning."""
+
 import logging
 import os
-from functools import partial
 from random import choice
-from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple
+from typing import Callable, Dict, Iterable, List, Optional, Tuple
 
+import equinox as eqx
 import numpy as onp
+import optax
 import optuna
-from jax import grad, jit
 from jax import numpy as np
 from jax import vmap
 from sklearn.model_selection import KFold
 from tqdm.autonotebook import tqdm
 
-from jax_unirep.losses import cross_entropy_loss
-
-from .evotuning_models import mlstm1900_apply_fun
-from .optimizers import adamW
+from .losses import cross_entropy_loss
+from .models import MLSTM, load_model, save_model
 from .utils import (
-    dump_params,
     get_batching_func,
     input_output_pairs,
     length_batch_input_outputs,
-    load_params,
     right_pad,
-    validate_mLSTM_params,
 )
-
-"""API for evolutionary tuning."""
-
 
 logger = logging.getLogger("evotuning")
 
@@ -45,12 +39,17 @@ def setup_evotuning_log():
     logger.addHandler(fh)
 
 
-def evotune_loss(params, predict, inputs, targets):
-    logging.debug(f"Input shape: {inputs.shape}")
-    logging.debug(f"Output shape: {targets.shape}")
-    # The model ends at Dense, so these are logits; the softmax is applied
-    # inside the loss, fused with the log.
-    logits = vmap(partial(predict, params))(inputs)
+def evotune_loss(model: MLSTM, inputs, targets):
+    """Masked next-amino-acid loss of a model on one batch of sequences.
+
+    :param model: The `MLSTM` being tuned.
+    :param inputs: One-hot sequences, shape (n_sequences, n_positions, 26).
+    :param targets: One-hot next letters, shape (n_sequences, n_positions, 25).
+    :returns: A scalar loss.
+    """
+    # `logits` handles one sequence, so vmap it over the batch. The softmax is
+    # applied inside the loss, fused with the log.
+    logits = vmap(model.logits)(inputs)
 
     # Class 0 is the "-" character that right_pad adds. It is a real class, so
     # an unmasked loss trains the model to predict gaps. With random batching
@@ -60,23 +59,21 @@ def evotune_loss(params, predict, inputs, targets):
     return cross_entropy_loss(targets, logits, mask)
 
 
+evotune_loss_jit = eqx.filter_jit(evotune_loss)
+
+
 def avg_loss(
     xs: List[np.ndarray],
     ys: List[np.ndarray],
-    params: Tuple,
-    model_func: Callable,
-    backend: str = "cpu",
+    model: MLSTM,
     batch_size: int = 50,
 ) -> float:
     """
-    Return average loss of a set of parameters, on a set of sequences.
+    Return average loss of a model on a set of sequences.
 
     :param xs: List of NumPy arrays
     :param ys: List of NumPy arrays
-    :param params: parameters (i.e. from training)
-    :param backend: Whether to use GPU ('gpu') or CPU ('cpu')
-        to perform calculation.
-        Defaults to 'cpu'.
+    :param model: The `MLSTM` to evaluate.
     :param batch_size: Size of batch when calculating average loss
         over train or holdout set.
         Controlling this parameter helps with memory allocation issues -
@@ -87,10 +84,6 @@ def avg_loss(
     logging.debug("Calculating average loss.")
     sum_loss = 0
     num_seqs = 0
-    global evotune_loss  # this is necessary for JIT to reference evotune_loss
-    evotune_loss_jit = jit(
-        partial(evotune_loss, predict=model_func), backend=backend
-    )
 
     def batch_iter(xs: np.ndarray, ys: np.ndarray, batch_size: int):
         for i in range(0, len(xs), batch_size):
@@ -99,9 +92,7 @@ def avg_loss(
     for xmat, ymat in zip(xs, ys):
         # Send x and y in small batches to control memory usage.
         for x, y in batch_iter(xmat, ymat, batch_size=batch_size):
-            sum_loss += evotune_loss_jit(
-                params=params, inputs=x, targets=y
-            ) * len(x)
+            sum_loss += evotune_loss_jit(model, x, y) * len(x)
             num_seqs += len(x)
 
     return sum_loss / num_seqs
@@ -159,18 +150,16 @@ def generate_batching_funcs(
 def fit(
     sequences: Iterable[str],
     n_epochs: int,
-    model_func: Callable = mlstm1900_apply_fun,
-    params: Any = None,
+    model: Optional[MLSTM] = None,
     batch_method: str = "length",
     batch_size: int = 25,
     step_size: float = 0.0001,
     holdout_seqs: Optional[Iterable[str]] = None,
     proj_name: str = "temp",
     epochs_per_print: int = 1,
-    backend: str = "cpu",
-) -> Dict:
+) -> MLSTM:
     """
-    Return mLSTM weights fitted to predict the next letter in each AA sequence.
+    Return an mLSTM fitted to predict the next letter in each AA sequence.
 
     The training loop is as follows, depending on the batching strategy:
 
@@ -212,30 +201,24 @@ def fit(
     Asymptotically, this should be approximately equivalent
     to doing epoch passes over the dataset.
 
-    To learn more about the passing of `params`,
-    have a look at the `evotune` function docstring.
-
-    You can optionally dump parameters
-    and print weights every `epochs_per_print` epochs
+    You can optionally dump weights
+    and print losses every `epochs_per_print` epochs
     to monitor training progress.
     For ergonomics, training/holdout set losses are estimated
     on a batch size the same as `batch_size`,
     rather than calculated exactly on the entire set.
-    Set `epochs_per_print` to `None` to avoid parameter dumping.
+    Dumped weights are written in the same layout `load_model` reads,
+    so training can be resumed from `load_model(folderpath=...)`.
 
     ### Parameters
 
     - `sequences`: List of sequences to evotune on.
     - `n_epochs`: The number of iterations to evotune on.
-    - `model_func`: A function that accepts (params, x).
-        Defaults to the mLSTM1900 model function.
-    - `params`: Optionally pass in the params you want to use.
-        These params must yield a correctly-sized mLSTM,
-        otherwise you will get cryptic shape errors!
-        If None, params will be randomly generated,
-        except for mlstm_size of 1900,
-        where the pre-trained weights from
-        the original publication are used.
+    - `model`: The `MLSTM` to tune.
+        Defaults to the pre-trained mLSTM1900 from the paper.
+        Pass `MLSTM(n_cells=..., output_dim=..., key=...)`
+        to start from randomly initialized weights of any size,
+        or `load_model(folderpath=...)` to resume from dumped weights.
     - `batch_method`: One of "length" or "random". Defaults to "length",
         which groups sequences of identical length and pads nothing.
         "random" pads every sequence to the longest in the *whole dataset*,
@@ -252,44 +235,16 @@ def fit(
     - `epochs_per_print`: Number of epochs to progress before printing
         and dumping of weights.
         Must be greater than or equal to 1.
-    - `backend`: Whether or not to use the GPU. Defaults to "cpu",
-        but can be set to "gpu" if desired.
-        If you set it to GPU, make sure you have
-        a version of `jax` that is pre-compiled to work with GPUs.
 
     ### Returns
 
-    Final optimized parameters.
+    The tuned `MLSTM`.
     """
 
     setup_evotuning_log()
-    model_func = jit(model_func)
 
-    @jit
-    def step(i, x, y, state):
-        """
-        Perform one step of evolutionary updating.
-
-        This function is closed inside `fit` because we need access
-        to the variables in its scope,
-        particularly the update and get_params functions.
-
-        By structuring the function this way, we can JIT-compile it,
-        and thus gain a massive speed-up!
-
-        :param i: The current iteration of the training loop.
-        :param state: Current state of parameters from jax.
-        """
-        params = get_params(state)
-        g = grad(partial(evotune_loss, predict=model_func))(
-            params, inputs=x, targets=y
-        )
-        state = update(i, g, state)
-
-        return state
-
-    if params is None:
-        params = load_params()
+    if model is None:
+        model = load_model(paper_weights=1900)
     # Defensive programming checks
     if batch_method not in ["length", "random"]:
         raise ValueError("batch_method must be one of 'length' or 'random'")
@@ -299,6 +254,31 @@ def fit(
         raise ValueError(
             "epochs_per_print must be greater than or equal to 1."
         )
+
+    optim = optax.adamw(learning_rate=step_size)
+    opt_state = optim.init(eqx.filter(model, eqx.is_array))
+
+    @eqx.filter_jit
+    def step(model, opt_state, x, y):
+        """
+        Perform one step of evolutionary updating.
+
+        The model *is* the parameters, so a step takes them in and hands the
+        updated ones back rather than threading an opaque optimizer state that
+        the parameters have to be dug out of.
+
+        :param model: The model at the start of this step.
+        :param opt_state: The optimizer's momentum estimates.
+        :param x: One-hot input sequences.
+        :param y: One-hot next letters to predict.
+        :returns: The updated model, the updated optimizer state, and the loss.
+        """
+        loss, grads = eqx.filter_value_and_grad(evotune_loss)(model, x, y)
+        updates, opt_state = optim.update(
+            grads, opt_state, eqx.filter(model, eqx.is_array)
+        )
+        # optax's update already negates the gradient, so these are added.
+        return eqx.apply_updates(model, updates), opt_state, loss
 
     if batch_method == "random":
         _, sequences, holdout_seqs = generate_single_length_batch(
@@ -328,15 +308,10 @@ def fit(
             f"and min batch length {min(batch_lens)}."
         )
     elif batch_method == "random":
-        # Both training_seq_lens
         logger.info(
-            f"Random batching done: "
-            f"All sequences padded to max sequence length of {max(training_seq_lens)}"
+            f"Random batching done: All sequences padded to max sequence "
+            f"length of {max(training_seq_lens)}"
         )
-
-    init, update, get_params = adamW(step_size=step_size)
-    get_params = jit(get_params)
-    state = init(params)
 
     # calculate how many iterations constitute one epoch approximately
     epoch_len = round(len(sequences) / batch_size)
@@ -345,76 +320,57 @@ def fit(
     for i in tqdm(range(n), desc="Iteration"):
         logger.debug(f"Iteration {i}")
         current_epoch = (i // epoch_len) + 1
-        is_starting_new_printing_epoch = (
-            i % (epochs_per_print * epoch_len) == 0
-        )
         # Choose a sequence length at random for this iteration
         length = choice(training_seq_lens)
-        avg_loss_func = partial(
-            avg_loss, model_func=model_func, backend=backend
-        )
 
-        if is_starting_new_printing_epoch:
-            log_epoch_func = partial(
-                log_epoch,
+        if i % (epochs_per_print * epoch_len) == 0:
+            log_epoch(
                 current_epoch=current_epoch,
-                get_params_func=get_params,
-                state=state,
-                avg_loss_func=avg_loss_func,
-            )
-
-            log_epoch_func(
+                model=model,
                 length=length,
                 len_batching_funcs=training_len_batching_funcs,
             )
 
             if holdout_seqs is not None:
-                holdout_length = choice(holdout_seq_lens)
-                log_epoch_func(
-                    length=holdout_length,
+                log_epoch(
+                    current_epoch=current_epoch,
+                    model=model,
+                    length=choice(holdout_seq_lens),
                     len_batching_funcs=holdout_len_batching_funcs,
                     is_holdout_set=True,
                 )
-            dump_params(get_params(state), proj_name, current_epoch - 1)
+            save_model(model, proj_name, current_epoch - 1)
 
         logger.debug("Getting batches")
         x, y = training_len_batching_funcs[length]()
 
-        # actual forward & backwrd pass happens here
-        logger.debug("Getting state")
-        state = step(i, x, y, state)
+        # actual forward & backward pass happens here
+        model, opt_state, loss = step(model, opt_state, x, y)
+        logger.debug(f"Iteration {i}: loss {loss}")
 
-    return get_params(state)
+    return model
 
 
 def log_epoch(
     current_epoch: int,
-    state,
+    model: MLSTM,
     length: int,
     len_batching_funcs: Dict[int, Callable],
-    get_params_func: Callable,
-    avg_loss_func: Callable,
     is_holdout_set: bool = False,
 ):
     """
     Log relevant information from one epoch.
 
     :param current_epoch: The current epoch that is being logged.
-    :param state: Parameters wrapped in a jax optimizer's state.
+    :param model: The model at the start of this epoch.
     :param length: The length chosen.
     :param len_batching_funcs: A dictionary of length-batching functions,
         each of which accepts no arguments and returns an x, y matrix pair.
-    :param get_params_func: A `get_params` function returned from
-        the JAX optimizer triplet.
-    :param avg_loss_func: A function that calculates the average loss
-        over all of the data points x, y (returned from the len_batching_funcs)
-        which accepts elements ([x], [y], and state_params)
     :param is_holdout_set: Whether or not we are using the holdout set.
         Affects the logging text only.
     """
-    state_params = get_params_func(state)
     x, y = len_batching_funcs[length]()
-    loss = avg_loss_func([x], [y], state_params)
+    loss = avg_loss([x], [y], model)
     data_set = "holdout" if is_holdout_set else "training"
     logger.info(f"Calculations for {data_set} set:")
     logger.info(f"Epoch {current_epoch - 1}: Estimated average loss: {loss}. ")
@@ -424,8 +380,7 @@ def log_epoch(
 def objective(
     trial,
     sequences: Iterable[str],
-    model_func: Callable,
-    params: Any,
+    model: MLSTM,
     n_epochs_config: Dict = None,
     learning_rate_config: Dict = None,
     n_splits: Optional[int] = 5,
@@ -441,14 +396,17 @@ def objective(
     :param trial: An Optuna trial object.
     :param sequences: A list of strings corresponding to the sequences
         that we want to evotune against.
-    :param model_func: A model forward pass function that accepts (params, x).
-    :param params: Model parameters that are compatible with the model_func.
+    :param model: The `MLSTM` that each fold starts from.
     :param n_epochs_config: A dictionary of kwargs
-        to `trial.suggest_discrete_uniform`,
-        which are: `name`, `low`, `high`, `q`.
+        to `trial.suggest_float`,
+        which are: `name`, `low`, `high`, `step`.
         This controls how many epochs to have Optuna test.
         See source code for default configuration,
         at the definition of `n_epochs_kwargs`.
+    :param learning_rate_config: A dictionary of kwargs
+        to `trial.suggest_float`,
+        which are: `name`, `low`, `high`.
+        This controls the learning rate of the model.
     :param n_splits: The number of folds of cross-validation to do.
 
     :returns: Average of 5-fold test loss.
@@ -458,7 +416,7 @@ def objective(
         "name": "n_epochs",
         "low": 1,
         "high": len(sequences) * 3,
-        "q": 1,
+        "step": 1,
     }
 
     # Default settings for learning_rate_kwargs
@@ -473,8 +431,8 @@ def objective(
     if learning_rate_config is not None:
         learning_rate_kwargs.update(learning_rate_config)
 
-    n_epochs = trial.suggest_discrete_uniform(**n_epochs_kwargs)
-    learning_rate = trial.suggest_loguniform(**learning_rate_kwargs)
+    n_epochs = trial.suggest_float(**n_epochs_kwargs)
+    learning_rate = trial.suggest_float(**learning_rate_kwargs, log=True)
     logger.info(
         f"Trying out {n_epochs} epochs with learning rate {learning_rate}."
     )
@@ -490,10 +448,9 @@ def objective(
             sequences[test_index],
         )
 
-        evotuned_params = fit(
+        tuned_model = fit(
             sequences=train_sequences,
-            model_func=model_func,
-            params=params,
+            model=model,
             n_epochs=int(n_epochs),
             step_size=learning_rate,
         )
@@ -505,23 +462,20 @@ def objective(
             xs.append(x)
             ys.append(y)
 
-        avg_test_losses.append(
-            avg_loss(xs, ys, evotuned_params, model_func=model_func)
-        )
+        avg_test_losses.append(avg_loss(xs, ys, tuned_model))
 
     return sum(avg_test_losses) / len(avg_test_losses)
 
 
 def evotune(
     sequences: Iterable[str],
-    model_func: Callable = mlstm1900_apply_fun,
-    params: Any = None,
+    model: Optional[MLSTM] = None,
     n_trials: Optional[int] = 20,
     n_epochs_config: Dict = None,
     learning_rate_config: Dict = None,
     n_splits: Optional[int] = 5,
     out_dom_seqs: Optional[List[str]] = None,
-) -> Tuple:
+) -> Tuple[optuna.Study, MLSTM]:
     """
     Evolutionarily tune the model to a set of sequences.
 
@@ -529,7 +483,7 @@ def evotune(
     This reimplementation of evotune provides a nicer API
     that automatically handles multiple sequences of variable lengths.
 
-    Evotuning always needs a starter set of weights.
+    Evotuning always needs a starter model.
     By default, the pre-trained weights from the Nature Methods paper are used.
     However, other pre-trained weights are legitimate.
 
@@ -538,34 +492,27 @@ def evotune(
     To save on computation time, the number of trials run
     defaults to 20, but can be configured.
 
-    By default, mLSTM and Dense weights from the paper are used
-    by setting `mlstm_size=1900` and `params=None`
-    in the partially-evaluated fit function (`fit_func`),
-    but if you want to use randomly intialized weights:
+    If you want to start from randomly initialized weights of any size:
 
     ```python
-    from jax_unirep.evotuning import evotuning_funcs, fit
     from jax.random import PRNGKey
-    from functools import partial
+    from jax_unirep.evotuning import evotune
+    from jax_unirep.models import MLSTM
 
-    init_func, _ = evotuning_funcs(mlstm_size=256) # works for any size
-    _, params = init_func(PRNGKey(0), input_shape=(-1, 26))
-    fit_func = partial(fit, mlstm_size=256, params=params)
+    model = MLSTM(n_cells=4, output_dim=256, key=PRNGKey(0))
+    study, tuned_model = evotune(sequences, model=model)
     ```
 
-    or dumped weights:
+    or from previously dumped weights:
 
     ```python
-    from jax_unirep.evotuning import fit
-    from jax_unirep.utils import load_params
+    from jax_unirep.models import load_model
 
-    params = load_params(folderpath="path/to/params/folder")
-    fit_func = partial(fit, mlstm_size=256, params=params)
+    model = load_model(folderpath="path/to/weights/folder")
     ```
 
-    The examples above use mLSTM sizes of 256, but any size works in theory!
-    Just make sure that the mLSTM size of your randomly initialized or dumped
-    `params` matches the one you set in the partially-evaluated fit function.
+    The model states its own architecture, so nothing needs to be told
+    what size it is.
 
     This function is intended as an automagic way of identifying
     the best model and training routine hyperparameters.
@@ -577,19 +524,17 @@ def evotune(
     ### Parameters
 
     - `sequences`: Sequences to evotune against.
-    - `model_func`: Model apply func.
-        Defaults to the mLSTM1900 apply function.
-    - `params`: Model params that are compatible with model apply func.
-        Defaults to the mLSTM1900 params.
-    - `n_trials: The number of trials Optuna should attempt.
+    - `model`: The `MLSTM` to tune.
+        Defaults to the pre-trained mLSTM1900 from the paper.
+    - `n_trials`: The number of trials Optuna should attempt.
     - `n_epochs_config`: A dictionary of kwargs
-        to `trial.suggest_discrete_uniform`,
-        which are: `name`, `low`, `high`, `q`.
+        to `trial.suggest_float`,
+        which are: `name`, `low`, `high`, `step`.
         This controls how many epochs to have Optuna test.
         See source code for default configuration,
         at the definition of `n_epochs_kwargs`.
     - `learning_rate_config`: A dictionary of kwargs
-        to `trial.suggest_loguniform`,
+        to `trial.suggest_float`,
         which are: `name`, `low`, `high`.
         This controls the learning rate of the model.
         See source code for default configuration,
@@ -602,18 +547,17 @@ def evotune(
 
     - `study`: The optuna study object, containing information
         about all evotuning trials.
-    - `evotuned_params`: A dictionary of the final, optimized weights.
+    - `tuned_model`: The final, optimized `MLSTM`.
     """
     study = optuna.create_study()
-    if params is None:
-        params = load_params()
+    if model is None:
+        model = load_model(paper_weights=1900)
 
     def objective_func(trial):
         return objective(
             trial,
             sequences=sequences,
-            model_func=model_func,
-            params=params,
+            model=model,
             n_epochs_config=n_epochs_config,
             learning_rate_config=learning_rate_config,
             n_splits=n_splits,
@@ -627,13 +571,12 @@ def evotune(
         f"Optuna done, starting tuning with learning rate={learning_rate}, "
     )
 
-    evotuned_params = fit(
+    tuned_model = fit(
         sequences=sequences,
-        model_func=model_func,
-        params=params,
+        model=model,
         n_epochs=n_epochs,
         step_size=learning_rate,
         holdout_seqs=out_dom_seqs,
     )
 
-    return study, evotuned_params
+    return study, tuned_model

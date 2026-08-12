@@ -11,7 +11,7 @@ from jax.random import PRNGKey
 from pyprojroot import here
 
 from jax_unirep import fit
-from jax_unirep.utils import dump_params
+from jax_unirep.models import MLSTM, save_model
 
 app = typer.Typer()
 
@@ -49,10 +49,10 @@ def main(
     num_sequences: Optional[int] = None,
     length: Optional[int] = None,
     validation_fraction: float = None,
-    backend: str = "gpu",
     n_epochs: int = 20,
     learning_rate_power: int = -3,
     mlstm_size: int = 256,
+    n_cells: int = 4,
     batch_size: int = 100,
     batch_method: BatchMethod = "random",
 ):
@@ -72,21 +72,21 @@ def main(
     LEARN_RATE = 10**learning_rate_power
     PROJECT_NAME = "temp"
 
-    evotuned_params = fit(
-        mlstm_size=mlstm_size,
-        rng=PRNGKey(42),
-        params=None,
+    # The model states its own architecture, so `fit` needs no size arguments.
+    model = MLSTM(n_cells=n_cells, output_dim=mlstm_size, key=PRNGKey(42))
+
+    tuned_model = fit(
         sequences=sequences,
         n_epochs=n_epochs,
+        model=model,
         step_size=LEARN_RATE,
         holdout_seqs=holdout_sequences,
         batch_size=batch_size,
         batch_method=batch_method,
         proj_name=PROJECT_NAME,
         epochs_per_print=1,
-        backend=backend,  # default is "cpu", can be "gpu" if you have JAX-GPU installed.
     )
-    dump_params(evotuned_params, PROJECT_NAME)
+    save_model(tuned_model, PROJECT_NAME)
     print("Evotuning done! Find output weights in", PROJECT_NAME)
 
 

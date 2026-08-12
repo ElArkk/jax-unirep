@@ -6,6 +6,8 @@ and `model.cells[0].wmh.shape[0]` is the width. Nothing needs to be told what
 shape the model is.
 """
 
+import pickle as pkl
+import warnings
 from pathlib import Path
 from typing import Optional, Tuple
 
@@ -17,11 +19,18 @@ from jax import lax, random
 from jax.nn.initializers import glorot_normal, normal
 
 from .activations import sigmoid, tanh
-from .utils import WEIGHTS_NPZ, get_weights_dir, l2_normalize
+from .utils import (
+    WEIGHTS_NPZ,
+    WEIGHTS_PKL,
+    get_weights_dir,
+    l2_normalize,
+)
 
 EMBEDDING_DIM = 10
 N_LETTERS = 26
 N_TARGET_CLASSES = 25
+
+MLSTM_PARAM_KEYS = ("b", "gh", "gmh", "gmx", "gx", "wh", "wmh", "wmx", "wx")
 
 
 class MLSTMCell(eqx.Module):
@@ -257,17 +266,97 @@ def model_from_arrays(arrays) -> MLSTM:
     return eqx.tree_at(lambda m: m.cells, model, cells)
 
 
+def model_to_arrays(model: MLSTM) -> dict:
+    """Flatten an `MLSTM` into named arrays, ready for `np.savez`.
+
+    Inverse of `model_from_arrays`.
+    """
+    arrays = {"embedding": onp.asarray(model.embedding)}
+    for i, cell in enumerate(model.cells):
+        for key in MLSTM_PARAM_KEYS:
+            arrays[f"mlstm.{i}.{key}"] = onp.asarray(getattr(cell, key))
+    if model.dense_w is not None:
+        arrays["dense.w"] = onp.asarray(model.dense_w)
+        arrays["dense.b"] = onp.asarray(model.dense_b)
+    return arrays
+
+
+def _arrays_from_legacy_tree(params) -> dict:
+    """Read the flat parameter tree that versions up to 2.x pickled.
+
+    That tree is the embedding, then one dict per mLSTM layer interleaved with
+    empty tuples for the parameterless stax layers, then the dense pair.
+    """
+    arrays = {"embedding": onp.asarray(params[0])}
+    cell = 0
+    for element in params[1:]:
+        if isinstance(element, dict):
+            for key in MLSTM_PARAM_KEYS:
+                arrays[f"mlstm.{cell}.{key}"] = onp.asarray(element[key])
+            cell += 1
+        elif isinstance(element, (tuple, list)) and len(element) == 2:
+            arrays["dense.w"] = onp.asarray(element[0])
+            arrays["dense.b"] = onp.asarray(element[1])
+    return arrays
+
+
+def save_model(
+    model: MLSTM,
+    dir_path: Path = Path("temp"),
+    step: Optional[int] = 0,
+) -> Path:
+    """Write a model's weights to `<dir_path>/iter_<step>/model_weights.npz`.
+
+    The layout matches the shipped weights, so a checkpoint can be read back
+    with `load_model(folderpath=...)`.
+
+    :param model: The model to save.
+    :param dir_path: Directory to write into. Created if it does not exist.
+    :param step: Training step, used to name the subdirectory.
+    :returns: The directory the weights were written to.
+    """
+    iteration_path = Path(dir_path) / f"iter_{step}"
+    iteration_path.mkdir(parents=True, exist_ok=True)
+    onp.savez(iteration_path / WEIGHTS_NPZ, **model_to_arrays(model))
+    return iteration_path
+
+
 def load_model(
     folderpath: Optional[str] = None, paper_weights: Optional[int] = 1900
 ) -> MLSTM:
     """Load a pre-trained `MLSTM`.
 
+    Weights saved by versions up to 2.x are Python pickles. Those are still
+    read, so previously saved weights keep working, but unpickling executes
+    arbitrary code and is only as trustworthy as the file. Re-save with
+    `save_model` to convert.
+
     :param folderpath: Directory holding a `model_weights.npz`.
     :param paper_weights: Which published model to load: 1900, 256 or 64.
     """
-    weights_dir = get_weights_dir(
-        folderpath=folderpath, paper_weights=paper_weights
+    weights_dir = Path(
+        get_weights_dir(folderpath=folderpath, paper_weights=paper_weights)
     )
-    npz_path = Path(weights_dir) / WEIGHTS_NPZ
-    with onp.load(npz_path, allow_pickle=False) as arrays:
-        return model_from_arrays({k: arrays[k] for k in arrays.files})
+
+    npz_path = weights_dir / WEIGHTS_NPZ
+    if npz_path.exists():
+        with onp.load(npz_path, allow_pickle=False) as arrays:
+            return model_from_arrays({k: arrays[k] for k in arrays.files})
+
+    pkl_path = weights_dir / WEIGHTS_PKL
+    if not pkl_path.exists():
+        raise FileNotFoundError(
+            f"No model weights found in {weights_dir}. Expected "
+            f"{WEIGHTS_NPZ}, or {WEIGHTS_PKL} if these were saved by "
+            f"jax-unirep 2.x or earlier."
+        )
+
+    warnings.warn(
+        f"Loading legacy pickled weights from {pkl_path}. Unpickling "
+        f"executes arbitrary code, so only load files you trust. Re-save "
+        f"them with save_model to convert to {WEIGHTS_NPZ}.",
+        FutureWarning,
+        stacklevel=2,
+    )
+    with open(pkl_path, "rb") as f:
+        return model_from_arrays(_arrays_from_legacy_tree(pkl.load(f)))

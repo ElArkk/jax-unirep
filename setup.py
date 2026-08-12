@@ -20,11 +20,15 @@ setup(
         "jax_unirep": ["weights/uniref50/*/*.npz"],
     },
     install_requires=[
-        "jax",
-        "jaxlib",
+        # jax.example_libraries only appeared in jax 0.2.25. A bare "jax"
+        # let resolvers pick something older, which is what issue #118 was.
+        "jax>=0.4",
+        "jaxlib>=0.4",
+        "equinox>=0.11",
+        "optax>=0.2",
         "multipledispatch",
         "numpy",
-        "optuna",
+        "optuna>=3",
         "scikit-learn",
         "tqdm",
     ],
