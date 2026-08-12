@@ -161,7 +161,7 @@ def fit(
     n_epochs: int,
     model_func: Callable = mlstm1900_apply_fun,
     params: Any = None,
-    batch_method: str = "random",
+    batch_method: str = "length",
     batch_size: int = 25,
     step_size: float = 0.0001,
     holdout_seqs: Optional[Iterable[str]] = None,
@@ -236,7 +236,12 @@ def fit(
         except for mlstm_size of 1900,
         where the pre-trained weights from
         the original publication are used.
-    - `batch_method`: One of "length" or "random".
+    - `batch_method`: One of "length" or "random". Defaults to "length",
+        which groups sequences of identical length and pads nothing.
+        "random" pads every sequence to the longest in the *whole dataset*,
+        which on a realistic length distribution wastes about half the
+        compute and feeds gap characters through the recurrent state.
+        Prefer "length" unless the sequences are already near-uniform.
     - `batch_size`: If random batching is used,
         number of sequences per batch.
         As a rule of thumb, batch size of 50 consumes
