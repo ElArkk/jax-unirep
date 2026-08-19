@@ -11,7 +11,11 @@ Then, install from PyPI:
 pip install jax-unirep
 ```
 
-On the roadmap is support for installation from PyPI and conda-forge.
+If you want to run on a GPU, install a CUDA-enabled JAX alongside it:
+
+```bash
+pip install -U "jax[cuda12]"
+```
 
 ## Basic Usage
 

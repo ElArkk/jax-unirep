@@ -2,6 +2,7 @@
 
 In particular, we are looking for tests that cause NaN errors in grads.
 """
+
 import jax.numpy as np
 import pytest
 from hypothesis import given, settings

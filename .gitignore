@@ -144,3 +144,7 @@ temp/*
 *.bbl
 *.blg
 scratch/*
+
+# uv resolves this locally; the library pins ranges in pyproject.toml,
+# and CI installs with `uv pip install -e ".[dev]"`, which does not read it.
+uv.lock

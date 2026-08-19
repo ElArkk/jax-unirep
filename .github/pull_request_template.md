@@ -16,8 +16,9 @@ that it addresses:
 1. [ ] If there are new features implemented, add suitable tests
    in the `tests` directory.
 2. [ ] If any new dependencies are introduced through the new features,
-   add the packages, pinned to a version, to `environment.yml`.
-3. [ ] Run `make test` in a console in the top level directory
+   add the packages to `dependencies` (or to the `dev` extra)
+   in `pyproject.toml`.
+3. [ ] Run `make fasttest` in a console in the top level directory
    to make sure all the tests pass.
 4. [ ] Run `make format` in a console in the top level directory
    to make the code comply with the formatting standards.

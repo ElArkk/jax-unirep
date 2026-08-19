@@ -5,17 +5,23 @@
 # Required
 version: 2
 
-# Build documentation in the docs/ directory with Sphinx
-# sphinx:
-#   configuration: docs/conf.py
+build:
+  os: ubuntu-24.04
+  tools:
+    python: "3.12"
+  jobs:
+    # docs/fitting.ipynb declares a kernel named "jax-unirep",
+    # and mknotebooks executes it at build time.
+    post_install:
+      - python -m ipykernel install --user --name jax-unirep
 
 # Build documentation with MkDocs
 mkdocs:
   configuration: mkdocs.yml
 
-# Optionally build your docs in additional formats such as PDF
-formats:
-  - pdf
-
-conda:
-  environment: environment.yml
+python:
+  install:
+    - method: pip
+      path: .
+      extra_requirements:
+        - dev

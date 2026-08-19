@@ -24,7 +24,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Pull latest commits of master branch
         run: |
@@ -32,10 +32,17 @@ jobs:
           git pull
 
       - name: Setup Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
 
-      - name: Install bump2version and wheel
-        run: python -m pip install bumpversion wheel # "bumpversion" installs bump2version
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install bump2version
+        run: python -m pip install bumpversion # "bumpversion" installs bump2version
 
       - name: Dry run bumpversion
         run: |
@@ -75,11 +82,11 @@ jobs:
 
       - name: Build package
         run: |
-          rm -f dist/*
-          python setup.py sdist bdist_wheel
+          rm -rf dist
+          uv build
 
       - name: Publish package
-        uses: pypa/gh-action-pypi-publish@master
+        uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}
