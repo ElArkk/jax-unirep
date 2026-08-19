@@ -201,6 +201,20 @@ class MLSTM(eqx.Module):
         return np.matmul(hidden_states, self.dense_w) + self.dense_b
 
 
+def _weight_leaves(model: MLSTM, n_cells: int, with_head: bool):
+    """Every array leaf of a model, in a fixed order.
+
+    Used as the `where` for `eqx.tree_at`, and mirrored by the value list in
+    `model_from_arrays`, so the two stay in step by construction.
+    """
+    leaves = [model.embedding]
+    for cell in model.cells[:n_cells]:
+        leaves += [getattr(cell, key) for key in MLSTM_PARAM_KEYS]
+    if with_head:
+        leaves += [model.dense_w, model.dense_b]
+    return leaves
+
+
 def model_from_arrays(arrays) -> MLSTM:
     """Build an `MLSTM` from the named arrays stored in a weights `.npz`.
 
@@ -211,59 +225,30 @@ def model_from_arrays(arrays) -> MLSTM:
         int(key.split(".")[1]) for key in arrays if key.startswith("mlstm.")
     )
     output_dim = arrays["mlstm.0.wmh"].shape[0]
+    with_head = "dense.w" in arrays
 
-    # Build a correctly-shaped skeleton, then replace every leaf. eqx.tree_at
-    # is the supported way to write into a frozen module.
-    model = MLSTM(
-        n_cells=n_cells,
-        output_dim=output_dim,
-        key=random.PRNGKey(0),
-        with_head="dense.w" in arrays,
+    # `filter_eval_shape` traces the constructor abstractly, so the skeleton
+    # is ShapeDtypeStructs rather than real arrays. Every leaf is replaced
+    # below, so actually running the random initialisers would be pure waste:
+    # 18M discarded floats and ~1.2s on the 1900 model, against 35ms here.
+    skeleton = eqx.filter_eval_shape(
+        MLSTM, n_cells, output_dim, random.PRNGKey(0), with_head
     )
 
-    replacements = {"embedding": np.asarray(arrays["embedding"])}
-    if "dense.w" in arrays:
-        replacements["dense_w"] = np.asarray(arrays["dense.w"])
-        replacements["dense_b"] = np.asarray(arrays["dense.b"])
+    values = [np.asarray(arrays["embedding"])]
+    for i in range(n_cells):
+        values += [
+            np.asarray(arrays[f"mlstm.{i}.{key}"]) for key in MLSTM_PARAM_KEYS
+        ]
+    if with_head:
+        values += [
+            np.asarray(arrays["dense.w"]),
+            np.asarray(arrays["dense.b"]),
+        ]
 
-    model = eqx.tree_at(
-        lambda m: [getattr(m, name) for name in replacements],
-        model,
-        [replacements[name] for name in replacements],
+    return eqx.tree_at(
+        lambda m: _weight_leaves(m, n_cells, with_head), skeleton, values
     )
-
-    cells = tuple(
-        eqx.tree_at(
-            lambda c: [
-                c.wmx,
-                c.wmh,
-                c.wx,
-                c.wh,
-                c.gmx,
-                c.gmh,
-                c.gx,
-                c.gh,
-                c.b,
-            ],
-            cell,
-            [
-                np.asarray(arrays[f"mlstm.{i}.{name}"])
-                for name in (
-                    "wmx",
-                    "wmh",
-                    "wx",
-                    "wh",
-                    "gmx",
-                    "gmh",
-                    "gx",
-                    "gh",
-                    "b",
-                )
-            ],
-        )
-        for i, cell in enumerate(model.cells)
-    )
-    return eqx.tree_at(lambda m: m.cells, model, cells)
 
 
 def model_to_arrays(model: MLSTM) -> dict:
