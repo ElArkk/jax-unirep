@@ -15,10 +15,19 @@ nav:
   - Improvements: improvements.md
   - Advanced Usage:
     - General: advanced.md
-    - Example workflow using fit: fitting.ipynb
+  # fitting.ipynb is written against the pre-v3 stax API (evotuning_models,
+  # jax_unirep.layers) and fails to execute. Rewrite it against the Equinox
+  # API and add this line back:
+  #   - Example workflow using fit: fitting.ipynb
   - Contributing: contributing.md
   - Development: development.md
   - API Docs: api.md
+
+# mkdocs builds every file under docs/, not just what the nav lists, so the
+# stale notebook has to be excluded explicitly rather than merely unlinked.
+# Delete this line once fitting.ipynb is rewritten against the Equinox API.
+exclude_docs: |
+  fitting.ipynb
 
 plugins:
   - search:
@@ -52,9 +61,10 @@ extra_javascript:
   - https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML
   - https://unpkg.com/mermaid@7.1.2/dist/mermaid.min.js
 
-google_analytics:
-  - 'UA-12498603-3'
-  - 'auto'
+
+extra:
+  version:
+    provider: mike
 
 repo_name: 'ElArkk/jax-unirep'
 repo_url: 'https://github.com/ElArkk/jax-unirep'

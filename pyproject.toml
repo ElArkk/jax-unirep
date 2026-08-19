@@ -50,7 +50,8 @@ dev = [
   "pre-commit",
   # Docs. mknotebooks executes docs/fitting.ipynb, which needs a kernel.
   "mkdocs",
-  "mkdocs-material",
+  "mike",
+    "mkdocs-material",
   "mkautodoc",
   "mknotebooks",
   "ipykernel",

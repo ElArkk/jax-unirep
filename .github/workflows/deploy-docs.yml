@@ -10,8 +10,13 @@ jobs:
     runs-on: ubuntu-latest
     name: Build and deploy docs
     steps:
+      # mike reads and rewrites the gh-pages branch, so it needs the full
+      # history and a token that can push.
       - uses: actions/checkout@v4
         name: Checkout repository
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GHPAGES_TOKEN }}
 
       - uses: astral-sh/setup-uv@v5
         name: Setup uv
@@ -24,23 +29,22 @@ jobs:
       - name: Install package and dev dependencies
         run: uv pip install -e ".[dev]"
 
-      # docs/fitting.ipynb declares a kernel named "jax-unirep",
-      # and mknotebooks executes it at build time.
-      - name: Register notebook kernel
-        run: uv run --no-sync python -m ipykernel install --user --name jax-unirep
+      - name: Configure git for mike
+        run: |
+          git config --global user.name "GitHub Bot"
+          git config --global user.email "git@github.com"
 
-      - name: Build docs
-        run: uv run --no-sync mkdocs build
+      # Docs are versioned: each release keeps its own copy under /<major.minor>/
+      # and the theme shows a version selector. `latest` always aliases the
+      # newest deploy, so existing links keep working.
+      - name: Read the version being documented
+        run: |
+          VERSION=$(uv run --no-sync python -c \
+            "import jax_unirep; print('.'.join(jax_unirep.__version__.split('.')[:2]))")
+          echo "docs_version=$VERSION" >> $GITHUB_ENV
 
-      - name: Deploy docs
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          # https://github.com/peaceiris/actions-gh-pages#%EF%B8%8F-set-personal-access-token-personal_token
-          personal_token: ${{ secrets.GHPAGES_TOKEN }}
-          publish_dir: ./site
-          publish_branch: gh-pages
-          allow_empty_commit: false
-          keep_files: false
-          force_orphan: true
-          enable_jekyll: false
-          disable_nojekyll: false
+      - name: Deploy versioned docs
+        run: |
+          uv run --no-sync mike deploy --push --update-aliases \
+            "${{ env.docs_version }}" latest
+          uv run --no-sync mike set-default --push latest
