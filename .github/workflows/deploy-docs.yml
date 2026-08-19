@@ -10,13 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     name: Build and deploy docs
     steps:
-      # mike reads and rewrites the gh-pages branch, so it needs the full
-      # history and a token that can push.
       - uses: actions/checkout@v4
         name: Checkout repository
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GHPAGES_TOKEN }}
 
       - uses: astral-sh/setup-uv@v5
         name: Setup uv
@@ -29,22 +24,22 @@ jobs:
       - name: Install package and dev dependencies
         run: uv pip install -e ".[dev]"
 
-      - name: Configure git for mike
-        run: |
-          git config --global user.name "GitHub Bot"
-          git config --global user.email "git@github.com"
+      - name: Build docs
+        run: uv run --no-sync mkdocs build --strict
 
-      # Docs are versioned: each release keeps its own copy under /<major.minor>/
-      # and the theme shows a version selector. `latest` always aliases the
-      # newest deploy, so existing links keep working.
-      - name: Read the version being documented
-        run: |
-          VERSION=$(uv run --no-sync python -c \
-            "import jax_unirep; print('.'.join(jax_unirep.__version__.split('.')[:2]))")
-          echo "docs_version=$VERSION" >> $GITHUB_ENV
-
-      - name: Deploy versioned docs
-        run: |
-          uv run --no-sync mike deploy --push --update-aliases \
-            "${{ env.docs_version }}" latest
-          uv run --no-sync mike set-default --push latest
+      # Single-version docs, deliberately. Older releases are not republished:
+      # their sources live in the git tags as readable markdown, e.g.
+      # `git show v2.2.0:docs/advanced.md`. Versioned hosting (mike) would add
+      # a selector, a versions.json and a permanent URL-layout change for a
+      # audience that can read the tag directly.
+      - name: Deploy docs
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          personal_token: ${{ secrets.GHPAGES_TOKEN }}
+          publish_dir: ./site
+          publish_branch: gh-pages
+          allow_empty_commit: false
+          keep_files: false
+          force_orphan: true
+          enable_jekyll: false
+          disable_nojekyll: false
