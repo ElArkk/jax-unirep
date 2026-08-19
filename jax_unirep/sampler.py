@@ -53,16 +53,17 @@ def is_accepted(best: float, candidate: float, temperature: float) -> bool:
     :returns bool: Whether or not candidate mutant was accepted
     """
 
-    c = np.exp((candidate - best) / temperature)
+    # Test "is the ratio above 1" in log space, before exponentiating. The
+    # ratio can be astronomically large, and exp() overflowed to inf here on
+    # every run -- harmless, since inf > 1, but it meant the guard fired only
+    # after the number that made it unnecessary had already blown up. Below
+    # this branch the exponent is negative, so exp cannot overflow at all.
+    log_ratio = (candidate - best) / temperature
 
-    if c > 1:
+    if log_ratio >= 0:
         return True
-    else:
-        p = np.random.uniform(0, 1)
-        if c >= p:
-            return True
-        else:
-            return False
+    # bool() because the comparison yields np.bool_, not a Python bool.
+    return bool(np.exp(log_ratio) >= np.random.uniform(0, 1))
 
 
 @dispatch(str)
