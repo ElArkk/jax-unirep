@@ -255,7 +255,12 @@ def fit(
             "epochs_per_print must be greater than or equal to 1."
         )
 
-    optim = optax.adamw(learning_rate=step_size)
+    # weight_decay=0.01 reproduces the hand-rolled adamW this replaced, whose
+    # update was `x - lr * (mhat / (sqrt(vhat) + eps) + w * x)` with w=0.01.
+    # optax.adamw chains scale_by_adam -> add_decayed_weights -> scale_by_lr,
+    # giving -lr * (adam + wd * params): the same expression. Its own default
+    # is 1e-4, which would quietly change evotuning results.
+    optim = optax.adamw(learning_rate=step_size, weight_decay=0.01)
     opt_state = optim.init(eqx.filter(model, eqx.is_array))
 
     @eqx.filter_jit
