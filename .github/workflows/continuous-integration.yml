@@ -107,10 +107,5 @@ jobs:
       - name: Install package and dev dependencies
         run: uv pip install -e ".[dev]"
 
-      # docs/fitting.ipynb declares a kernel named "jax-unirep",
-      # and mknotebooks executes it at build time.
-      - name: Register notebook kernel
-        run: uv run --no-sync python -m ipykernel install --user --name jax-unirep
-
       - name: Build docs
         run: uv run --no-sync mkdocs build

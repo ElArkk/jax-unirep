@@ -15,28 +15,16 @@ nav:
   - Improvements: improvements.md
   - Advanced Usage:
     - General: advanced.md
-  # fitting.ipynb is written against the pre-v3 stax API (evotuning_models,
-  # jax_unirep.layers) and fails to execute. Rewrite it against the Equinox
-  # API and add this line back:
-  #   - Example workflow using fit: fitting.ipynb
+    - Example workflow using fit: fitting.md
   - Contributing: contributing.md
   - Development: development.md
   - API Docs: api.md
-
-# mkdocs builds every file under docs/, not just what the nav lists, so the
-# stale notebook has to be excluded explicitly rather than merely unlinked.
-# Delete this line once fitting.ipynb is rewritten against the Equinox API.
-exclude_docs: |
-  fitting.ipynb
 
 plugins:
   - search:
       separator: '[\s\-\.]+'
       lang:
         - en
-  - mknotebooks:
-      execute: true
-      timeout: 300
 
 # Taken from here: https://squidfunk.github.io/mkdocs-material/extensions/codehilite/
 markdown_extensions:

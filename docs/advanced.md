@@ -42,18 +42,7 @@ The `fit` function has further customization options,
 such as different batching strategies.
 Please see the function docstring [here][fitdoc] for more information.
 
-!!! note "GPU usage"
-
-    The `fit` function will always default to using a
-    GPU `backend` if available for the forward and backward passes
-    during training of the LSTM.
-    However, for the calulation of the average loss
-    on the dataset after every epoch, you can decide
-    if the CPU or GPU `backend` should be used (default is CPU).
-
 You can find an example usage of the evotuning function [here][evotuneex].
-For an example workflow using `fit`, have a look at the notebook
-in [the next section][fitex].
 
 !!! warning "Read the docs!"
 
@@ -66,9 +55,9 @@ that were dumped in an earlier run,
 create params as follows:
 
 ```python
-from jax_unirep.utils import load_params
+from jax_unirep.models import load_model
 
-params = load_params(folderpath="path/to/params/folder")
+params = load_model(folderpath="path/to/params/folder")
 ```
 
 Make sure that the params were created using the same
@@ -77,17 +66,15 @@ model architecture that you want to use them with!
 If you want to start from randomly initialized embedding, mLSTM and dense weights instead:
 
 ```python
-from jax_unirep.evotuning_models import mlstm1900
+from jax_unirep.models import MLSTM
 from jax.random import PRNGKey
 
-init_fun, apply_fun = mlstm1900()
-
-_, params = init_fun(PRNGKey(42), input_shape=(-1, 26))
+# For the canonical single-stack 1900-model:
+model = MLSTM(n_cells=1, output_dim=1900, key=PRNGKey(42))
 ```
 
-[fitdoc]: https://elarkk.github.io/jax-unirep/api/#evotuning
+[fitdoc]: https://elarkk.github.io/jax-unirep/api/#jax_unirepfit
 [evotuneex]: https://github.com/ElArkk/jax-unirep/blob/master/examples/evotuning.py
-[fitex]: https://elarkk.github.io/jax-unirep/fitting
 
 ## End-to-end differentiable models
 
@@ -97,34 +84,151 @@ but might want to jointly optimize the UniRep weights
 with the top model reps.
 You're in luck!
 
-We implemented the mLSTM layers in such a way that
-they are compatible with `jax.example_libraries.stax`.
-This means that they can easily be plugged into
-a `stax.serial` model, e.g. to train both the mLSTM
-and a top-model at once:
+Because `MLSTM` is an [equinox][equinoxdoc] module, and equinox modules are
+just PyTrees, you compose one by holding it as a field on your own module.
+Its parameters then become part of your model's tree, and gradients reach
+them with no extra plumbing.
 
 ```python
-from jax.example_libraries import stax
-from jax.example_libraries.stax import Dense, Relu, serial
+import equinox as eqx
+import jax
+import jax.numpy as jnp
+from jax.random import PRNGKey
 
-from jax_unirep.layers import AAEmbedding, mLSTM, mLSTMAvgHidden
+from jax_unirep import MLSTM, load_model
+from jax_unirep.utils import seq_to_oh
 
-init_fun, apply_fun = serial(
-    AAEmbedding(10)
-    mLSTM(1900),
-    mLSTMAvgHidden(),
-    # Add two layers, one dense layer that results in 512-dim activations
-    Dense(512), Relu(),
-    # And then a linear layer to produce a 1-dim activation
-    Dense(1)
-)
+
+class TopModel(eqx.Module):
+    """A UniRep trunk with a linear head, trained end to end."""
+
+    trunk: MLSTM
+    weight: jax.Array
+    bias: jax.Array
+
+    def __init__(self, trunk: MLSTM, key: jax.Array):
+        self.trunk = trunk
+        wkey, bkey = jax.random.split(key)
+        self.weight = jax.random.normal(wkey, (trunk.output_dim,)) * 0.01
+        self.bias = jnp.zeros(())
+
+    def __call__(self, one_hot):
+        # __call__ handles ONE sequence; vmap it for a batch.
+        _, _, hidden_states = self.trunk(one_hot)
+        h_avg = hidden_states.mean(axis=0)   # the canonical UniRep rep
+        return jnp.dot(h_avg, self.weight) + self.bias
 ```
 
-Have a look at the [documentation][stax] and [examples][staxex]
-for more information about how to implement a model in `jax`.
+Three choices worth making deliberately:
 
-[stax]: https://jax.readthedocs.io/en/latest/jax.example_libraries.stax.html
-[staxex]: https://github.com/google/jax/tree/master/examples
+- **Drop the next-amino-acid head.** The built-in `Dense(25)` head predicts the
+  next residue and is only used for evotuning. Under your own head it is dead
+  parameters.
+- **Pool with `h_avg`.** `hidden_states.mean(axis=0)` is the canonical UniRep
+  representation, the same array `get_reps` returns first. Use `h_final`
+  instead if the end of the sequence matters more than the whole of it.
+- **Start from pre-trained weights.** A randomly initialised `MLSTM` returns
+  nearly the same representation for every sequence, because the
+  weight-normalisation gains start near zero and the gates sit at
+  `sigmoid(0)`. A linear head on a constant representation can only learn the
+  mean of your targets.
+
+The shipped weights all include the amino-acid head, so drop it explicitly
+after loading. The `is_leaf` argument is required -- without it `tree_at`
+cannot address a field you are replacing *with* `None`:
+
+```python
+trunk = load_model(paper_weights=64)
+trunk = eqx.tree_at(
+    lambda m: (m.dense_w, m.dense_b),
+    trunk,
+    replace=(None, None),
+    is_leaf=lambda x: x is None,
+)
+
+model = TopModel(trunk, key=PRNGKey(1))
+```
+
+Then train it like any other equinox model. Note that `optax`'s `update`
+returns already-negated updates, so `apply_updates` **adds** them:
+
+```python
+import optax
+
+sequences = ["HASTA", "VISTA", "ALAVA", "LIMED"]
+x = jnp.stack([seq_to_oh(s)[:-1] for s in sequences])
+y = jnp.array([1.0, 0.5, -0.5, -1.0])
+
+
+@eqx.filter_value_and_grad
+def loss_fn(model, x, y):
+    predictions = jax.vmap(model)(x)
+    return jnp.mean((predictions - y) ** 2)
+
+
+optim = optax.adam(1e-3)
+opt_state = optim.init(eqx.filter(model, eqx.is_array))
+
+
+@eqx.filter_jit
+def step(model, opt_state, x, y):
+    loss, grads = loss_fn(model, x, y)
+    updates, opt_state = optim.update(
+        grads, opt_state, eqx.filter(model, eqx.is_array)
+    )
+    return eqx.apply_updates(model, updates), opt_state, loss
+
+
+for _ in range(100):
+    model, opt_state, loss = step(model, opt_state, x, y)
+```
+
+Gradients flow into both the head and every mLSTM cell, which is what makes
+this end to end.
+
+### Training only the head
+
+To fit the head against frozen representations, partition the model with a
+boolean tree marking what is trainable. **Initialise the optimizer from the
+trainable part, not the whole model** -- otherwise `optax` tries to match a
+full-model state against partial gradients, and the error surfaces deep inside
+`tree_map`:
+
+```python
+trainable = jax.tree_util.tree_map(lambda _: False, model)
+trainable = eqx.tree_at(
+    lambda m: (m.weight, m.bias), trainable, replace=(True, True)
+)
+
+diff, static = eqx.partition(model, trainable)
+
+optim = optax.adam(1e-2)
+opt_state = optim.init(diff)          # from `diff`, not from `model`
+
+
+@eqx.filter_value_and_grad
+def head_loss(diff, static, x, y):
+    model = eqx.combine(diff, static)
+    return jnp.mean((jax.vmap(model)(x) - y) ** 2)
+
+
+@eqx.filter_jit
+def head_step(diff, static, opt_state, x, y):
+    loss, grads = head_loss(diff, static, x, y)
+    updates, opt_state = optim.update(grads, opt_state, diff)
+    return eqx.apply_updates(diff, updates), opt_state, loss
+
+
+for _ in range(20):
+    diff, opt_state, loss = head_step(diff, static, opt_state, x, y)
+
+model = eqx.combine(diff, static)
+```
+
+Have a look at the [equinox documentation][equinoxdoc]
+for more on building and manipulating models this way.
+
+[equinoxdoc]: https://docs.kidger.site/equinox/
 
 ## Sampling new protein sequences
 

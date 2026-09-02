@@ -48,13 +48,10 @@ dev = [
   "black",
   "isort",
   "pre-commit",
-  # Docs. mknotebooks executes docs/fitting.ipynb, which needs a kernel.
+  # Docs.
   "mkdocs",
-  "mike",
-    "mkdocs-material",
+  "mkdocs-material",
   "mkautodoc",
-  "mknotebooks",
-  "ipykernel",
   # Used by examples/draft_cli.py
   "pyprojroot",
 ]
