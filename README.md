@@ -1,5 +1,5 @@
-[![Build Status](https://travis-ci.com/ElArkk/jax-unirep.svg?branch=master)](https://travis-ci.com/ElArkk/jax-unirep)
-[![codecov](https://codecov.io/gh/ElArkk/jax-unirep/branch/master/graph/badge.svg)](https://codecov.io/gh/ElArkk/jax-unirep)
+[![CI](https://github.com/ElArkk/jax-unirep/actions/workflows/continuous-integration.yml/badge.svg)](https://github.com/ElArkk/jax-unirep/actions/workflows/continuous-integration.yml)
+[![codecov](https://codecov.io/github/ElArkk/jax-unirep/graph/badge.svg?token=DCSVGQB5RU)](https://codecov.io/github/ElArkk/jax-unirep)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 # jax-unirep
