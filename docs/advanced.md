@@ -124,9 +124,13 @@ Three choices worth making deliberately:
 - **Drop the next-amino-acid head.** The built-in `Dense(25)` head predicts the
   next residue and is only used for evotuning. Under your own head it is dead
   parameters.
-- **Pool with `h_avg`.** `hidden_states.mean(axis=0)` is the canonical UniRep
-  representation, the same array `get_reps` returns first. Use `h_final`
-  instead if the end of the sequence matters more than the whole of it.
+- **Pool with `h_avg`.** This is not a convention -- it is the definition.
+  The [original paper][unirep] constructs the representation as "the *average*
+  of the 1,900-unit model's hidden states, integrating information across
+  distant amino acids", and names that vector "UniRep" throughout. Final
+  Hidden and Final Cell were evaluated *against* it, not offered as
+  situational alternatives. `hidden_states.mean(axis=0)` is the same array
+  `get_reps` returns first.
 - **Start from pre-trained weights.** A randomly initialised `MLSTM` returns
   nearly the same representation for every sequence, because the
   weight-normalisation gains start near zero and the gates sit at
@@ -134,7 +138,7 @@ Three choices worth making deliberately:
   mean of your targets.
 
 The shipped weights all include the amino-acid head, so drop it explicitly
-after loading. The `is_leaf` argument is required -- without it `tree_at`
+after loading. The `is_leaf` argument is required, without it `tree_at`
 cannot address a field you are replacing *with* `None`:
 
 ```python
@@ -229,6 +233,7 @@ Have a look at the [equinox documentation][equinoxdoc]
 for more on building and manipulating models this way.
 
 [equinoxdoc]: https://docs.kidger.site/equinox/
+[unirep]: https://www.nature.com/articles/s41592-019-0598-1
 
 ## Sampling new protein sequences
 

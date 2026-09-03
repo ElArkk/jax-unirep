@@ -47,3 +47,21 @@ h_avg, h_final, c_final= get_reps(sequences)
 ```
 
 Canonically, you would use `h_avg` as the "reps".
+
+## UniRep Fusion
+
+The [original paper][unirep] also defines "UniRep Fusion": the three
+representations concatenated into one 5,700-dimensional vector, used for the
+supervised stability and function prediction tasks. `get_reps` returns exactly
+those three, in that order, so building it is one line:
+
+```python
+import numpy as np
+
+from jax_unirep import get_reps
+
+h_avg, h_final, c_final = get_reps(["HASTA", "VISTA"])
+fusion = np.hstack([h_avg, h_final, c_final])   # (n_sequences, 5700)
+```
+
+[unirep]: https://www.nature.com/articles/s41592-019-0598-1
