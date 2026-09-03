@@ -10,10 +10,10 @@ jobs:
     runs-on: ubuntu-latest
     name: Code style checks
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         name: Checkout repository
 
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v10
         name: Setup uv
         with:
           enable-cache: true
@@ -35,10 +35,10 @@ jobs:
       matrix:
         python-version: ["3.11", "3.12"]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         name: Checkout repository
 
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v10
         name: Setup uv
         with:
           enable-cache: true
@@ -55,7 +55,7 @@ jobs:
           --cov=jax_unirep --cov-report term-missing --cov-report xml
 
       - name: Upload coverage
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           flags: python
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -64,10 +64,10 @@ jobs:
     runs-on: ubuntu-latest
     name: Run slow tests
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         name: Checkout repository
 
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v10
         name: Setup uv
         with:
           enable-cache: true
@@ -84,7 +84,7 @@ jobs:
           --cov=jax_unirep --cov-report term-missing --cov-report xml
 
       - name: Upload coverage
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           flags: python
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -93,10 +93,10 @@ jobs:
     runs-on: ubuntu-latest
     name: Build docs
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         name: Checkout repository
 
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v10
         name: Setup uv
         with:
           enable-cache: true
