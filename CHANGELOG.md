@@ -4,6 +4,71 @@ In the changelog, @ElArkk and @ericmjl would like to acknowledge contributors wh
 
 <!-- Please add your contribution to the top -->
 
+## 3.0.0 (3 September 2026)
+
+A breaking release. The model is now an [equinox](https://docs.kidger.site/equinox/)
+module rather than a `jax.example_libraries.stax` layer stack, and parameters
+live on the model instead of in an anonymous tuple beside it.
+
+Representations are unchanged. The 1900, 256 and 64 models still reproduce the
+original TensorFlow UniRep hidden states to ~1e-6, and the test suite now pins
+those numbers against captured ground truth so a change that alters an
+embedding fails the build.
+
+### Migration
+
+| v2 | v3 |
+| --- | --- |
+| `get_reps(seqs, params=...)` | `get_reps(seqs, model=...)` |
+| `load_params(...)` | `load_model(...)` |
+| `dump_params(params, dir)` | `save_model(model, dir)` |
+| `fit(..., model_func=..., params=...)` | `fit(..., model=...)` |
+| `evotuning_models.mlstm1900()` | `MLSTM(n_cells=1, output_dim=1900, key=...)` |
+| `evotuning_models.mlstm256()` | `MLSTM(n_cells=4, output_dim=256, key=...)` |
+| `jax_unirep.layers.*` | `jax_unirep.models.MLSTM` |
+
+`fit` and `evotune` now return an `MLSTM`. Weights are stored as `.npz` rather
+than pickle; `load_model` still reads 2.x pickles, with a warning.
+
+### Fixed
+
+- `get_reps` returned plausible but wrong values for the 256 and 64 models. It
+  ignored `mlstm_size` when loading, always used the 1900 embedding matrix, and
+  ran one mLSTM cell where those models stack four. With explicit params it
+  returned a `(1, 256)` array with no error, off by 1.44 from ground truth
+  (issue #111).
+- `pkg_resources` was removed from setuptools, making the package unimportable
+  in modern environments (issue #122).
+- A bare `"jax"` requirement let resolvers install a version predating
+  `jax.example_libraries`, which is the real cause of issue #118. Now
+  `jax>=0.4`.
+- Evotuning used *binary* cross-entropy elementwise across 25 softmax outputs,
+  so roughly half the gradient went to classes softmax already handles. Now
+  categorical cross-entropy computed from logits, which also removes the
+  `log(0)` clamp that guarded the NaN losses recorded in April 2020 and issue
+  #94.
+- Padding was not masked out of the evotuning loss. Since `"-"` maps to class 0,
+  a real class, the model was trained to predict gap characters -- 41% of the
+  batch loss in a representative case.
+- `fit` now defaults to `batch_method="length"`. `"random"` pads every sequence
+  to the longest in the *whole dataset*, wasting about half the compute on a
+  realistic length distribution.
+- `sampler.is_accepted` overflowed `exp` on every run.
+
+### Added
+
+- `fusion_reps`, the "UniRep Fusion" representation from the paper: average
+  hidden, final hidden and final cell concatenated.
+- `MLSTM`, `load_model` and `save_model` are exported at the top level.
+
+### Internal
+
+- `optax.adamw` replaces the hand-rolled optimizer, with `weight_decay=0.01`
+  preserved so results are unchanged.
+- Packaging moved to `pyproject.toml`; conda and `environment.yml` replaced by
+  uv. `layers.py`, `evotuning_models.py` and `optimizers.py` are deleted.
+
+
 - 12 August 2022: Fixed jax dependency imports, by @aaroncsolomon
 - 23 December 2020: Snuck in a fix for incorrect logger info, by @ericmjl.
 - 23 December 2020: Fixed bug with NaN values in grad (issue #94), by @ericmjl
