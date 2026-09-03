@@ -27,9 +27,9 @@ jobs:
       - name: Run black
         run: uv run --no-sync make style
 
-  run-fast-tests:
+  run-tests:
     runs-on: ubuntu-latest
-    name: Run fast tests (Python ${{ matrix.python-version }})
+    name: Run tests (Python ${{ matrix.python-version }})
     strategy:
       fail-fast: false
       matrix:
@@ -49,47 +49,15 @@ jobs:
       - name: Install package and dev dependencies
         run: uv pip install -e ".[dev]"
 
-      - name: Run fast tests
+      # One job for the whole suite. There is no fast/slow split: the two
+      # tests that used to be marked slow take under 5s, most of which is
+      # interpreter and JAX import paid once regardless, so splitting cost a
+      # second runner and a second coverage upload for no wall-clock gain.
+      - name: Run tests
         run: >
-          uv run --no-sync pytest -m "not slow"
+          uv run --no-sync pytest
           --cov=jax_unirep --cov-report term-missing --cov-report xml
 
-      # No token: the Codecov org has token authentication disabled for
-      # public repositories, which is their default for new orgs. Passing an
-      # empty secret is not the same as passing none, so the input is omitted
-      # rather than left referencing a secret that does not exist.
-      - name: Upload coverage
-        uses: codecov/codecov-action@v7
-        with:
-          flags: python
-
-  run-slow-tests:
-    runs-on: ubuntu-latest
-    name: Run slow tests
-    steps:
-      - uses: actions/checkout@v7
-        name: Checkout repository
-
-      - uses: astral-sh/setup-uv@v10
-        name: Setup uv
-        with:
-          enable-cache: true
-
-      - name: Create environment
-        run: uv venv --python 3.12
-
-      - name: Install package and dev dependencies
-        run: uv pip install -e ".[dev]"
-
-      - name: Run slow tests
-        run: >
-          uv run --no-sync pytest -m "slow"
-          --cov=jax_unirep --cov-report term-missing --cov-report xml
-
-      # No token: the Codecov org has token authentication disabled for
-      # public repositories, which is their default for new orgs. Passing an
-      # empty secret is not the same as passing none, so the input is omitted
-      # rather than left referencing a secret that does not exist.
       - name: Upload coverage
         uses: codecov/codecov-action@v7
         with:

@@ -39,7 +39,6 @@ def test_fit(model, holdout_seqs, batch_method, tmp_path):
     assert (dumped.cells[0].wx == model.cells[0].wx).all()
 
 
-@pytest.mark.slow
 def test_fit_defaults(tmp_path):
     """``fit`` defaults to tuning the pre-trained mLSTM1900."""
     sequences = ["ASDFGHJKL", "ASDYGHTKW", "HSKS", "HSGL", "ER"]
@@ -55,7 +54,6 @@ def test_fit_defaults(tmp_path):
     assert len(tuned_model.cells) == 1
 
 
-@pytest.mark.slow
 def test_evotune(model):
     """Simple execution test for evotune."""
     seqs = ["MTN", "BDD"] * 5

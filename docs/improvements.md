@@ -14,7 +14,7 @@ Our preprint [on bioarxiv][preprint] provides additional detail on our claim.
 Secondly, robustness:
 we have extensively unit tested the model code,
 so that others may use it with confidence.
-The code has 92% test coverage,
+The code has 99% test coverage,
 and we leverage GitHub Actions for continuous integration,
 such that every change is tested extensively.
 Since v3, the suite also pins the model's numerical output against
