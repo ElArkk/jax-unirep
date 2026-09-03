@@ -124,13 +124,6 @@ Three choices worth making deliberately:
 - **Drop the next-amino-acid head.** The built-in `Dense(25)` head predicts the
   next residue and is only used for evotuning. Under your own head it is dead
   parameters.
-- **Pool with `h_avg`.** This is not a convention -- it is the definition.
-  The [original paper][unirep] constructs the representation as "the *average*
-  of the 1,900-unit model's hidden states, integrating information across
-  distant amino acids", and names that vector "UniRep" throughout. Final
-  Hidden and Final Cell were evaluated *against* it, not offered as
-  situational alternatives. `hidden_states.mean(axis=0)` is the same array
-  `get_reps` returns first.
 - **Start from pre-trained weights.** A randomly initialised `MLSTM` returns
   nearly the same representation for every sequence, because the
   weight-normalisation gains start near zero and the gates sit at

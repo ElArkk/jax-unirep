@@ -9,6 +9,11 @@ Here lies the official top-level API for interacting with `jax-unirep`.
 ::: jax_unirep.get_reps
     :docstring:
 
+### `jax_unirep.fusion_reps`
+
+::: jax_unirep.fusion_reps
+    :docstring:
+
 ## Evotuning
 
 ### `jax_unirep.fit`

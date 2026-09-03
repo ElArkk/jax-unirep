@@ -117,3 +117,43 @@ def get_reps(
         model = load_model(paper_weights=mlstm_size)
 
     return rep_arbitrary_lengths(seqs, model)
+
+
+def fusion_reps(
+    seqs: Union[str, Iterable[str]],
+    model: Optional[MLSTM] = None,
+    mlstm_size: int = 1900,
+) -> onp.ndarray:
+    """
+    Get "UniRep Fusion" representations of proteins.
+
+    Alley et al. 2019 define UniRep Fusion as the concatenation of all three
+    representations -- average hidden, final hidden and final cell state --
+    into a single vector, and use it for the supervised stability and
+    quantitative function prediction tasks. For the 1900 model that is 5700
+    dimensions.
+
+    This is a one-line composition of `get_reps`, and exists because the
+    concatenation is a named quantity from the paper rather than an obvious
+    thing to guess:
+
+    ```python
+    h_avg, h_final, c_final = get_reps(seqs)
+    fusion = np.hstack([h_avg, h_final, c_final])
+    ```
+
+    If you are fine-tuning rather than featurizing, do not reach for this.
+    Concatenate inside your own `equinox.Module` instead, so the gradient
+    reaches the mLSTM -- see the "End-to-end differentiable models" section of
+    the docs.
+
+    :param seqs: A list of sequences as strings, or a single string.
+    :param model: The `MLSTM` to featurize with, as returned by `load_model()`
+        or `fit()`. When given, its own width is used and `mlstm_size` is
+        ignored.
+    :param mlstm_size: Which set of pre-trained weights to load when `model`
+        is None. One of 1900, 256 or 64.
+    :returns: An `np.array` of shape (n_sequences, 3 * mlstm_size), the
+        components in the order `h_avg`, `h_final`, `c_final`.
+    """
+    return onp.hstack(get_reps(seqs, model=model, mlstm_size=mlstm_size))

@@ -56,12 +56,14 @@ supervised stability and function prediction tasks. `get_reps` returns exactly
 those three, in that order, so building it is one line:
 
 ```python
-import numpy as np
+from jax_unirep import fusion_reps
 
-from jax_unirep import get_reps
-
-h_avg, h_final, c_final = get_reps(["HASTA", "VISTA"])
-fusion = np.hstack([h_avg, h_final, c_final])   # (n_sequences, 5700)
+reps = fusion_reps(["HASTA", "VISTA"])   # (n_sequences, 5700)
 ```
+
+The components come back in the paper's order: average hidden, final hidden,
+final cell. If you are fine-tuning rather than featurizing, do not use this --
+concatenate inside your own `equinox.Module` so that gradients reach the
+mLSTM. See [End-to-end differentiable models](advanced.md).
 
 [unirep]: https://www.nature.com/articles/s41592-019-0598-1

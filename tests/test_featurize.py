@@ -3,7 +3,7 @@ from contextlib import suppress as does_not_raise
 import numpy as np
 import pytest
 
-from jax_unirep import get_reps
+from jax_unirep import fusion_reps, get_reps
 from jax_unirep.errors import SequenceLengthsError
 from jax_unirep.featurize import rep_arbitrary_lengths, rep_same_lengths
 from jax_unirep.models import load_model
@@ -91,3 +91,22 @@ def test_get_reps():
     assert h_avg.shape == (3, 1900)
     assert h_final.shape == (3, 1900)
     assert c_final.shape == (3, 1900)
+
+
+def test_fusion_reps_concatenates_in_paper_order():
+    """UniRep Fusion is avg hidden, then final hidden, then final cell.
+
+    Alley et al. 2019 define it as "a concatenation of all 3 representation
+    possibilities (Average Hidden, Final Hidden and Final Cell)". The order
+    matters: a model trained on one ordering is meaningless under another.
+    """
+    seqs = ["MTN", "MD"]
+    h_avg, h_final, c_final = get_reps(seqs, model=MODEL)
+
+    fusion = fusion_reps(seqs, model=MODEL)
+
+    assert fusion.shape == (len(seqs), 3 * MODEL.output_dim)
+    width = MODEL.output_dim
+    np.testing.assert_array_equal(fusion[:, :width], h_avg)
+    np.testing.assert_array_equal(fusion[:, width : 2 * width], h_final)
+    np.testing.assert_array_equal(fusion[:, 2 * width :], c_final)
