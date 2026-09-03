@@ -119,7 +119,7 @@ class TopModel(eqx.Module):
         return jnp.dot(h_avg, self.weight) + self.bias
 ```
 
-Three choices worth making deliberately:
+Two choices worth making deliberately:
 
 - **Drop the next-amino-acid head.** The built-in `Dense(25)` head predicts the
   next residue and is only used for evotuning. Under your own head it is dead
@@ -157,6 +157,9 @@ x = jnp.stack([seq_to_oh(s)[:-1] for s in sequences])
 y = jnp.array([1.0, 0.5, -0.5, -1.0])
 
 
+# The decorator replaces the function: the body returns just the loss, but
+# calling `loss_fn` returns `(loss, grads)`. Use `eqx.filter_grad` instead if
+# you only want the gradient.
 @eqx.filter_value_and_grad
 def loss_fn(model, x, y):
     predictions = jax.vmap(model)(x)
@@ -203,6 +206,7 @@ optim = optax.adam(1e-2)
 opt_state = optim.init(diff)          # from `diff`, not from `model`
 
 
+# Again: decorated, so this returns `(loss, grads)` when called.
 @eqx.filter_value_and_grad
 def head_loss(diff, static, x, y):
     model = eqx.combine(diff, static)
