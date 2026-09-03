@@ -54,11 +54,14 @@ jobs:
           uv run --no-sync pytest -m "not slow"
           --cov=jax_unirep --cov-report term-missing --cov-report xml
 
+      # No token: the Codecov org has token authentication disabled for
+      # public repositories, which is their default for new orgs. Passing an
+      # empty secret is not the same as passing none, so the input is omitted
+      # rather than left referencing a secret that does not exist.
       - name: Upload coverage
         uses: codecov/codecov-action@v7
         with:
           flags: python
-          token: ${{ secrets.CODECOV_TOKEN }}
 
   run-slow-tests:
     runs-on: ubuntu-latest
@@ -83,11 +86,14 @@ jobs:
           uv run --no-sync pytest -m "slow"
           --cov=jax_unirep --cov-report term-missing --cov-report xml
 
+      # No token: the Codecov org has token authentication disabled for
+      # public repositories, which is their default for new orgs. Passing an
+      # empty secret is not the same as passing none, so the input is omitted
+      # rather than left referencing a secret that does not exist.
       - name: Upload coverage
         uses: codecov/codecov-action@v7
         with:
           flags: python
-          token: ${{ secrets.CODECOV_TOKEN }}
 
   build-docs:
     runs-on: ubuntu-latest
