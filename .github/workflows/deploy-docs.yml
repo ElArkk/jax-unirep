@@ -13,7 +13,7 @@ jobs:
       - uses: actions/checkout@v7
         name: Checkout repository
 
-      - uses: astral-sh/setup-uv@v10
+      - uses: astral-sh/setup-uv@v10.0.1
         name: Setup uv
         with:
           enable-cache: true
