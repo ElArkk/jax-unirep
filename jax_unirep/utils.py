@@ -1,16 +1,13 @@
 """Utility functions for jax-unirep."""
+
 import logging
-import os
-import pickle as pkl
-from collections import Counter
-from functools import lru_cache
+from importlib.resources import files
 from pathlib import Path
 from random import sample
-from typing import Callable, Dict, Iterable, List, Optional, Tuple
+from typing import Callable, Iterable, List, Optional, Tuple
 
 import jax.numpy as np
 import numpy as onp
-import pkg_resources
 from tqdm.autonotebook import tqdm
 
 from .errors import SequenceLengthsError
@@ -66,53 +63,15 @@ def get_weights_dir(
         return Path(folderpath)
     else:
         return Path(
-            pkg_resources.resource_filename(
-                "jax_unirep", f"weights/uniref50/{paper_weights}_weights"
+            str(
+                files("jax_unirep")
+                / f"weights/uniref50/{paper_weights}_weights"
             )
         )
 
 
-def dump_params(
-    params: Dict,
-    dir_path: Path = Path("temp"),
-    step: Optional[int] = 0,
-):
-    """
-    Dump the current params of model being trained to a .pkl file.
-
-    Note: We used to dump to a `.npy` file for each weight.
-    This was tied to a previously strong assumption
-    that the weights were from an mLSTM1900 model.
-
-    With the change from a single model architecture assumption
-    to one that allows for more flexibility,
-    we can no longer assume that the weights match up.
-    Hence, we now simply do a Python pickle dump instead.
-    As with before,
-    the embedding weights are not dumped.
-
-    The directory is specified by dir_path,
-    and will be created, if it does not exist yet.
-
-    `dir_path`, by convention, should be relative to
-    the current working directory
-    in which you executed your Python script or Jupyter notebook.
-
-    :param params: the parameters at the current state of training,
-        input as a tuple of dicts.
-    :param step: the number of training steps to get to this state.
-    :param dir_name: path of directory params will save to.
-    """
-    # create directory if it doesn't already exist:
-    if not os.path.exists(dir_path):
-        os.makedirs(dir_path)
-        print(f"created directory at {dir_path}")
-
-    iteration_path = Path(dir_path) / f"iter_{step}"
-    iteration_path.mkdir(exist_ok=True)
-
-    with open(iteration_path / "model_weights.pkl", "wb") as f:
-        pkl.dump(params, f)
+WEIGHTS_NPZ = "model_weights.npz"
+WEIGHTS_PKL = "model_weights.pkl"
 
 
 def aa_seq_to_int(s: str) -> List[int]:
@@ -124,138 +83,6 @@ def aa_seq_to_int(s: str) -> List[int]:
             f" {set(s).difference(set(aa_to_int.keys()))}"
         )
     return [24] + [aa_to_int[a] for a in s] + [25]
-
-
-def load_embedding(
-    folderpath: Optional[str] = None, paper_weights: Optional[int] = 1900
-):
-    """
-    Load pre-trained embedding weights for UniRep paper models.
-
-    :param folderpath: Path to the folder containing the model weights
-    :param paper_weights: If paper weights should be loaded (folderpath set to None),
-        specify from which model architecture. Possible values are `1900`, `256` and `64`.
-        Defaults to 1900 weights.
-    """
-    weights_dir = get_weights_dir(
-        folderpath=folderpath, paper_weights=paper_weights
-    )
-    with open(weights_dir / "model_weights.pkl", "rb") as f:
-        params = pkl.load(f)
-    return params[0]
-
-
-def get_embedding(sequence: str, embeddings: np.ndarray) -> np.ndarray:
-    """Get embeddings for one sequence."""
-    if len(sequence) < 1:
-        raise SequenceLengthsError("Sequence must be at least of length one.")
-    sequence = aa_seq_to_int(sequence)[:-1]
-    x = onp.vstack([embeddings[i] for i in sequence])
-    return x
-
-
-def get_embeddings(sequences: Iterable[str]) -> np.ndarray:
-    """
-    Return embedding of a list of sequences.
-
-    This function takes a list of protein sequences as strings,
-    all sequences being of the same length,
-    and returns the 10-dimensional embedding of those sequences.
-    Input shapes should be (n_sequences, sequence_length),
-    output shape is (n_sequences, sequence_length, 10).
-
-    :param sequences: A list of sequences to obtain embeddings for.
-    """
-    # Defensive programming checks.
-    # 1. Make sure list is not empty
-    if len(sequences) == 0:
-        raise SequenceLengthsError("Cannot pass in empty list of sequences.")
-    # 2. Ensure that all sequences are of the same length
-    seq_lengths = Counter([len(s) for s in sequences])
-    if not len(seq_lengths) == 1:
-        error = f"""
-Sequences passed in are not all of the same length.
-Sequence length: number of sequences information in the dictionary below.
-{seq_lengths}
-"""
-        raise SequenceLengthsError(error)
-    embeddings = load_embedding()
-
-    seq_embeddings = [get_embedding(s, embeddings) for s in sequences]
-    return onp.stack(seq_embeddings, axis=0)
-
-
-def validate_mLSTM_params(params: Dict, n_outputs):
-    """
-    Validate shapes of mLSTM parameter dictionary.
-
-    Check that mLSTM params dictionary contains the correct set of keys
-    and that the shapes of the params are correct.
-
-    :param params: A dictionary of mLSTM weights.
-    """
-    expected = {
-        "gh": (n_outputs * 4,),
-        "gmh": (n_outputs,),
-        "gmx": (n_outputs,),
-        "gx": (n_outputs * 4,),
-        "wh": (n_outputs, n_outputs * 4),
-        "wmh": (n_outputs, n_outputs),
-        "wmx": (10, n_outputs),
-        "wx": (10, n_outputs * 4),
-        "b": (n_outputs * 4,),
-    }
-
-    for key, value in params.items():
-        if hasattr(value, "shape") and value.shape != expected[key]:
-            raise ValueError(
-                f"Param {key} does not have the right shape. Expected: {expected[key]}, got: {value.shape} instead."
-            )
-
-
-def load_params(
-    folderpath: Optional[str] = None, paper_weights: Optional[int] = 1900
-):
-    """
-    Load params for passing to evotuning stax model.
-
-    The weights are saved as a single pickle file.
-    We did this in version 1.1 to unify how weights are stored and dumped.
-    When loaded into memory, the weights object `params`
-    will be a nested tuple of arrays and dictionaries. In order, they are:
-
-    - embedding params
-    - mLSMT1900 params (with gating weights `g*`, matrix multiplication weights `w*`, and bias `b` as keys)
-    - dense params to predict one-hot encoded next letter.
-
-    Loading a Pickle file can pose a security issue,
-    so if you wish to verify the MD5 of the pickles before loading them,
-    you can do so using the following block of code:
-
-    ```python
-    from jax_unirep.utils import get_weights_dir
-
-    weights_dir = get_weights_dir(folderpath=None)
-    weights_path = weights_dir / "model_weights.pkl"
-    # shell out to the system by calling on md5.
-    os.system(f"md5 {str(weights_path)}")
-    ```
-
-    The return should be identical to the following:
-
-        MD5 (model_weights.pkl) = 87c89ab62929485e43474c8b24cda5c8
-
-    :param folderpath: Path to the folder containing the model weights
-    :param paper_weights: If paper weights should be loaded (folderpath set to None),
-        specify from which model architecture. Possible values are `1900`, `256` and `64`.
-        Defaults to 1900 weights.
-    """
-    weights_dir = get_weights_dir(
-        folderpath=folderpath, paper_weights=paper_weights
-    )
-    with open(weights_dir / "model_weights.pkl", "rb") as f:
-        params = pkl.load(f)
-    return params
 
 
 def l2_normalize(arr, axis, epsilon=1e-12):
@@ -463,12 +290,10 @@ def input_output_pairs(
     seqlengths = set(map(len, sequences))
     logging.debug(seqlengths)
     if not len(seqlengths) == 1:
-        raise ValueError(
-            """
+        raise ValueError("""
 Sequences should be of uniform length, but are not.
 Please ensure that they are all of the same length before passing them in.
-"""
-        )
+""")
 
     xs = []
     ys = []

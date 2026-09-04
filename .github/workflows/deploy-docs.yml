@@ -6,72 +6,35 @@ on:
       - master
 
 jobs:
-  build-environment:
-    runs-on: ubuntu-18.04
-    name: Build conda environment
+  build-and-deploy-docs:
+    runs-on: ubuntu-latest
+    name: Build and deploy docs
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v7
         name: Checkout repository
 
-      # See: https://github.com/marketplace/actions/setup-conda
-      - uses: s-weigand/setup-conda@v1
+      - uses: astral-sh/setup-uv@v10.0.1
+        name: Setup uv
         with:
-          conda-channels: "conda-forge"
+          enable-cache: true
 
-      # # Build cache of environment -- this can shave minutes off the CI.
-      # - name: Cache conda environment
-      #   id: cache-environment
-      #   uses: actions/cache@v2
-      #   # Conda environment build step depends on just environment.yml,
-      #   # so we ensure that the hash key contains its hash.
-      #   # If the file changes, then its hash will change,
-      #   # and the cache will be invalidated,
-      #   # thus triggering a rebuild.
-      #   # (There is a strong assumption here that changing `build_environment.sh`
-      #   # will not change the environment definition, which it shouldn't.)
-      #   with:
-      #     path: |
-      #       jax-unirep.tar.gz
-      #     key: ${{ runner.os }}-${{ hashFiles('environment.yml') }}
+      - name: Create environment
+        run: uv venv --python 3.12
 
-      - name: Build and pack environment
-        if: steps.cache-environment.outputs.cache-hit != 'true'
-        run: bash scripts/ci/build_environment.sh
+      - name: Install package and dev dependencies
+        run: uv pip install -e ".[dev]"
 
-      # # See: https://github.com/actions/upload-artifact
-      # - name: Upload environment
-      #   uses: actions/upload-artifact@v2
-      #   with:
-      #     name: jax-unirep-tarball
-      #     path: jax-unirep.tar.gz
+      - name: Build docs
+        run: uv run --no-sync mkdocs build --strict
 
-  # build-and-deploy-docs:
-  #   runs-on: ubuntu-18.04
-  #   needs: build-environment
-  #   name: Build and deploy docs
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #       name: Checkout repository
-
-  #     # https://github.com/actions/download-artifact
-  #     - name: Download environment tarball
-  #       uses: actions/download-artifact@v2
-  #       with:
-  #         name: jax-unirep-tarball
-
-  #     - name: Unpack environment and activate it
-  #       run: bash scripts/ci/unpack_environment.sh
-
-      - name: Build Docs
-        run: |
-          source activate jax-unirep
-          bash scripts/ci/build_docs.sh
-
-
+      # Single-version docs, deliberately. Older releases are not republished:
+      # their sources live in the git tags as readable markdown, e.g.
+      # `git show v2.2.0:docs/advanced.md`. Versioned hosting (mike) would add
+      # a selector, a versions.json and a permanent URL-layout change for a
+      # audience that can read the tag directly.
       - name: Deploy docs
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          # https://github.com/peaceiris/actions-gh-pages#%EF%B8%8F-set-personal-access-token-personal_token
           personal_token: ${{ secrets.GHPAGES_TOKEN }}
           publish_dir: ./site
           publish_branch: gh-pages

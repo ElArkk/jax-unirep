@@ -3,152 +3,83 @@ name: JAX-UniRep CI pipeline
 on: [pull_request]
 
 jobs:
-  # Code style checks
-  # In principle, these don't rely on the environment.yml,
-  # and can be run in a bare native Python env instead.
-  # Doing so gives us speed, so we can quickly uncover code style issues
-  # instead of having to wait for the environment to be built first.
+  # Code style checks.
+  # These only need black, so we skip installing the package entirely
+  # and get feedback on style issues within seconds.
   code-style:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     name: Code style checks
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v7
         name: Checkout repository
 
-      - uses: actions/setup-python@v2
-        name: Setup Python
+      - uses: astral-sh/setup-uv@v10.0.1
+        name: Setup uv
         with:
-          python-version: 3.9
+          enable-cache: true
 
-      - name: Install code style checker "black"
-        run: python -m pip install black
+      - name: Create environment
+        run: uv venv --python 3.12
+
+      - name: Install black
+        run: uv pip install black
 
       - name: Run black
-        run: make style
+        run: uv run --no-sync make style
 
-  # Build environment
-  # This can be zipped up and passed to the downstream jobs:
-  # - run-tests
-  # - make-docs
-  # for which we want both to run concurrently to save time.
-  build-environment:
-    runs-on: ubuntu-18.04
-    name: Build conda environment
+  run-tests:
+    runs-on: ubuntu-latest
+    name: Run tests (Python ${{ matrix.python-version }})
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v7
         name: Checkout repository
 
-      # See: https://github.com/marketplace/actions/setup-conda
-      - uses: s-weigand/setup-conda@v1
+      - uses: astral-sh/setup-uv@v10.0.1
+        name: Setup uv
         with:
-          conda-channels: "conda-forge"
+          enable-cache: true
 
-      # Build cache of environment -- this can shave minutes off the CI.
-      - name: Cache conda environment
-        id: cache-environment
-        uses: actions/cache@v2
-        # Conda environment build step depends on just environment.yml,
-        # so we ensure that the hash key contains its hash.
-        # If the file changes, then its hash will change,
-        # and the cache will be invalidated,
-        # thus triggering a rebuild.
-        # (There is a strong assumption here that changing `build_environment.sh`
-        # will not change the environment definition, which it shouldn't.)
+      - name: Create environment
+        run: uv venv --python ${{ matrix.python-version }}
+
+      - name: Install package and dev dependencies
+        run: uv pip install -e ".[dev]"
+
+      # One job for the whole suite. There is no fast/slow split: the two
+      # tests that used to be marked slow take under 5s, most of which is
+      # interpreter and JAX import paid once regardless, so splitting cost a
+      # second runner and a second coverage upload for no wall-clock gain.
+      - name: Run tests
+        run: >
+          uv run --no-sync pytest
+          --cov=jax_unirep --cov-report term-missing --cov-report xml
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v7
         with:
-          path: |
-            jax-unirep.tar.gz
-          key: ${{ runner.os }}-${{ hashFiles('environment.yml') }}
-
-      - name: Build and pack environment
-        if: steps.cache-environment.outputs.cache-hit != 'true'
-        run: bash scripts/ci/build_environment.sh
-
-      # See: https://github.com/actions/upload-artifact
-      - name: Upload environment
-        uses: actions/upload-artifact@v2
-        with:
-          name: jax-unirep-tarball
-          path: jax-unirep.tar.gz
-
-  run-fast-tests:
-    runs-on: ubuntu-18.04
-    needs: build-environment
-    name: Run fast tests
-    steps:
-      - uses: actions/checkout@v2
-        name: Checkout repository
-
-      # https://github.com/actions/download-artifact
-      - name: Download environment tarball
-        uses: actions/download-artifact@v2
-        with:
-          name: jax-unirep-tarball
-
-      - name: Unpack environment and activate it
-        run: bash scripts/ci/unpack_environment.sh
-
-
-      - name: Run fast tests
-        run: |
-          source /tmp/jax_unirep_env/bin/activate
-          make fasttest
-          bash <(curl -s https://codecov.io/bash) -cF python
-
-      # - name: Upload fast-test coverage
-      #   uses: codecov/codecov-action@v1
-      #   with:
-      #     files: ./.coverage
-      #     name: codecov-fast-tests
-      #     fail_ci_if_error: true
-
-  run-slow-tests:
-    runs-on: ubuntu-18.04
-    needs: build-environment
-    name: Run slow tests
-    steps:
-      - uses: actions/checkout@v2
-        name: Checkout repository
-
-      # https://github.com/actions/download-artifact
-      - name: Download environment tarball
-        uses: actions/download-artifact@v2
-        with:
-          name: jax-unirep-tarball
-
-      - name: Unpack environment and activate it
-        run: bash scripts/ci/unpack_environment.sh
-
-      - name: Run slow tests
-        run: |
-          source /tmp/jax_unirep_env/bin/activate
-          make slowtest
-          bash <(curl -s https://codecov.io/bash) -cF python
-
-      # - name: Upload slow-test coverage
-      #   uses: codecov/codecov-action@v1
-      #   with:
-      #     files: ./.coverage
-      #     name: codecov-slow-tests
-      #     fail_ci_if_error: true
+          flags: python
 
   build-docs:
-    runs-on: ubuntu-18.04
-    needs: build-environment
+    runs-on: ubuntu-latest
     name: Build docs
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v7
         name: Checkout repository
 
-      # https://github.com/actions/download-artifact
-      - name: Download environment tarball
-        uses: actions/download-artifact@v2
+      - uses: astral-sh/setup-uv@v10.0.1
+        name: Setup uv
         with:
-          name: jax-unirep-tarball
+          enable-cache: true
 
-      - name: Unpack environment and activate it
-        run: bash scripts/ci/unpack_environment.sh
+      - name: Create environment
+        run: uv venv --python 3.12
 
-      - name: Build Docs
-        run: |
-          source /tmp/jax_unirep_env/bin/activate
-          bash scripts/ci/build_docs.sh
+      - name: Install package and dev dependencies
+        run: uv pip install -e ".[dev]"
+
+      - name: Build docs
+        run: uv run --no-sync mkdocs build

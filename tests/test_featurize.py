@@ -3,36 +3,32 @@ from contextlib import suppress as does_not_raise
 import numpy as np
 import pytest
 
-from jax_unirep import get_reps
+from jax_unirep import fusion_reps, get_reps
 from jax_unirep.errors import SequenceLengthsError
 from jax_unirep.featurize import rep_arbitrary_lengths, rep_same_lengths
-from jax_unirep.layers import mLSTM
-from jax_unirep.utils import load_params
+from jax_unirep.models import load_model
 
-_, apply_fun = mLSTM(output_dim=1900)
+# The smallest published model: these tests check shapes and plumbing, not
+# numbers, so there is no reason to load 73 MB of 1900-sized weights for them.
+# The numerical checks live in test_regression.py.
+MODEL = load_model(paper_weights=64)
 
 
 @pytest.mark.parametrize(
     "seqs, expected",
     [
-        ([], pytest.raises(SequenceLengthsError)),
         (["MT", "M1"], pytest.raises(ValueError)),
-        (["MT", "MTN", "MD"], pytest.raises(SequenceLengthsError)),
         (["MTN"], does_not_raise()),
         (["MD", "MT", "DF"], does_not_raise()),
     ],
 )
 def test_rep_same_lengths(seqs, expected):
-    params = load_params()[1]
-
     with expected:
-        assert rep_same_lengths(seqs, params, apply_fun) is not None
+        h_avg, h_final, c_final = rep_same_lengths(seqs, MODEL)
 
-    if expected == does_not_raise():
-        h_final, c_final, h_avg = rep_same_lengths(seqs, params, apply_fun)
-        assert h_final.shape == (len(seqs), 1900)
-        assert c_final.shape == (len(seqs), 1900)
-        assert h_avg.shape == (len(seqs), 1900)
+        assert h_avg.shape == (len(seqs), MODEL.output_dim)
+        assert h_final.shape == (len(seqs), MODEL.output_dim)
+        assert c_final.shape == (len(seqs), MODEL.output_dim)
 
 
 @pytest.mark.parametrize(
@@ -46,30 +42,71 @@ def test_rep_same_lengths(seqs, expected):
     ],
 )
 def test_rep_arbitrary_lengths(seqs, expected):
-    params = load_params()[1]
-
     with expected:
-        assert rep_arbitrary_lengths(seqs, params, apply_fun, 1900) is not None
+        h_avg, h_final, c_final = rep_arbitrary_lengths(seqs, MODEL)
 
-    if expected == does_not_raise():
-        h_final, c_final, h_avg = rep_arbitrary_lengths(
-            seqs, params, apply_fun, 1900
+        assert h_avg.shape == (len(seqs), MODEL.output_dim)
+        assert h_final.shape == (len(seqs), MODEL.output_dim)
+        assert c_final.shape == (len(seqs), MODEL.output_dim)
+
+
+def test_rep_arbitrary_lengths_restores_order():
+    """Sequences are repped grouped by length, but returned in input order."""
+    seqs = ["MD", "MTN", "MT", "DFGH", "DF"]
+    reps, _, _ = rep_arbitrary_lengths(seqs, MODEL)
+
+    for i, seq in enumerate(seqs):
+        np.testing.assert_array_equal(
+            reps[i], rep_same_lengths([seq], MODEL)[0][0]
         )
-        assert h_final.shape == (len(seqs), 1900)
-        assert c_final.shape == (len(seqs), 1900)
-        assert h_avg.shape == (len(seqs), 1900)
+
+
+def test_get_reps_accepts_a_bare_string():
+    listed = get_reps(["ABC"], model=MODEL)
+    bare = get_reps("ABC", model=MODEL)
+
+    for from_list, from_string in zip(listed, bare):
+        assert np.array_equal(from_list, from_string)
+
+
+def test_get_reps_rejects_empty_input():
+    with pytest.raises(SequenceLengthsError):
+        get_reps([])
+
+
+def test_get_reps_uses_the_model_it_is_given():
+    """A passed-in model's own width wins; `mlstm_size` is only for loading."""
+    h_avg, h_final, c_final = get_reps(
+        ["ABC", "DEFGH", "DEF"], model=MODEL, mlstm_size=1900
+    )
+
+    assert h_avg.shape == (3, 64)
+    assert h_final.shape == (3, 64)
+    assert c_final.shape == (3, 64)
 
 
 def test_get_reps():
-    a, b, c = get_reps(["ABC"])
-    d, e, f = get_reps("ABC")
+    h_avg, h_final, c_final = get_reps(["ABC", "DEFGH", "DEF"])
 
-    assert np.array_equal(a, d)
-    assert np.array_equal(b, e)
-    assert np.array_equal(c, f)
-
-    h_final, c_final, h_avg = get_reps(["ABC", "DEFGH", "DEF"])
-
+    assert h_avg.shape == (3, 1900)
     assert h_final.shape == (3, 1900)
     assert c_final.shape == (3, 1900)
-    assert h_avg.shape == (3, 1900)
+
+
+def test_fusion_reps_concatenates_in_paper_order():
+    """UniRep Fusion is avg hidden, then final hidden, then final cell.
+
+    Alley et al. 2019 define it as "a concatenation of all 3 representation
+    possibilities (Average Hidden, Final Hidden and Final Cell)". The order
+    matters: a model trained on one ordering is meaningless under another.
+    """
+    seqs = ["MTN", "MD"]
+    h_avg, h_final, c_final = get_reps(seqs, model=MODEL)
+
+    fusion = fusion_reps(seqs, model=MODEL)
+
+    assert fusion.shape == (len(seqs), 3 * MODEL.output_dim)
+    width = MODEL.output_dim
+    np.testing.assert_array_equal(fusion[:, :width], h_avg)
+    np.testing.assert_array_equal(fusion[:, width : 2 * width], h_final)
+    np.testing.assert_array_equal(fusion[:, 2 * width :], c_final)

@@ -1,101 +1,75 @@
-from functools import partial
-from typing import Callable, Dict, Iterable, List, Optional, Tuple, Union
+from typing import Iterable, Optional, Tuple, Union
 
-import numpy as np
+import numpy as onp
 from jax import vmap
 
 from .errors import SequenceLengthsError
-from .layers import mLSTM
-from .utils import (
-    batch_sequences,
-    get_embeddings,
-    load_params,
-    validate_mLSTM_params,
-)
-
-# instantiate the mLSTM
+from .models import MLSTM, load_model
+from .utils import batch_sequences, seq_to_oh
 
 
 def rep_same_lengths(
-    seqs: Iterable[str], params: Dict, apply_fun: Callable
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    seqs: Iterable[str], model: MLSTM
+) -> Tuple[onp.ndarray, onp.ndarray, onp.ndarray]:
     """
-    This function generates representations of protein sequences that have the same length,
-    by passing them through the UniRep mLSTM.
+    Generate reps for protein sequences that all have the same length.
 
     :param seqs: A list of same length sequences as strings.
-        If passing only a single sequence, it also needs to be passed inside a list.
-    :param apply_fun: Model forward pass function.
-    :returns: A tuple of np.arrays containing the reps.
-        Each `np.array` has shape (n_sequences, mlstm_size).
+        If passing only a single sequence, it also needs to be passed
+        inside a list.
+    :param model: The `MLSTM` to featurize with.
+    :returns: A 3-tuple of `np.array`s containing the reps,
+        in the order `h_avg`, `h_final`, and `c_final`.
+        Each `np.array` has shape (n_sequences, model.output_dim).
     """
+    # The model consumes one-hots and does its own embedding lookup.
+    # Sequences carry a start token but no stop token at inference time.
+    one_hot = onp.stack([seq_to_oh(s)[:-1] for s in seqs])
 
-    embedded_seqs = get_embeddings(seqs)
+    h_final, c_final, h = vmap(model)(one_hot)
 
-    h_final, c_final, h = vmap(partial(apply_fun, params))(embedded_seqs)
-    h_avg = h.mean(axis=1)
-
-    return np.array(h_avg), np.array(h_final), np.array(c_final)
+    # Converting to `np.array` blocks until the computation has completed.
+    return (
+        onp.asarray(h.mean(axis=1)),
+        onp.asarray(h_final),
+        onp.asarray(c_final),
+    )
 
 
 def rep_arbitrary_lengths(
-    seqs: Iterable[str], params: Dict, apply_fun: Callable, mlstm_size: int
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    seqs: Iterable[str], model: MLSTM
+) -> Tuple[onp.ndarray, onp.ndarray, onp.ndarray]:
     """
-    This function generates representations of protein sequences of arbitrary length,
-    by batching together all sequences of the same length and passing them through
-    the mLSTM. Original order of sequences is restored in the final output.
+    Generate reps for protein sequences of arbitrary length.
 
-    This function exists to speed up the original published workflow
-    of "repping one sequence at a time", through repping of all sequences
-    of the same length at once.
-    Repping one sequence length at a time avoids generating noise
-    in the reps from adding padding characters.
+    All sequences of the same length are batched together and passed through
+    the mLSTM in one go, which is much faster than the original published
+    workflow of repping one sequence at a time. Batching by exact length
+    rather than padding to a common length keeps padding characters from
+    adding noise to the reps.
 
     :param seqs: A list of sequences as strings.
-        If passing only a single sequence, it also needs to be passed inside a list.
-    :param apply_fun: Model forward pass function.
-    :param mlstm_size: Integer specifying the number of nodes in the mLSTM layer.
-        Though the model architecture space is practically infinite,
-        we assume that you are using the same number of nodes per mLSTM layer.
-        (This is a common simplification used in the design of neural networks.)
-    :returns: A 3-tuple of `np.array`s containing the reps.
-        Each `np.array` has shape (n_sequences, mlstm_size).
-        Return order: (h_avg, h_final, c_final).
+        If passing only a single sequence, it also needs to be passed
+        inside a list.
+    :param model: The `MLSTM` to featurize with.
+    :returns: A 3-tuple of `np.array`s containing the reps,
+        in the order `h_avg`, `h_final`, and `c_final`.
+        Each `np.array` has shape (n_sequences, model.output_dim).
     """
     order = batch_sequences(seqs)
-    # TODO: Find a better way to do this, without code triplication
-    ha_list, hf_list, cf_list = [], [], []
-    # Each list in `order` contains the indexes of all sequences of a
-    # given length from the original list of sequences.
-    for idxs in order:
-        subset = [seqs[i] for i in idxs]
+    reps = [rep_same_lengths([seqs[i] for i in idxs], model) for idxs in order]
 
-        h_avg, h_final, c_final = rep_same_lengths(subset, params, apply_fun)
-        ha_list.append(h_avg)
-        hf_list.append(h_final)
-        cf_list.append(c_final)
-
-    h_avg, h_final, c_final = (
-        np.zeros((len(seqs), mlstm_size)),
-        np.zeros((len(seqs), mlstm_size)),
-        np.zeros((len(seqs), mlstm_size)),
-    )
-    # Re-order generated reps to match sequence order in the original list.
-    for i, subset in enumerate(order):
-        for j, rep in enumerate(subset):
-            h_avg[rep] = ha_list[i][j]
-            h_final[rep] = hf_list[i][j]
-            c_final[rep] = cf_list[i][j]
-
-    return h_avg, h_final, c_final
+    # `order` lists the original positions of the sequences in the order they
+    # were repped, so argsorting it restores the caller's order.
+    restore = onp.argsort(onp.concatenate(order))
+    return tuple(onp.concatenate(rep)[restore] for rep in zip(*reps))
 
 
 def get_reps(
     seqs: Union[str, Iterable[str]],
-    params: Optional[Dict] = None,
-    mlstm_size: Optional[str] = 1900,
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    model: Optional[MLSTM] = None,
+    mlstm_size: int = 1900,
+) -> Tuple[onp.ndarray, onp.ndarray, onp.ndarray]:
     """
     Get reps of proteins.
 
@@ -113,57 +87,73 @@ def get_reps(
     You should not use this function
     if you want to do further JAX-based computations
     on the output vectors!
-    In that case, the `DeviceArray` futures returned by `mLSTM`
-    should be passed directly into the next step
-    instead of converting them to `np.array`s.
-    The conversion to `np.array`s is done
-    in the dispatched `rep_x_lengths` functions
-    to force python to wait with returning the values
-    until the computation is completed.
+    In that case, call the `MLSTM` directly,
+    so that the JAX arrays it returns
+    can be passed into the next step
+    instead of being converted to `np.array`s.
 
-    The keys of the `params` dictionary must be:
+    All three published model sizes are supported. The model knows its own
+    depth and width, so nothing needs to be declared about its architecture:
+    the 1900 model has one mLSTM cell and the 256 and 64 models have four.
 
-        b, gh, gmh, gmx, gx, wh, wmh, wmx, wx
-
-    ### Parameters
-
-    - `seqs`: A list of sequences as strings or a single string.
-    - `params`: A dictionary of mLSTM weights.
-    - `mlstm_size`: Integer specifying the number of nodes in the mLSTM layer.
-        Though the model architecture space is practically infinite,
-        we assume that you are using the same number of nodes per mLSTM layer.
-        (This is a common simplification used in the design of neural networks.)
-
-    ### Returns
-
-    A 3-tuple of `np.array`s containing the reps,
-    in the order `h_avg`, `h_final`, and `c_final`.
-    Each `np.array` has shape (n_sequences, mlstm_size).
+    :param seqs: A list of sequences as strings, or a single string.
+    :param model: The `MLSTM` to featurize with, as returned by `load_model()`
+        or `fit()`. When given, its own width is used and `mlstm_size` is
+        ignored.
+    :param mlstm_size: Which set of pre-trained weights to load when `model`
+        is None. One of 1900, 256 or 64.
+    :returns: A 3-tuple of `np.array`s containing the reps,
+        in the order `h_avg`, `h_final`, and `c_final`.
+        Each `np.array` has shape (n_sequences, mlstm_size).
     """
-    _, apply_fun = mLSTM(output_dim=mlstm_size)
-    if params is None:
-        params = load_params()[1]
-    # Check that params have correct keys and shapes
-    validate_mLSTM_params(params, n_outputs=mlstm_size)
     # If single string sequence is passed, package it into a list
     if isinstance(seqs, str):
         seqs = [seqs]
-    # Make sure list is not empty
+    # Check before loading 73 MB of weights on the caller's behalf.
     if len(seqs) == 0:
         raise SequenceLengthsError("Cannot pass in empty list of sequences.")
 
-    # Differentiate between two cases:
-    # 1. All sequences in the list have the same length
-    # 2. There are sequences of different lengths in the list
-    if len(set([len(s) for s in seqs])) == 1:
-        h_avg, h_final, c_final = rep_same_lengths(
-            seqs,
-            params,
-            apply_fun,
-        )
-        return h_avg, h_final, c_final
-    else:
-        h_avg, h_final, c_final = rep_arbitrary_lengths(
-            seqs, params, apply_fun, mlstm_size
-        )
-        return h_avg, h_final, c_final
+    if model is None:
+        model = load_model(paper_weights=mlstm_size)
+
+    return rep_arbitrary_lengths(seqs, model)
+
+
+def fusion_reps(
+    seqs: Union[str, Iterable[str]],
+    model: Optional[MLSTM] = None,
+    mlstm_size: int = 1900,
+) -> onp.ndarray:
+    """
+    Get "UniRep Fusion" representations of proteins.
+
+    Alley et al. 2019 define UniRep Fusion as the concatenation of all three
+    representations -- average hidden, final hidden and final cell state --
+    into a single vector, and use it for the supervised stability and
+    quantitative function prediction tasks. For the 1900 model that is 5700
+    dimensions.
+
+    This is a one-line composition of `get_reps`, and exists because the
+    concatenation is a named quantity from the paper rather than an obvious
+    thing to guess:
+
+    ```python
+    h_avg, h_final, c_final = get_reps(seqs)
+    fusion = np.hstack([h_avg, h_final, c_final])
+    ```
+
+    If you are fine-tuning rather than featurizing, do not reach for this.
+    Concatenate inside your own `equinox.Module` instead, so the gradient
+    reaches the mLSTM -- see the "End-to-end differentiable models" section of
+    the docs.
+
+    :param seqs: A list of sequences as strings, or a single string.
+    :param model: The `MLSTM` to featurize with, as returned by `load_model()`
+        or `fit()`. When given, its own width is used and `mlstm_size` is
+        ignored.
+    :param mlstm_size: Which set of pre-trained weights to load when `model`
+        is None. One of 1900, 256 or 64.
+    :returns: An `np.array` of shape (n_sequences, 3 * mlstm_size), the
+        components in the order `h_avg`, `h_final`, `c_final`.
+    """
+    return onp.hstack(get_reps(seqs, model=model, mlstm_size=mlstm_size))

@@ -22,7 +22,7 @@ def safe_sigmoid_exp(x, clip_value=-88):
     gives us NaN values when calculating the gradient of sigmoid.
     As such, we clip -x to a minimum value of -88.0.
     """
-    x = np.clip(x, a_min=-88)
+    x = np.clip(x, min=-88)
     return 1 / (1 + np.exp(-x))
 
 

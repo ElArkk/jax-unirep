@@ -1,61 +1,26 @@
+"""Loss functions for evotuning."""
+
 import jax.numpy as np
-
-# def _cross_entropy_loss(y, y_hat):
-#     """
-#     Also corresponds to the log likelihood of the Bernoulli
-#     distribution.
-#     Intended to be used inside of another function that differentiates w.r.t.
-#     parameters.
-#     """
-#     xent = y * np.log(y_hat) + (1 - y) * np.log(1 - y_hat)
-#     return np.mean(xent)
+from jax.scipy.special import logsumexp
 
 
-def _neg_cross_entropy_loss(y, y_hat, tol=1e-10):
+def cross_entropy_loss(targets, logits, mask=None):
+    """Categorical cross-entropy, computed from logits.
+
+    Takes logits rather than probabilities so that logsumexp can fuse the
+    softmax with the log, avoiding overflow and log(0).
+
+    :param targets: One-hot targets, shape (..., n_classes).
+    :param logits: Unnormalized model outputs, shape (..., n_classes).
+    :param mask: Optional weights per position, shape (...). Use 0.0 to drop a
+        position from the loss and 1.0 to keep it. The result is averaged over
+        the kept positions only.
+    :returns: Mean negative log-likelihood over the kept positions.
     """
-    Also corresponds to the log likelihood of the Bernoulli
-    distribution.
-    Intended to be used inside of another function that differentiates w.r.t.
-    parameters.
-    """
-    xent = -(
-        y * np.log(np.maximum(tol, y_hat))
-        + (1 - y) * np.log(np.maximum(tol, 1 - y_hat))
-    )
-    return np.mean(xent)
+    log_probs = logits - logsumexp(logits, axis=-1, keepdims=True)
+    # Sum over classes to select the true one.
+    nll = -np.sum(targets * log_probs, axis=-1)
 
-
-# def _mse_loss(y, y_hat):
-#     """
-#     Intended to be used inside of another function that differentiates w.r.t.
-#     parameters.
-#     """
-#     return np.mean(np.power(y - y_hat, 2))
-
-
-# def _mae_loss(y, y_hat):
-#     """
-#     Intended to be used inside of another function that differentiates w.r.t.
-#     parameters.
-#     """
-#     return np.mean(np.abs(y - y_hat))
-
-
-# def cross_entropy_loss(params, model, x, y):
-#     y_hat = model(params, x)
-#     return _cross_entropy_loss(y, y_hat)
-
-
-# def neg_cross_entropy_loss(params, model, x, y):
-#     y_hat = model(params, x)
-#     return _neg_cross_entropy_loss(y, y_hat)
-
-
-# def mseloss(params, model, x, y):
-#     y_hat = model(params, x)
-#     return _mse_loss(y, y_hat)
-
-
-# def maeloss(params, model, x, y):
-#     y_hat = model(params, x)
-#     return _mae_loss(y, y_hat)
+    if mask is None:
+        return nll.mean()
+    return np.sum(nll * mask) / np.sum(mask)

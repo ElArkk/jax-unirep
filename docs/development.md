@@ -50,33 +50,34 @@ submit a PR with the appropriate build command inserted in the Dockerfile.
 Care has been taken to document what each step does,
 so please read the in-line documentation in the Dockerfile carefully.
 
-## Conda Environment
+## uv Environment
 
 This is another supported way of working.
-We assume that you already have the Anaconda distribution of Python
-setup on your local machine.
+We assume that you already have [uv](https://docs.astral.sh/uv/) installed
+on your local machine.
 Once you've done that:
 
 1. Fork the repository.
 2. Clone your fork locally.
 3. In your terminal, enter into the local copy of the repository.
 
-Now, install the environment:
+Now, create the environment:
 
 ```bash
-conda env create -f environment.yml
+uv venv
 ```
 
-This will create an environment called `jax-unirep` that you can activate.
+This will create a virtual environment in `.venv` that you can activate.
 
 ```bash
-conda activate jax-unirep
+source .venv/bin/activate
 ```
 
-Finally, install `jax-unirep` into your environment in development mode.
+Finally, install `jax-unirep` into your environment in development mode,
+together with everything needed to run the tests and build the docs.
 
 ```bash
-python setup.py develop
+uv pip install -e ".[dev]"
 ```
 
 ## Your favourite way here

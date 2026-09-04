@@ -15,7 +15,7 @@ nav:
   - Improvements: improvements.md
   - Advanced Usage:
     - General: advanced.md
-    - Example workflow using fit: fitting.ipynb
+    - Example workflow using fit: fitting.md
   - Contributing: contributing.md
   - Development: development.md
   - API Docs: api.md
@@ -25,9 +25,6 @@ plugins:
       separator: '[\s\-\.]+'
       lang:
         - en
-  - mknotebooks:
-      execute: true
-      timeout: 300
 
 # Taken from here: https://squidfunk.github.io/mkdocs-material/extensions/codehilite/
 markdown_extensions:
@@ -52,9 +49,6 @@ extra_javascript:
   - https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML
   - https://unpkg.com/mermaid@7.1.2/dist/mermaid.min.js
 
-google_analytics:
-  - 'UA-12498603-3'
-  - 'auto'
 
 repo_name: 'ElArkk/jax-unirep'
 repo_url: 'https://github.com/ElArkk/jax-unirep'

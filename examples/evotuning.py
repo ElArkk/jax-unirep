@@ -1,12 +1,9 @@
-"""Evotuning two ways!"""
-
-from pathlib import Path
+"""Evotuning with Optuna."""
 
 from jax.random import PRNGKey
 
 from jax_unirep import evotune
-from jax_unirep.evotuning_models import mlstm64
-from jax_unirep.utils import dump_params
+from jax_unirep.models import MLSTM, save_model
 
 # Test sequences:
 sequences = ["HASTA", "VISTA", "ALAVA", "LIMED", "HAST", "HAS", "HASVASTA"] * 5
@@ -20,19 +17,16 @@ holdout_sequences = [
 ] * 5
 PROJECT_NAME = "evotuning_temp"
 
-init_fun, apply_fun = mlstm64()
+# Start from randomly initialized weights of any size. To start from the
+# pre-trained paper weights instead, pass no `model` at all, or
+# `load_model(paper_weights=64)` / `load_model(folderpath=...)` to resume.
+model = MLSTM(n_cells=4, output_dim=64, key=PRNGKey(42))
 
-# The input_shape is always going to be (-1, 26),
-# because that is the number of unique AA, one-hot encoded.
-_, inital_params = init_fun(PRNGKey(42), input_shape=(-1, 26))
-
-# 1. Evotuning with Optuna
 n_epochs_config = {"low": 1, "high": 1}
 lr_config = {"low": 1e-5, "high": 1e-3}
-study, evotuned_params = evotune(
+study, tuned_model = evotune(
     sequences=sequences,
-    model_func=apply_fun,
-    params=inital_params,
+    model=model,
     out_dom_seqs=holdout_sequences,
     n_trials=2,
     n_splits=2,
@@ -40,6 +34,6 @@ study, evotuned_params = evotune(
     learning_rate_config=lr_config,
 )
 
-dump_params(evotuned_params, Path(PROJECT_NAME))
+save_model(tuned_model, PROJECT_NAME)
 print("Evotuning done! Find output weights in", PROJECT_NAME)
 print(study.trials_dataframe())

@@ -11,7 +11,11 @@ Then, install from PyPI:
 pip install jax-unirep
 ```
 
-On the roadmap is support for installation from PyPI and conda-forge.
+If you want to run on a GPU, install a CUDA-enabled JAX alongside it:
+
+```bash
+pip install -U "jax[cuda12]"
+```
 
 ## Basic Usage
 
@@ -43,3 +47,23 @@ h_avg, h_final, c_final= get_reps(sequences)
 ```
 
 Canonically, you would use `h_avg` as the "reps".
+
+## UniRep Fusion
+
+The [original paper][unirep] also defines "UniRep Fusion": the three
+representations concatenated into one 5,700-dimensional vector, used for the
+supervised stability and function prediction tasks. `get_reps` returns exactly
+those three, in that order, so building it is one line:
+
+```python
+from jax_unirep import fusion_reps
+
+reps = fusion_reps(["HASTA", "VISTA"])   # (n_sequences, 5700)
+```
+
+The components come back in the paper's order: average hidden, final hidden,
+final cell. If you are fine-tuning rather than featurizing, do not use this --
+concatenate inside your own `equinox.Module` so that gradients reach the
+mLSTM. See [End-to-end differentiable models](advanced.md).
+
+[unirep]: https://www.nature.com/articles/s41592-019-0598-1

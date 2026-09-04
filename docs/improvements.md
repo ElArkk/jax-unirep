@@ -14,9 +14,12 @@ Our preprint [on bioarxiv][preprint] provides additional detail on our claim.
 Secondly, robustness:
 we have extensively unit tested the model code,
 so that others may use it with confidence.
-The code has 96% test coverage,
-and we leverage Travis CI for continuous integration,
+The code has 99% test coverage,
+and we leverage GitHub Actions for continuous integration,
 such that every change is tested extensively.
+Since v3, the suite also pins the model's numerical output against
+representations captured from the original TensorFlow implementation,
+so a change that alters an embedding fails the build.
 
 Thirdly, user-friendly APIs:
 Most of our expected user base should be not-so-technical protein engineers.
