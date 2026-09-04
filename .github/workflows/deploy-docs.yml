@@ -35,7 +35,12 @@ jobs:
       - name: Deploy docs
         uses: peaceiris/actions-gh-pages@v4
         with:
-          personal_token: ${{ secrets.GHPAGES_TOKEN }}
+          # The built-in token, not a PAT. GHPAGES_TOKEN was a personal
+          # access token created in 2021; PATs expire, and it did, failing
+          # the push after a clean build. GITHUB_TOKEN is issued per run and
+          # cannot expire. It needs contents:write, which this repo's default
+          # workflow permissions already grant.
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./site
           publish_branch: gh-pages
           allow_empty_commit: false
